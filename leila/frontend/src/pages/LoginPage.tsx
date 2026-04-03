@@ -42,33 +42,102 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
-      {/* Background pattern */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-blue-50 opacity-60" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-indigo-50 opacity-40" />
-      </div>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Left panel — branding */}
+      <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative bg-slate-950 flex-col justify-between p-12 overflow-hidden">
+        {/* Subtle grid */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)`,
+            backgroundSize: '48px 48px',
+          }}
+        />
+        {/* Glow blobs */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600 rounded-full opacity-10 blur-[120px]" />
+        <div className="absolute bottom-1/3 right-1/4 w-72 h-72 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
 
-      <div className="relative w-full max-w-md">
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8">
-          {/* Logo / brand */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-slate-900 mb-4">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        {/* Logo */}
+        <div className="relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Leila</h1>
-            <p className="text-sm text-slate-500 mt-1">Rastreador de Imóveis de Leilão</p>
+            <span className="text-white font-semibold text-lg tracking-tight">Leila</span>
           </div>
+        </div>
+
+        {/* Hero content */}
+        <div className="relative z-10 max-w-lg">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-white/60 font-medium mb-8">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Avaliação IA em tempo real
+          </div>
+
+          <h1 className="text-4xl xl:text-5xl font-bold text-white leading-[1.1] tracking-tight mb-6">
+            Encontre leilões com<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-400">
+              vantagem real
+            </span>
+          </h1>
+
+          <p className="text-white/50 text-lg leading-relaxed mb-12">
+            Agregamos imóveis de leilão de múltiplas fontes e usamos IA para avaliar cada oportunidade — antes que você perca tempo.
+          </p>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-6">
+            {[
+              { value: '10+', label: 'Fontes monitoradas' },
+              { value: '0.1s', label: 'Por avaliação IA' },
+              { value: '100%', label: 'Privado' },
+            ].map(({ value, label }) => (
+              <div key={label}>
+                <p className="text-2xl font-bold text-white">{value}</p>
+                <p className="text-xs text-white/40 mt-0.5">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom quote */}
+        <div className="relative z-10">
+          <blockquote className="border-l-2 border-white/10 pl-4">
+            <p className="text-white/40 text-sm italic">
+              "O melhor negócio é aquele que você vê antes de todo mundo."
+            </p>
+          </blockquote>
+        </div>
+      </div>
+
+      {/* Right panel — form */}
+      <div className="w-full lg:flex-1 flex flex-col justify-center items-center px-6 sm:px-12 py-12 bg-white">
+        <div className="w-full max-w-sm">
+          {/* Mobile logo */}
+          <div className="flex items-center gap-2 mb-10 lg:hidden">
+            <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            </div>
+            <span className="font-semibold text-slate-900">Leila</span>
+          </div>
+
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">
+            Bem-vindo de volta
+          </h2>
+          <p className="text-slate-500 text-sm mb-8">
+            Entre na sua conta para continuar
+          </p>
 
           {/* Google SSO */}
           <button
             type="button"
             onClick={handleGoogle}
             disabled={googleLoading || loading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed mb-5"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             {googleLoading ? (
               <span className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
@@ -80,20 +149,20 @@ export default function LoginPage() {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
             )}
-            {googleLoading ? 'Redirecionando...' : 'Entrar com Google'}
+            {googleLoading ? 'Redirecionando...' : 'Continuar com Google'}
           </button>
 
           {/* Divider */}
-          <div className="flex items-center gap-3 mb-5">
+          <div className="flex items-center gap-3 my-6">
             <div className="flex-1 h-px bg-slate-100" />
-            <span className="text-xs text-slate-400 font-medium">ou</span>
+            <span className="text-xs text-slate-400 font-medium">ou use seu email</span>
             <div className="flex-1 h-px bg-slate-100" />
           </div>
 
           {/* Email / Password form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 Email
               </label>
               <input
@@ -101,26 +170,28 @@ export default function LoginPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="voce@exemplo.com"
-                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all"
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/8 focus:border-slate-400 focus:bg-white transition-all"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">
-                Senha
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium text-slate-700">
+                  Senha
+                </label>
+              </div>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all"
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl bg-slate-50/50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/8 focus:border-slate-400 focus:bg-white transition-all"
                 required
               />
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-100 rounded-xl">
+              <div className="flex items-start gap-2.5 p-3.5 bg-red-50 border border-red-100 rounded-xl">
                 <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -131,7 +202,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || googleLoading}
-              className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 active:bg-slate-950 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 flex items-center justify-center gap-2 mt-1"
+              className="w-full py-3 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 active:bg-slate-950 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 flex items-center justify-center gap-2 shadow-sm shadow-slate-900/20 mt-2"
             >
               {loading && (
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -139,12 +210,11 @@ export default function LoginPage() {
               {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
-        </div>
 
-        {/* Footer note */}
-        <p className="text-center text-xs text-slate-400 mt-5">
-          Plataforma privada — acesso restrito
-        </p>
+          <p className="text-center text-xs text-slate-400 mt-8">
+            Plataforma privada — acesso restrito
+          </p>
+        </div>
       </div>
     </div>
   )
