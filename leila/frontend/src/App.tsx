@@ -13,7 +13,9 @@ const queryClient = new QueryClient({
 })
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  // AUTH DESATIVADO TEMPORARIAMENTE — remover quando SSO Google estiver configurado
+  const { session, loading } = useAuth()
+  if (loading) return null
+  if (!session) return <Navigate to="/login" replace />
   return <>{children}</>
 }
 
