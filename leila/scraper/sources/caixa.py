@@ -17,10 +17,12 @@ import re
 import io
 import csv
 import asyncio
+import time
+import random
 from datetime import datetime
 from typing import Optional
 
-import httpx
+from curl_cffi.requests import AsyncSession
 
 from .base import BaseSource, ScrapedProperty
 
@@ -88,32 +90,33 @@ class CaixaSource(BaseSource):
     def __init__(self, ufs: Optional[list[str]] = None):
         self.ufs = ufs or DEFAULT_UFS
 
-    async def _scrape_uf(self, client: httpx.AsyncClient, uf: str) -> list[ScrapedProperty]:
+    async def _scrape_uf(self, session: AsyncSession, uf: str) -> list[ScrapedProperty]:
         url = CSV_URL.format(uf=uf)
         properties = []
 
         try:
-            response = await self._get(client, url)
+            await asyncio.sleep(random.uniform(1.0, 3.0))
+            response = await session.get(url, timeout=30)
+            response.raise_for_status()
         except Exception as e:
             print(f"[Caixa] Erro ao baixar CSV para {uf}: {e}")
             return []
 
-        # Caixa usa encoding latin-1 nos CSVs
         content = response.content.decode("latin-1", errors="replace")
 
-        # Debug: mostrar primeiros 300 chars para diagnóstico
-        preview = content[:300].replace("\n", " ").replace("\r", "")
-        print(f"[Caixa] {uf} HTTP {response.status_code} | {len(response.content)} bytes | preview: {preview[:150]}")
+        # Detectar CAPTCHA/WAF em vez de CSV
+        if content.strip().startswith("<") or "CAPTCHA" in content or "Bot Manager" in content:
+            print(f"[Caixa] {uf}: bloqueado por WAF (recebeu HTML)")
+            return []
 
         reader = csv.DictReader(io.StringIO(content), delimiter=";")
-
         for row in reader:
             try:
                 prop = self._parse_row(row, uf)
                 if prop:
                     properties.append(prop)
             except Exception as e:
-                print(f"[Caixa] Erro ao parsear linha ({uf}): {e} — {row}")
+                print(f"[Caixa] Erro ao parsear linha ({uf}): {e}")
 
         print(f"[Caixa] {uf}: {len(properties)} imóveis")
         return properties
@@ -200,13 +203,23 @@ class CaixaSource(BaseSource):
         )
 
     async def scrape(self) -> list[ScrapedProperty]:
-        async with self._build_client() as client:
-            tasks = [self._scrape_uf(client, uf) for uf in self.ufs]
-            results = await asyncio.gather(*tasks)
+        # curl-cffi com fingerprint Chrome120 para bypassar Radware WAF
+        async with AsyncSession(impersonate="chrome120") as session:
+            # Visita a página principal primeiro para obter cookies de sessão
+            try:
+                await session.get(
+                    "https://venda-imoveis.caixa.gov.br/sistema/login-site.asp",
+                    timeout=15
+                )
+                await asyncio.sleep(2)
+            except Exception:
+                pass
 
-        properties: list[ScrapedProperty] = []
-        for batch in results:
-            properties.extend(batch)
+            # Raspa UFs sequencialmente (evita rate-limit)
+            properties: list[ScrapedProperty] = []
+            for uf in self.ufs:
+                batch = await self._scrape_uf(session, uf)
+                properties.extend(batch)
 
         print(f"[Caixa] Total: {len(properties)} imóveis em {len(self.ufs)} UFs")
         return properties
