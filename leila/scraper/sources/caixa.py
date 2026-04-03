@@ -111,7 +111,23 @@ class CaixaSource(BaseSource):
             print(f"[Caixa] {uf}: bloqueado por WAF (recebeu HTML)")
             return []
 
-        reader = csv.DictReader(io.StringIO(content), delimiter=";")
+        # O CSV da Caixa tem linhas de metadata antes do cabeçalho real.
+        # Pula até encontrar a linha que começa com o campo de ID do imóvel.
+        lines = content.splitlines()
+        header_idx = None
+        for i, line in enumerate(lines):
+            low = line.lower()
+            if "n°" in low or "numero" in low or "imóvel" in low or "imovel" in low:
+                if ";" in line:  # é linha CSV, não texto livre
+                    header_idx = i
+                    break
+
+        if header_idx is None:
+            print(f"[Caixa] {uf}: header CSV não encontrado")
+            return []
+
+        csv_content = "\n".join(lines[header_idx:])
+        reader = csv.DictReader(io.StringIO(csv_content), delimiter=";")
         for row in reader:
             try:
                 prop = self._parse_row(row, uf)
@@ -127,8 +143,9 @@ class CaixaSource(BaseSource):
         # Normaliza chaves (Caixa usa headers com espaços e acentos)
         normalized = {k.strip().lower(): v.strip() for k, v in row.items() if k}
 
-        # Campo do ID externo — pode ser 'nº do imóvel' ou 'numero do imovel'
+        # Campo do ID externo
         external_id = (
+            normalized.get("n° do imóvel") or   # formato real do CSV
             normalized.get("nº do imóvel") or
             normalized.get("numero do imovel") or
             normalized.get("numero_imovel") or
@@ -140,9 +157,10 @@ class CaixaSource(BaseSource):
             return None
 
         auction_price_raw = (
+            normalized.get("preço") or           # formato real do CSV
+            normalized.get("preco") or
             normalized.get("valor de venda") or
             normalized.get("valor venda") or
-            normalized.get("preco") or
             ""
         )
         auction_price = _parse_brl(auction_price_raw)
@@ -152,6 +170,7 @@ class CaixaSource(BaseSource):
         appraised_raw = (
             normalized.get("valor de avaliação") or
             normalized.get("valor avaliacao") or
+            normalized.get("avaliação") or
             ""
         )
         appraised_value = _parse_brl(appraised_raw)
@@ -178,6 +197,14 @@ class CaixaSource(BaseSource):
             normalized.get("bairro") or "",
         ]
         address = ", ".join(p for p in address_parts if p).strip()
+
+        # Se não achou tipo ainda, tentar inferir do título/descrição
+        if not raw_type:
+            desc = normalized.get("descrição") or normalized.get("descricao") or ""
+            for abbr in PROPERTY_TYPE_MAP:
+                if abbr.lower() in desc.lower():
+                    raw_type = abbr
+                    break
 
         title = f"{_normalize_type(raw_type).title()} — {city}/{uf}".strip()
         if not title.startswith("—"):
