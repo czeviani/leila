@@ -103,8 +103,6 @@ class CaixaSource(BaseSource):
             return []
 
         content = response.content.decode("latin-1", errors="replace")
-        preview = content[:200].replace("\n", " ").replace("\r", "")
-        print(f"[Caixa] {uf} HTTP {response.status_code} | {len(response.content)}b | {preview[:120]}")
 
         # Detectar CAPTCHA/WAF em vez de CSV
         if content.strip().startswith("<") or "CAPTCHA" in content or "Bot Manager" in content:
