@@ -6,6 +6,12 @@ import { useFilters, useSaveFilters } from '../../hooks/useProperties'
 const PROPERTY_TYPES = ['apartamento', 'casa', 'terreno', 'loja', 'galpão', 'sala', 'sobrado']
 const UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
 
+const POPULAR_CITIES = [
+  'São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Curitiba',
+  'Porto Alegre', 'Brasília', 'Goiânia', 'Salvador', 'Fortaleza',
+  'Campinas', 'Florianópolis', 'Recife', 'Manaus', 'Belém',
+]
+
 interface Props {
   onFilterChange: (params: Record<string, string | number | undefined>) => void
 }
@@ -19,6 +25,7 @@ export default function FilterPanel({ onFilterChange }: Props) {
   const [priceMin, setPriceMin] = useState('')
   const [priceMax, setPriceMax] = useState('')
   const [selectedStates, setSelectedStates] = useState<string[]>([])
+  const [selectedCities, setSelectedCities] = useState<string[]>([])
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const [discountMin, setDiscountMin] = useState('')
 
@@ -27,6 +34,7 @@ export default function FilterPanel({ onFilterChange }: Props) {
       if (savedFilters.price_min) setPriceMin(String(savedFilters.price_min))
       if (savedFilters.price_max) setPriceMax(String(savedFilters.price_max))
       if (savedFilters.states?.length) setSelectedStates(savedFilters.states)
+      if (savedFilters.cities?.length) setSelectedCities(savedFilters.cities)
       if (savedFilters.property_types?.length) setSelectedTypes(savedFilters.property_types)
       if (savedFilters.discount_min) setDiscountMin(String(savedFilters.discount_min))
     }
@@ -47,6 +55,9 @@ export default function FilterPanel({ onFilterChange }: Props) {
   const toggleState = (uf: string) =>
     setSelectedStates(prev => prev.includes(uf) ? prev.filter(s => s !== uf) : [...prev, uf])
 
+  const toggleCity = (city: string) =>
+    setSelectedCities(prev => prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city])
+
   const toggleType = (t: string) =>
     setSelectedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
 
@@ -55,7 +66,7 @@ export default function FilterPanel({ onFilterChange }: Props) {
       price_min: priceMin ? Number(priceMin) : null,
       price_max: priceMax ? Number(priceMax) : null,
       states: selectedStates,
-      cities: [],
+      cities: selectedCities,
       property_types: selectedTypes,
       discount_min: discountMin ? Number(discountMin) : null,
     }
@@ -65,8 +76,9 @@ export default function FilterPanel({ onFilterChange }: Props) {
     const params: Record<string, string | number | undefined> = {}
     if (filters.price_min) params.price_min = filters.price_min
     if (filters.price_max) params.price_max = filters.price_max
-    if (filters.states.length) params.state = filters.states[0] // API single-state for now
-    if (filters.property_types.length) params.type = filters.property_types[0]
+    if (filters.states.length) params.state = filters.states.join(',')
+    if (filters.cities.length) params.city = filters.cities.join(',')
+    if (filters.property_types.length) params.type = filters.property_types.join(',')
     if (filters.discount_min) params.discount_min = filters.discount_min
 
     onFilterChange(params)
@@ -75,12 +87,12 @@ export default function FilterPanel({ onFilterChange }: Props) {
 
   const reset = () => {
     setPriceMin(''); setPriceMax(''); setSelectedStates([])
-    setSelectedTypes([]); setDiscountMin('')
+    setSelectedCities([]); setSelectedTypes([]); setDiscountMin('')
     onFilterChange({})
     setOpen(false)
   }
 
-  const activeCount = selectedStates.length + selectedTypes.length +
+  const activeCount = selectedStates.length + selectedCities.length + selectedTypes.length +
     (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (discountMin ? 1 : 0)
 
   return (
@@ -160,6 +172,26 @@ export default function FilterPanel({ onFilterChange }: Props) {
                   }`}
                 >
                   {uf}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Cities */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Cidades</p>
+            <div className="flex flex-wrap gap-1.5">
+              {POPULAR_CITIES.map(city => (
+                <button
+                  key={city}
+                  onClick={() => toggleCity(city)}
+                  className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-all duration-100 ${
+                    selectedCities.includes(city)
+                      ? 'bg-slate-900 text-white border-slate-900'
+                      : 'border-slate-200 text-slate-600 hover:border-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  {city}
                 </button>
               ))}
             </div>

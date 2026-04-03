@@ -12,6 +12,7 @@ Estratégia:
   3. Para desconto e edital, pode enriquecer via página de detalhe (opcional)
 """
 
+import os
 import re
 import io
 import csv
@@ -27,11 +28,18 @@ SOURCE_ID = "caixa"
 BASE_URL = "https://venda-imoveis.caixa.gov.br"
 CSV_URL = f"{BASE_URL}/listaweb/Lista_imoveis_{{uf}}.csv"
 
-# UFs disponíveis para scraping (pode filtrar por config)
+# Todos as UFs disponíveis
 ALL_UFS = [
     "AC","AL","AM","AP","BA","CE","DF","ES","GO","MA",
     "MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN",
     "RO","RR","RS","SC","SE","SP","TO"
+]
+
+# UFs padrão: principais mercados de leilão do Brasil
+# Pode ser sobrescrito via env: SCRAPER_UFS=SP,RJ,MG
+_env_ufs = os.getenv("SCRAPER_UFS", "").strip()
+DEFAULT_UFS = [u.strip().upper() for u in _env_ufs.split(",") if u.strip()] if _env_ufs else [
+    "SP", "RJ", "MG", "PR", "RS", "SC", "GO", "DF", "BA", "CE", "PE"
 ]
 
 PROPERTY_TYPE_MAP = {
@@ -78,7 +86,7 @@ class CaixaSource(BaseSource):
     source_id = SOURCE_ID
 
     def __init__(self, ufs: Optional[list[str]] = None):
-        self.ufs = ufs or ALL_UFS
+        self.ufs = ufs or DEFAULT_UFS
 
     async def _scrape_uf(self, client: httpx.AsyncClient, uf: str) -> list[ScrapedProperty]:
         url = CSV_URL.format(uf=uf)

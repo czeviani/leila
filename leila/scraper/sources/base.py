@@ -67,7 +67,7 @@ class BaseSource(ABC):
             headers=DEFAULT_HEADERS,
             timeout=REQUEST_TIMEOUT,
             follow_redirects=True,
-            proxies=proxy,  # type: ignore[arg-type]
+            proxy=proxy,
         )
 
     @retry(

@@ -13,7 +13,7 @@ import random
 from typing import Optional
 
 
-def _parse_proxies() -> list[dict]:
+def _parse_proxies() -> list[str]:
     raw = os.getenv("PROXY_LIST", "").strip()
     if not raw:
         return []
@@ -23,16 +23,10 @@ def _parse_proxies() -> list[dict]:
         parts = entry.strip().split(":")
         if len(parts) == 4:
             ip, port, user, password = parts
-            proxies.append({
-                "http://":  f"http://{user}:{password}@{ip}:{port}",
-                "https://": f"http://{user}:{password}@{ip}:{port}",
-            })
+            proxies.append(f"http://{user}:{password}@{ip}:{port}")
         elif len(parts) == 2:
             ip, port = parts
-            proxies.append({
-                "http://":  f"http://{ip}:{port}",
-                "https://": f"http://{ip}:{port}",
-            })
+            proxies.append(f"http://{ip}:{port}")
     return proxies
 
 
@@ -40,8 +34,8 @@ _PROXIES = _parse_proxies()
 _ROTATION_ENABLED = os.getenv("PROXY_ROTATION", "false").lower() == "true"
 
 
-def get_proxy() -> Optional[dict]:
-    """Retorna um proxy aleatório da lista, ou None se rotação desativada."""
+def get_proxy() -> Optional[str]:
+    """Retorna URL de um proxy aleatório, ou None se rotação desativada."""
     if not _ROTATION_ENABLED or not _PROXIES:
         return None
     return random.choice(_PROXIES)

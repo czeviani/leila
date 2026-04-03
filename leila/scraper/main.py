@@ -101,24 +101,6 @@ async def status():
     }
 
 
-@app.post("/scrape/{source_id}")
-async def scrape_source(source_id: str):
-    if source_id not in SOURCES:
-        raise HTTPException(status_code=404, detail=f"Source '{source_id}' not found")
-
-    SourceClass = SOURCES[source_id]
-    source = SourceClass()
-
-    print(f"[Scraper] Starting {source_id}...")
-    properties = await source.scrape()
-
-    result = await _upsert_properties(properties)
-    await _update_source_timestamp(source_id)
-
-    print(f"[Scraper] {source_id} done: {result}")
-    return result.__dict__
-
-
 @app.post("/scrape/all")
 async def scrape_all():
     # Get active sources from DB
@@ -139,6 +121,24 @@ async def scrape_all():
             all_results[source_id] = {"error": str(e)}
 
     return all_results
+
+
+@app.post("/scrape/{source_id}")
+async def scrape_source(source_id: str):
+    if source_id not in SOURCES:
+        raise HTTPException(status_code=404, detail=f"Source '{source_id}' not found")
+
+    SourceClass = SOURCES[source_id]
+    source = SourceClass()
+
+    print(f"[Scraper] Starting {source_id}...")
+    properties = await source.scrape()
+
+    result = await _upsert_properties(properties)
+    await _update_source_timestamp(source_id)
+
+    print(f"[Scraper] {source_id} done: {result}")
+    return result.__dict__
 
 
 if __name__ == "__main__":

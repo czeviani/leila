@@ -10,9 +10,22 @@ export const getProperties = async (req: Request, res: Response) => {
     .order('scraped_at', { ascending: false })
     .range(offset, offset + Number(limit) - 1)
 
-  if (state) query = query.eq('state', state)
-  if (city) query = query.ilike('city', `%${city}%`)
-  if (type) query = query.eq('property_type', type)
+  if (state) {
+    const states = String(state).split(',').map(s => s.trim()).filter(Boolean)
+    query = states.length === 1 ? query.eq('state', states[0]) : query.in('state', states)
+  }
+  if (city) {
+    const cities = String(city).split(',').map(c => c.trim()).filter(Boolean)
+    if (cities.length === 1) {
+      query = query.ilike('city', `%${cities[0]}%`)
+    } else {
+      query = query.or(cities.map(c => `city.ilike.%${c}%`).join(','))
+    }
+  }
+  if (type) {
+    const types = String(type).split(',').map(t => t.trim()).filter(Boolean)
+    query = types.length === 1 ? query.eq('property_type', types[0]) : query.in('property_type', types)
+  }
   if (price_min) query = query.gte('auction_price', Number(price_min))
   if (price_max) query = query.lte('auction_price', Number(price_max))
   if (discount_min) query = query.gte('discount_pct', Number(discount_min))
