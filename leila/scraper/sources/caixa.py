@@ -100,6 +100,11 @@ class CaixaSource(BaseSource):
 
         # Caixa usa encoding latin-1 nos CSVs
         content = response.content.decode("latin-1", errors="replace")
+
+        # Debug: mostrar primeiros 300 chars para diagnóstico
+        preview = content[:300].replace("\n", " ").replace("\r", "")
+        print(f"[Caixa] {uf} HTTP {response.status_code} | {len(response.content)} bytes | preview: {preview[:150]}")
+
         reader = csv.DictReader(io.StringIO(content), delimiter=";")
 
         for row in reader:
