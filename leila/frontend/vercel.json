@@ -1,6 +1,8 @@
 {
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/dist",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm install && npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/(.*)",
