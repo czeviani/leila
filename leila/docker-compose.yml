@@ -11,6 +11,7 @@ services:
       - backend/.env
     networks:
       - leila-net
+      - easypanel-zeke
 
   leila-scraper:
     build:
@@ -28,3 +29,5 @@ services:
 networks:
   leila-net:
     driver: bridge
+  easypanel-zeke:
+    external: true
