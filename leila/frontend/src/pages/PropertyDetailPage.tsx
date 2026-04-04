@@ -212,14 +212,19 @@ export default function PropertyDetailPage() {
               </div>
             </div>
             {(!evaluation || evaluation.status === 'error') && (
-              <button
-                onClick={() => requestEval.mutate(property.id)}
-                disabled={requestEval.isPending}
-                className="flex items-center gap-2 px-3.5 py-2 text-sm font-semibold bg-slate-900 text-white rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-all shadow-sm shadow-slate-900/20"
-              >
-                <Sparkles size={13} />
-                {requestEval.isPending ? 'Solicitando...' : 'Avaliar com IA'}
-              </button>
+              <div className="flex flex-col items-end gap-1.5">
+                <button
+                  onClick={() => requestEval.mutate(property.id)}
+                  disabled={requestEval.isPending}
+                  className="flex items-center gap-2 px-3.5 py-2 text-sm font-semibold bg-slate-900 text-white rounded-xl hover:bg-slate-800 disabled:opacity-50 transition-all shadow-sm shadow-slate-900/20"
+                >
+                  <Sparkles size={13} />
+                  {requestEval.isPending ? 'Solicitando...' : 'Avaliar com IA'}
+                </button>
+                {requestEval.isError && (
+                  <p className="text-xs text-red-500">{(requestEval.error as Error)?.message ?? 'Erro ao solicitar'}</p>
+                )}
+              </div>
             )}
           </div>
 

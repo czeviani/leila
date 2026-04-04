@@ -20,6 +20,11 @@ export const useProperty = (id: string) =>
     queryKey: ['property', id],
     queryFn: () => api.properties.get(id),
     enabled: !!id,
+    refetchInterval: (query) => {
+      const data = query.state.data as import('../lib/api').Property | undefined
+      if (data?.leila_evaluations?.[0]?.status === 'processing') return 3000
+      return false
+    },
   })
 
 export const useFilters = () =>
