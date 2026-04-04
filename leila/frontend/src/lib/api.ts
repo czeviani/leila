@@ -83,6 +83,24 @@ export interface Favorite {
   leila_properties?: Property
 }
 
+export interface EvaluationFinancialData {
+  estimated_total_cost: number
+  total_cost_breakdown: {
+    arrematacao: number
+    itbi: number
+    itbi_pct: number
+    registro_cartorio: number
+    comissao_leiloeiro: number
+    custo_total: number
+  }
+  market_avg_price_m2: number | null
+  price_vs_market_pct: number | null
+  rental_estimate_monthly: number | null
+  rental_yield_annual_pct: number | null
+  financial_verdict: string
+  liquidity_assessment: 'alta' | 'media' | 'baixa'
+}
+
 export interface Evaluation {
   id: string
   property_id: string
@@ -95,6 +113,8 @@ export interface Evaluation {
   documents_notes: string | null
   risks: string[]
   highlights: string[]
+  price_per_m2: number | null
+  financial_data: EvaluationFinancialData | null
   evaluated_at: string | null
 }
 

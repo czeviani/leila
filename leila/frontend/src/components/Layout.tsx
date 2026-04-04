@@ -1,16 +1,20 @@
 import { useState } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
-import { Home, Heart, Settings, LogOut, Menu, X } from 'lucide-react'
+import { Home, Sparkles, Settings, LogOut, Menu, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { useFavorites } from '../hooks/useProperties'
 
 export default function Layout() {
   const { signOut, user } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { data: favorites } = useFavorites()
+
+  const favCount = favorites?.length ?? 0
 
   const navItems = [
-    { to: '/', icon: Home, label: 'Imóveis', end: true },
-    { to: '/favorites', icon: Heart, label: 'Favoritos', end: false },
-    { to: '/settings', icon: Settings, label: 'Configurações', end: false },
+    { to: '/', icon: Home, label: 'Imóveis', end: true, badge: null },
+    { to: '/favorites', icon: Sparkles, label: 'Avaliação', end: false, badge: favCount > 0 ? favCount : null },
+    { to: '/settings', icon: Settings, label: 'Configurações', end: false, badge: null },
   ]
 
   return (
@@ -58,11 +62,12 @@ export default function Layout() {
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-3 pb-2">Menu</p>
-          {navItems.map(({ to, icon: Icon, label, end }) => (
+          {navItems.map(({ to, icon: Icon, label, end, badge }) => (
             <NavLink
               key={to}
               to={to}
               end={end}
+              onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                   isActive
@@ -72,7 +77,12 @@ export default function Layout() {
               }
             >
               <Icon size={15} />
-              {label}
+              <span className="flex-1">{label}</span>
+              {badge != null && (
+                <span className="w-5 h-5 rounded-full bg-slate-700 text-white text-[10px] font-bold flex items-center justify-center">
+                  {badge > 99 ? '99+' : badge}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>

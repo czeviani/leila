@@ -1,13 +1,27 @@
 import { Request, Response } from 'express'
 
+const SORT_FIELDS: Record<string, string> = {
+  discount_pct: 'discount_pct',
+  auction_price: 'auction_price',
+  area_m2: 'area_m2',
+  scraped_at: 'scraped_at',
+}
+
 export const getProperties = async (req: Request, res: Response) => {
-  const { state, city, type, price_min, price_max, discount_min, page = 1, limit = 50 } = req.query
+  const {
+    state, city, type, price_min, price_max, discount_min,
+    page = 1, limit = 50,
+    sort_by = 'discount_pct', sort_order = 'desc',
+  } = req.query
   const offset = (Number(page) - 1) * Number(limit)
+
+  const sortField = SORT_FIELDS[String(sort_by)] ?? 'discount_pct'
+  const ascending = String(sort_order) === 'asc'
 
   let query = req.supabase!
     .from('leila_properties')
     .select('*, leila_sources(name, icon_url)', { count: 'exact' })
-    .order('scraped_at', { ascending: false })
+    .order(sortField, { ascending, nullsFirst: false })
     .range(offset, offset + Number(limit) - 1)
 
   if (state) {

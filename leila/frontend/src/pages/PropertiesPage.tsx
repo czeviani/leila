@@ -1,17 +1,41 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { RefreshCw, Search, Home } from 'lucide-react'
+import { RefreshCw, Search, Home, TrendingDown, DollarSign, Maximize2, Clock, ArrowUpDown } from 'lucide-react'
 import { useProperties, useFavorites, useToggleFavorite, useRunScraper } from '../hooks/useProperties'
 import PropertyCard from '../components/properties/PropertyCard'
 import FilterPanel from '../components/filters/FilterPanel'
+
+type SortOption = {
+  key: string
+  label: string
+  sort_by: string
+  sort_order: 'asc' | 'desc'
+  icon: React.ElementType
+}
+
+const SORT_OPTIONS: SortOption[] = [
+  { key: 'discount_desc', label: 'Maior Desconto', sort_by: 'discount_pct', sort_order: 'desc', icon: TrendingDown },
+  { key: 'price_asc',     label: 'Menor Preço',    sort_by: 'auction_price', sort_order: 'asc',  icon: DollarSign  },
+  { key: 'area_desc',     label: 'Maior Área',     sort_by: 'area_m2',       sort_order: 'desc', icon: Maximize2   },
+  { key: 'date_desc',     label: 'Mais Recente',   sort_by: 'scraped_at',    sort_order: 'desc', icon: Clock       },
+]
 
 export default function PropertiesPage() {
   const navigate = useNavigate()
   const [searchText, setSearchText] = useState('')
   const [filterParams, setFilterParams] = useState<Record<string, string | number | undefined>>({})
   const [page, setPage] = useState(1)
+  const [activeSort, setActiveSort] = useState<SortOption>(SORT_OPTIONS[0])
 
-  const { data, isLoading, isError } = useProperties({ ...filterParams, page, limit: 48 })
+  const queryParams = {
+    ...filterParams,
+    page,
+    limit: 48,
+    sort_by: activeSort.sort_by,
+    sort_order: activeSort.sort_order,
+  }
+
+  const { data, isLoading, isError } = useProperties(queryParams)
   const { data: favorites } = useFavorites()
   const toggleFav = useToggleFavorite()
   const runScraper = useRunScraper()
@@ -25,10 +49,8 @@ export default function PropertiesPage() {
     p.address?.toLowerCase().includes(searchText.toLowerCase())
   ) ?? []
 
-  const handleScrape = () => {
-    runScraper.mutate(undefined)
-  }
-
+  const handleScrape = () => runScraper.mutate(undefined)
+  const handleSort = (option: SortOption) => { setActiveSort(option); setPage(1) }
   const totalPages = data ? Math.ceil(data.total / data.limit) : 1
 
   return (
@@ -68,6 +90,34 @@ export default function PropertiesPage() {
           </div>
           <FilterPanel onFilterChange={(params) => { setFilterParams(params); setPage(1) }} />
         </div>
+
+        {/* Sort bar */}
+        <div className="flex items-center gap-2 mt-3">
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <ArrowUpDown size={12} />
+            <span className="font-medium">Ordenar:</span>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {SORT_OPTIONS.map(option => {
+              const Icon = option.icon
+              const isActive = activeSort.key === option.key
+              return (
+                <button
+                  key={option.key}
+                  onClick={() => handleSort(option)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
+                    isActive
+                      ? 'bg-slate-900 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <Icon size={11} />
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Content */}
@@ -77,12 +127,14 @@ export default function PropertiesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm animate-pulse">
-                <div className="h-44 bg-slate-100" />
-                <div className="p-4 space-y-3">
-                  <div className="h-3 bg-slate-100 rounded-full w-1/3" />
+                <div className="p-3.5 space-y-3">
+                  <div className="flex gap-2">
+                    <div className="h-6 w-14 bg-slate-100 rounded-lg" />
+                    <div className="h-6 w-12 bg-slate-100 rounded-md" />
+                  </div>
                   <div className="h-4 bg-slate-100 rounded-full w-4/5" />
                   <div className="h-3 bg-slate-100 rounded-full w-1/2" />
-                  <div className="h-6 bg-slate-100 rounded-full w-2/3 mt-2" />
+                  <div className="h-6 bg-slate-100 rounded-full w-2/3 mt-4" />
                 </div>
               </div>
             ))}

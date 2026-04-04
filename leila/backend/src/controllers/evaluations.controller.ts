@@ -52,7 +52,8 @@ export const requestEvaluation = async (req: Request, res: Response) => {
     auction_price: property.auction_price,
     appraised_value: property.appraised_value,
     discount_pct: property.discount_pct,
-    description: property.description ?? '',
+    area_m2: property.area_m2,
+    description: property.description,
     edital_url: property.edital_url,
     source_name: property.leila_sources?.name ?? 'Desconhecida',
   }).then(async (evaluation) => {
@@ -68,6 +69,8 @@ export const requestEvaluation = async (req: Request, res: Response) => {
         risks: evaluation.risks,
         highlights: evaluation.highlights,
         recommendation: evaluation.recommendation,
+        price_per_m2: evaluation.price_per_m2,
+        financial_data: evaluation.financial_data,
         evaluated_at: new Date().toISOString(),
       })
       .eq('property_id', property_id)
