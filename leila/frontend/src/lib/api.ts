@@ -145,6 +145,7 @@ export const api = {
       return apiFetch<PropertiesResponse>(`/api/properties?${q}`)
     },
     get: (id: string) => apiFetch<Property>(`/api/properties/${id}`),
+    cities: (search: string) => apiFetch<string[]>(`/api/properties/cities?search=${encodeURIComponent(search)}`),
   },
 
   // ── Filters ──────────────────────────────────────────────────────────────

@@ -14,10 +14,16 @@ type SortOption = {
 }
 
 const SORT_OPTIONS: SortOption[] = [
-  { key: 'discount_desc', label: 'Maior Desconto', sort_by: 'discount_pct', sort_order: 'desc', icon: TrendingDown },
+  { key: 'discount_desc', label: 'Maior Desconto', sort_by: 'discount_pct',  sort_order: 'desc', icon: TrendingDown },
   { key: 'price_asc',     label: 'Menor Preço',    sort_by: 'auction_price', sort_order: 'asc',  icon: DollarSign  },
   { key: 'area_desc',     label: 'Maior Área',     sort_by: 'area_m2',       sort_order: 'desc', icon: Maximize2   },
   { key: 'date_desc',     label: 'Mais Recente',   sort_by: 'scraped_at',    sort_order: 'desc', icon: Clock       },
+]
+
+const PAGE_SIZE_OPTIONS = [
+  { label: '50',  value: 50     },
+  { label: '100', value: 100    },
+  { label: 'Tudo', value: 99999 },
 ]
 
 export default function PropertiesPage() {
@@ -26,11 +32,12 @@ export default function PropertiesPage() {
   const [filterParams, setFilterParams] = useState<Record<string, string | number | undefined>>({})
   const [page, setPage] = useState(1)
   const [activeSort, setActiveSort] = useState<SortOption>(SORT_OPTIONS[0])
+  const [pageSize, setPageSize] = useState(50)
 
   const queryParams = {
     ...filterParams,
     page,
-    limit: 48,
+    limit: pageSize,
     sort_by: activeSort.sort_by,
     sort_order: activeSort.sort_order,
   }
@@ -51,7 +58,8 @@ export default function PropertiesPage() {
 
   const handleScrape = () => runScraper.mutate(undefined)
   const handleSort = (option: SortOption) => { setActiveSort(option); setPage(1) }
-  const totalPages = data ? Math.ceil(data.total / data.limit) : 1
+  const handlePageSize = (size: number) => { setPageSize(size); setPage(1) }
+  const totalPages = data && pageSize < 99999 ? Math.ceil(data.total / pageSize) : 1
 
   return (
     <div className="min-h-full bg-slate-50">
@@ -91,31 +99,53 @@ export default function PropertiesPage() {
           <FilterPanel onFilterChange={(params) => { setFilterParams(params); setPage(1) }} />
         </div>
 
-        {/* Sort bar */}
-        <div className="flex items-center gap-2 mt-3">
-          <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <ArrowUpDown size={12} />
-            <span className="font-medium">Ordenar:</span>
+        {/* Sort + Per-page bar */}
+        <div className="flex items-center justify-between gap-3 mt-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <ArrowUpDown size={12} />
+              <span className="font-medium">Ordenar:</span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {SORT_OPTIONS.map(option => {
+                const Icon = option.icon
+                const isActive = activeSort.key === option.key
+                return (
+                  <button
+                    key={option.key}
+                    onClick={() => handleSort(option)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
+                      isActive
+                        ? 'bg-slate-900 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <Icon size={11} />
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {SORT_OPTIONS.map(option => {
-              const Icon = option.icon
-              const isActive = activeSort.key === option.key
-              return (
+
+          {/* Per-page selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-slate-400 font-medium">Por página:</span>
+            <div className="flex items-center gap-1">
+              {PAGE_SIZE_OPTIONS.map(opt => (
                 <button
-                  key={option.key}
-                  onClick={() => handleSort(option)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
-                    isActive
-                      ? 'bg-slate-900 text-white shadow-sm'
+                  key={opt.value}
+                  onClick={() => handlePageSize(opt.value)}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 ${
+                    pageSize === opt.value
+                      ? 'bg-slate-900 text-white'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  <Icon size={11} />
-                  {option.label}
+                  {opt.label}
                 </button>
-              )
-            })}
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -199,8 +229,8 @@ export default function PropertiesPage() {
           </div>
         )}
 
-        {/* Pagination */}
-        {data && data.total > data.limit && (
+        {/* Pagination — only when not showing All */}
+        {data && pageSize < 99999 && data.total > pageSize && (
           <div className="flex items-center justify-center gap-3 mt-10">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}

@@ -7,6 +7,14 @@ export const useProperties = (params: Record<string, string | number | undefined
     queryFn: () => api.properties.list(params),
   })
 
+export const useCities = (search: string) =>
+  useQuery({
+    queryKey: ['cities', search],
+    queryFn: () => api.properties.cities(search),
+    enabled: search.trim().length >= 2,
+    staleTime: 1000 * 60 * 10,
+  })
+
 export const useProperty = (id: string) =>
   useQuery({
     queryKey: ['property', id],

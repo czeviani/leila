@@ -50,6 +50,23 @@ export const getProperties = async (req: Request, res: Response) => {
   return res.json({ data, total: count, page: Number(page), limit: Number(limit) })
 }
 
+export const getPropertyCities = async (req: Request, res: Response) => {
+  const { search } = req.query
+  if (!search || String(search).trim().length < 2) return res.json([])
+
+  const { data, error } = await req.supabase!
+    .from('leila_properties')
+    .select('city')
+    .ilike('city', `%${String(search).trim()}%`)
+    .not('city', 'is', null)
+    .limit(300)
+
+  if (error) return res.status(500).json({ error: error.message })
+
+  const cities = [...new Set((data ?? []).map((r: { city: string }) => r.city).filter(Boolean))].sort().slice(0, 30)
+  return res.json(cities)
+}
+
 export const getPropertyById = async (req: Request, res: Response) => {
   const { id } = req.params
 

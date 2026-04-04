@@ -18,14 +18,24 @@ export const getEvaluation = async (req: Request, res: Response) => {
 export const requestEvaluation = async (req: Request, res: Response) => {
   const { property_id } = req.body
 
-  // Check if already evaluated
+  // Check if already evaluated (skip only if pending/processing/done — re-run if error)
   const { data: existing } = await req.supabase!
     .from('leila_evaluations')
-    .select('id')
+    .select('id, status')
     .eq('property_id', property_id)
     .single()
 
-  if (existing) return res.json({ message: 'Already evaluated', id: existing.id })
+  if (existing && existing.status !== 'error') {
+    return res.json({ message: 'Already evaluated', id: existing.id })
+  }
+
+  // If previous attempt errored, delete it before re-running
+  if (existing?.status === 'error') {
+    await supabaseAdmin
+      .from('leila_evaluations')
+      .delete()
+      .eq('property_id', property_id)
+  }
 
   // Get property details
   const { data: property, error: propError } = await req.supabase!
