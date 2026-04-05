@@ -22,7 +22,7 @@ export const useProperty = (id: string) =>
     enabled: !!id,
     refetchInterval: (query) => {
       const data = query.state.data as import('../lib/api').Property | undefined
-      if (data?.leila_evaluations?.[0]?.status === 'processing') return 3000
+      if (data?.leila_evaluations?.status === 'processing') return 3000
       return false
     },
     refetchIntervalInBackground: true,
@@ -71,7 +71,7 @@ export const useRequestEvaluation = () => {
         if (!old) return old
         return {
           ...old,
-          leila_evaluations: [{
+          leila_evaluations: {
             id: 'optimistic',
             property_id,
             status: 'processing' as const,
@@ -86,7 +86,7 @@ export const useRequestEvaluation = () => {
             price_per_m2: null,
             financial_data: null,
             evaluated_at: null,
-          }],
+          },
         }
       })
       return { previous }
