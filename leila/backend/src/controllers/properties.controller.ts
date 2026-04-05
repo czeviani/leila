@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import { supabaseAdmin } from '../config/supabase'
 
 const SORT_FIELDS: Record<string, string> = {
   discount_pct: 'discount_pct',
@@ -70,7 +71,7 @@ export const getPropertyCities = async (req: Request, res: Response) => {
 export const getPropertyById = async (req: Request, res: Response) => {
   const { id } = req.params
 
-  const { data, error } = await req.supabase!
+  const { data, error } = await supabaseAdmin
     .from('leila_properties')
     .select('*, leila_sources(name, icon_url), leila_evaluations(*)')
     .eq('id', id)

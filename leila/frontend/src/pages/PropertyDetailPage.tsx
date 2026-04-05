@@ -236,9 +236,10 @@ export default function PropertyDetailPage() {
             )}
 
             {evaluation?.status === 'processing' && (
-              <div className="flex items-center justify-center gap-3 py-8">
+              <div className="flex flex-col items-center justify-center gap-3 py-8">
                 <span className="w-5 h-5 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin" />
-                <p className="text-sm text-slate-500">Análise em andamento... atualize a página em instantes.</p>
+                <p className="text-sm text-slate-500">Analisando imóvel com IA... (~40 segundos)</p>
+                <p className="text-xs text-slate-400">A página atualiza automaticamente</p>
               </div>
             )}
 
