@@ -445,7 +445,7 @@ export default function FavoritesPage() {
 
   // Auto-poll when evaluations are pending
   const hasPending = favorites?.some(f => {
-    const ev = f.leila_properties?.leila_evaluations?.[0]
+    const ev = f.leila_properties?.leila_evaluations
     return ev?.status === 'pending' || ev?.status === 'processing'
   })
 
@@ -460,7 +460,7 @@ export default function FavoritesPage() {
   const handleEvaluateAll = () => {
     const ids = favorites
       ?.filter(f => {
-        const ev = f.leila_properties?.leila_evaluations?.[0]
+        const ev = f.leila_properties?.leila_evaluations
         return !ev || ev.status === 'error'
       })
       .map(f => f.property_id) ?? []
@@ -468,12 +468,12 @@ export default function FavoritesPage() {
   }
 
   const unevaluatedCount = favorites?.filter(f => {
-    const ev = f.leila_properties?.leila_evaluations?.[0]
+    const ev = f.leila_properties?.leila_evaluations
     return !ev || ev.status === 'error'
   }).length ?? 0
 
   const doneCount = favorites?.filter(f =>
-    f.leila_properties?.leila_evaluations?.[0]?.status === 'done'
+    f.leila_properties?.leila_evaluations?.status === 'done'
   ).length ?? 0
 
   return (
@@ -575,7 +575,7 @@ export default function FavoritesPage() {
             {favorites?.map(fav => {
               const property = fav.leila_properties
               if (!property) return null
-              const evaluation = property.leila_evaluations?.[0]
+              const evaluation = property.leila_evaluations ?? undefined
 
               return (
                 <EvaluationCard

@@ -62,7 +62,7 @@ export default function PropertyDetailPage() {
   }
 
   const isFav = favorites?.some(f => f.property_id === property.id) ?? false
-  const evaluation = property.leila_evaluations?.[0]
+  const evaluation = property.leila_evaluations ?? undefined
   const recInfo = evaluation?.recommendation ? RECOMMENDATION_MAP[evaluation.recommendation] : null
 
   return (

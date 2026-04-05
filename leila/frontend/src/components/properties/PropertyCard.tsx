@@ -64,7 +64,7 @@ function fmtCompact(v: number) {
 }
 
 export default function PropertyCard({ property, isFavorite, onToggleFavorite, onClick }: Props) {
-  const evaluation = property.leila_evaluations?.[0]
+  const evaluation = property.leila_evaluations ?? undefined
   const source = property.leila_sources
   const typeConf = property.property_type ? (TYPE_CONFIG[property.property_type] ?? { label: property.property_type, bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' }) : null
   const srcConf = source ? getSourceConfig(source.name) : null

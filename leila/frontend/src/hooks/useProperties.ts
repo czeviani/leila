@@ -22,7 +22,7 @@ export const useProperty = (id: string) =>
     enabled: !!id,
     refetchInterval: (query) => {
       const data = query.state.data as import('../lib/api').Property | undefined
-      if (data?.leila_evaluations?.[0]?.status === 'processing') return 3000
+      if (data?.leila_evaluations?.status === 'processing') return 3000
       return false
     },
     refetchIntervalInBackground: true,
@@ -90,7 +90,7 @@ export const useRequestEvaluation = () => {
 
       qc.setQueryData<import('../lib/api').Property>(['property', property_id], (old) => {
         if (!old) return old
-        return { ...old, leila_evaluations: [OPTIMISTIC_EVALUATION(property_id)] }
+        return { ...old, leila_evaluations: OPTIMISTIC_EVALUATION(property_id) }
       })
 
       qc.setQueryData<Favorite[]>(['favorites'], (old) => {
@@ -100,7 +100,7 @@ export const useRequestEvaluation = () => {
           return {
             ...fav,
             leila_properties: fav.leila_properties
-              ? { ...fav.leila_properties, leila_evaluations: [OPTIMISTIC_EVALUATION(property_id)] }
+              ? { ...fav.leila_properties, leila_evaluations: OPTIMISTIC_EVALUATION(property_id) }
               : undefined,
           }
         })
@@ -133,12 +133,12 @@ export const useBulkEvaluate = () => {
         if (!old) return old
         return old.map(fav => {
           if (!propertyIds.includes(fav.property_id)) return fav
-          const hasExisting = fav.leila_properties?.leila_evaluations?.[0]
+          const hasExisting = fav.leila_properties?.leila_evaluations
           if (hasExisting && hasExisting.status !== 'error') return fav
           return {
             ...fav,
             leila_properties: fav.leila_properties
-              ? { ...fav.leila_properties, leila_evaluations: [OPTIMISTIC_EVALUATION(fav.property_id)] }
+              ? { ...fav.leila_properties, leila_evaluations: OPTIMISTIC_EVALUATION(fav.property_id) }
               : undefined,
           }
         })

@@ -54,7 +54,7 @@ export interface Property {
   auction_status: string
   scraped_at: string
   leila_sources?: Pick<Source, 'name' | 'icon_url'>
-  leila_evaluations?: Evaluation[] | null
+  leila_evaluations?: Evaluation | null
 }
 
 export interface PropertiesResponse {
