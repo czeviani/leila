@@ -47,6 +47,7 @@ class ScrapedProperty:
     edital_url: Optional[str] = None
     photos: list[str] = field(default_factory=list)
     auction_date: Optional[date] = None
+    auction_modality: Optional[str] = None
     raw_data: dict = field(default_factory=dict)
 
 

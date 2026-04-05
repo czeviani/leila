@@ -67,6 +67,7 @@ const OPTIMISTIC_EVALUATION = (property_id: string) => ({
   score: null,
   recommendation: null,
   summary: null,
+  area_classification: null,
   location_notes: null,
   condition_notes: null,
   documents_notes: null,

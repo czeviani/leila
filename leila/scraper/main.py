@@ -63,6 +63,7 @@ async def _upsert_properties(properties: list[ScrapedProperty]) -> ScrapeResult:
             "edital_url": prop.edital_url,
             "photos": prop.photos,
             "auction_date": prop.auction_date.isoformat() if prop.auction_date else None,
+            "auction_modality": prop.auction_modality,
             "raw_data": prop.raw_data,
             "scraped_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),

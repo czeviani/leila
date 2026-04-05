@@ -23,6 +23,7 @@ export interface EvaluationFinancialData {
 export interface PropertyEvaluation {
   score: number
   summary: string
+  area_classification: 'nobre' | 'intermediário' | 'popular' | 'comunidade' | 'indefinido'
   location_notes: string
   condition_notes: string
   documents_notes: string
@@ -57,92 +58,69 @@ export const evaluateProperty = async (property: {
     ? `R$ ${property.appraised_value.toLocaleString('pt-BR')}`
     : 'N/D'
 
-  const prompt = `Você é um analista sênior de investimentos imobiliários especializado em leilões judiciais e extrajudiciais no Brasil, com expertise em precificação de mercado, análise de risco jurídico e avaliação de retorno sobre investimento.
+  const prompt = `Você é um analista sênior de investimentos imobiliários em leilões no Brasil. Responda de forma técnica, direta e objetiva — sem introduções, sem enrolação.
 
-## DADOS DO IMÓVEL
+## DADOS
 
-- **Fonte**: ${property.source_name}
-- **Título**: ${property.title}
-- **Endereço**: ${[property.address, property.city, property.state].filter(Boolean).join(', ') || 'N/D'}
-- **Tipo**: ${property.property_type ?? 'N/D'}
-- **Área**: ${property.area_m2 ? `${property.area_m2} m²` : 'N/D'}
-- **Valor de Avaliação (PTAM)**: ${appraised}
-- **Preço Mínimo de Lance**: R$ ${property.auction_price.toLocaleString('pt-BR')}
-- **Desconto sobre Avaliação**: ${property.discount_pct != null ? `${property.discount_pct.toFixed(1)}%` : 'N/D'}
-- **Preço/m² no lance**: ${pricePerM2 !== 'N/D' ? `R$ ${Number(pricePerM2).toLocaleString('pt-BR')}` : 'N/D'}
-- **Descrição**: ${property.description ?? 'Sem descrição disponível.'}
-${property.edital_url ? `- **Edital**: ${property.edital_url}` : ''}
+- Fonte: ${property.source_name}
+- Título: ${property.title}
+- Endereço: ${[property.address, property.city, property.state].filter(Boolean).join(', ') || 'N/D'}
+- Tipo: ${property.property_type ?? 'N/D'}
+- Área: ${property.area_m2 ? `${property.area_m2} m²` : 'N/D'}
+- Avaliação (PTAM): ${appraised}
+- Lance mínimo: R$ ${property.auction_price.toLocaleString('pt-BR')}
+- Desconto: ${property.discount_pct != null ? `${property.discount_pct.toFixed(1)}%` : 'N/D'}
+- Preço/m²: ${pricePerM2 !== 'N/D' ? `R$ ${Number(pricePerM2).toLocaleString('pt-BR')}` : 'N/D'}
+- Descrição: ${property.description ?? 'Sem descrição.'}
+${property.edital_url ? `- Edital: ${property.edital_url}` : ''}
 
-## INSTRUÇÕES DE ANÁLISE
+## ANÁLISE REQUERIDA
 
-Realize uma avaliação técnica completa usando os seguintes critérios:
+1. **Precificação**: Compare preço/m² com mercado local. Calcule custo total (lance + ITBI 3% + cartório ~1,5% + comissão leiloeiro 5%). Estime aluguel mensal e yield bruto anual.
 
-### 1. METODOLOGIA DE PRECIFICAÇÃO
-- Compare o preço/m² do lance com a média de mercado para o tipo de imóvel na cidade/região (use seu conhecimento de mercado imobiliário brasileiro)
-- Calcule o custo total de aquisição: arrematação + ITBI (use 3% como base, variável por município) + registro em cartório (~1,5% ou mínimo R$ 1.500) + comissão do leiloeiro (5% sobre o lance, pago pelo arrematante)
-- Estime o potencial de aluguel mensal com base no tipo, área e localização
-- Calcule o yield bruto anual = (aluguel mensal × 12) / custo total de aquisição × 100
-- Avalie a liquidez do imóvel (alta = apartamento residencial em capital, media = casa/comercial em cidade média, baixa = terreno/industrial/cidade pequena)
+2. **Localização**: Identifique capital/região metropolitana/interior. Classifique o perfil do bairro como: nobre (alta renda, valorização histórica), intermediário (classe média, infraestrutura boa), popular (classe baixa/média-baixa, infraestrutura básica), ou comunidade (área de favela, invasão ou alta vulnerabilidade).
 
-### 2. ANÁLISE DE LOCALIZAÇÃO
-- Avalie o potencial da cidade e bairro (se identificável)
-- Considere fatores de valorização, infraestrutura, mercado local
-- Identifique se é capital, região metropolitana ou interior
+3. **Condição**: Estime estado físico com base no tipo e descrição. Identifique ocupação e necessidade de reforma.
 
-### 3. ANÁLISE DAS CONDIÇÕES
-- Com base na descrição e tipo, estime o estado do imóvel
-- Identifique se está ocupado (risco de desocupação judicial)
-- Estime custo de reforma se necessário
+4. **Jurídico**: Avalie tipo de praça, origem da dívida, riscos de ônus e segurança do título.
 
-### 4. ANÁLISE DOCUMENTAL E JURÍDICA
-- Avalie o tipo de leilão (judicial/extrajudicial, 1ª/2ª praça)
-- Identifique riscos jurídicos (dívidas de condomínio, IPTU, ônus reais)
-- Avalie a segurança do título
-
-### 5. CRITÉRIOS DE SCORE
-- **9-10**: Excelente oportunidade — desconto > 40%, localização premium, baixo risco jurídico, yield > 8%
-- **7-8**: Boa oportunidade — desconto 25-40%, boa localização, riscos gerenciáveis
-- **5-6**: Regular — desconto < 25% ou riscos moderados, yield abaixo de 6%
-- **3-4**: Arriscado — problemas jurídicos relevantes, localização fraca ou imóvel com problemas sérios
-- **0-2**: Evitar — alto risco jurídico, imóvel com problemas graves ou preço acima do mercado
+## CRITÉRIOS DE SCORE
+- 9-10: Desconto >40%, localização premium, baixo risco jurídico, yield >8%
+- 7-8: Desconto 25-40%, boa localização, riscos gerenciáveis
+- 5-6: Desconto <25% ou risco moderado, yield <6%
+- 3-4: Problemas jurídicos relevantes ou localização fraca
+- 0-2: Alto risco jurídico, preço acima do mercado ou problemas graves
 
 ## FORMATO DE RESPOSTA
 
-Responda APENAS com JSON válido neste formato exato (sem markdown, sem texto antes ou depois):
+JSON válido apenas (sem markdown, sem texto fora do JSON):
 
 {
-  "score": <número decimal 0.0-10.0>,
-  "summary": "<parágrafo executivo de 2-3 frases destacando os pontos mais relevantes da oportunidade>",
-  "location_notes": "<análise detalhada da localização, mercado local, potencial de valorização e comparação regional>",
-  "condition_notes": "<análise das condições físicas estimadas, ocupação, necessidade de reforma, riscos estruturais>",
-  "documents_notes": "<análise jurídica: tipo de praça, origem da dívida, riscos de ônus, segurança do título>",
-  "risks": [
-    "<risco específico e acionável 1>",
-    "<risco específico e acionável 2>",
-    "<risco específico e acionável 3>"
-  ],
-  "highlights": [
-    "<ponto positivo concreto 1>",
-    "<ponto positivo concreto 2>",
-    "<ponto positivo concreto 3>"
-  ],
+  "score": <0.0-10.0>,
+  "summary": "<2 frases técnicas e diretas: principal atrativo/risco e veredicto>",
+  "area_classification": "<nobre|intermediário|popular|comunidade|indefinido>",
+  "location_notes": "<1-2 frases: tipo da cidade, perfil do bairro, potencial de valorização>",
+  "condition_notes": "<1-2 frases: estado estimado, ocupação, reforma necessária>",
+  "documents_notes": "<1-2 frases: tipo de praça/leilão, nível de risco jurídico, ônus relevantes>",
+  "risks": ["<risco acionável 1>", "<risco acionável 2>", "<risco acionável 3>"],
+  "highlights": ["<ponto positivo concreto 1>", "<ponto positivo concreto 2>", "<ponto positivo concreto 3>"],
   "recommendation": "<strong_buy|consider|risky|avoid>",
-  "price_per_m2": <número ou null se área desconhecida>,
+  "price_per_m2": <número ou null>,
   "financial_data": {
-    "estimated_total_cost": <lance + ITBI + registro + comissão leiloeiro>,
+    "estimated_total_cost": <lance + ITBI + cartório + comissão>,
     "total_cost_breakdown": {
       "arrematacao": <valor do lance>,
-      "itbi": <valor estimado ITBI 3%>,
+      "itbi": <ITBI 3%>,
       "itbi_pct": 3.0,
-      "registro_cartorio": <valor estimado registro>,
+      "registro_cartorio": <estimativa cartório>,
       "comissao_leiloeiro": <5% do lance>,
-      "custo_total": <soma de tudo>
+      "custo_total": <soma total>
     },
-    "market_avg_price_m2": <preço médio/m² estimado para o tipo e cidade, ou null>,
-    "price_vs_market_pct": <percentual abaixo(-) ou acima(+) do mercado, ou null>,
+    "market_avg_price_m2": <preço médio/m² estimado para tipo+cidade, ou null>,
+    "price_vs_market_pct": <% abaixo(-) ou acima(+) do mercado, ou null>,
     "rental_estimate_monthly": <aluguel mensal estimado em R$, ou null>,
     "rental_yield_annual_pct": <yield bruto anual %, ou null>,
-    "financial_verdict": "<parágrafo técnico de 2-4 frases com a análise financeira completa: custo total, comparação de mercado e retorno estimado>",
+    "financial_verdict": "<2 frases: custo total real vs mercado, yield estimado e veredicto financeiro>",
     "liquidity_assessment": "<alta|media|baixa>"
   }
 }`

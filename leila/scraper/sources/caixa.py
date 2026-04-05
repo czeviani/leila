@@ -55,6 +55,45 @@ PROPERTY_TYPE_MAP = {
     "SO": "sobrado",
 }
 
+# Mapeia modalidade de venda da Caixa para categorias padronizadas
+MODALITY_MAP: dict[str, str] = {
+    # Compra Direta — paga e o imóvel é seu, sem lances
+    "venda direta":               "compra_direta",
+    "venda online":               "compra_direta",
+    "venda direta online":        "compra_direta",
+    # Leilão Online — lances online em tempo real
+    "licitação aberta":           "leilao_online",
+    "licitação aberta online":    "leilao_online",
+    "licitação online":           "leilao_online",
+    "leilão online":              "leilao_online",
+    # Leilão — com leiloeiro oficial (presencial ou híbrido)
+    "licitação":                  "leilao",
+    "1ª praça":                   "leilao",
+    "2ª praça":                   "leilao",
+    "leilão":                     "leilao",
+    "leilão judicial":            "leilao",
+    "leilão extrajudicial":       "leilao",
+    # Proposta Fechada — banco escolhe a melhor proposta enviada
+    "proposta online":            "proposta_fechada",
+    "concorrência":               "proposta_fechada",
+    "proposta fechada":           "proposta_fechada",
+}
+
+
+def _normalize_modality(raw: str) -> Optional[str]:
+    """Converte modalidade raw do CSV para categoria padronizada."""
+    if not raw:
+        return None
+    key = raw.strip().lower()
+    # Busca exata
+    if key in MODALITY_MAP:
+        return MODALITY_MAP[key]
+    # Busca parcial
+    for pattern, category in MODALITY_MAP.items():
+        if pattern in key:
+            return category
+    return None
+
 
 def _parse_brl(value: str) -> Optional[float]:
     """Converte 'R$ 1.234.567,89' ou '1234567.89' para float."""
@@ -211,6 +250,14 @@ class CaixaSource(BaseSource):
         edital_url_fragment = normalized.get("link de acesso") or normalized.get("link") or ""
         edital_url = edital_url_fragment if edital_url_fragment.startswith("http") else None
 
+        raw_modality = (
+            normalized.get("modalidade de venda") or
+            normalized.get("modalidade") or
+            normalized.get("tipo de venda") or
+            ""
+        )
+        auction_modality = _normalize_modality(raw_modality)
+
         return ScrapedProperty(
             source_id=SOURCE_ID,
             external_id=f"{uf}-{external_id}",
@@ -226,6 +273,7 @@ class CaixaSource(BaseSource):
             discount_pct=discount_pct,
             description=normalized.get("descrição") or normalized.get("descricao") or None,
             edital_url=edital_url,
+            auction_modality=auction_modality,
             raw_data=dict(normalized),
         )
 

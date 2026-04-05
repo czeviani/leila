@@ -52,6 +52,7 @@ export interface Property {
   photos: string[]
   auction_date: string | null
   auction_status: string
+  auction_modality: string | null
   scraped_at: string
   leila_sources?: Pick<Source, 'name' | 'icon_url'>
   leila_evaluations?: Evaluation | null
@@ -72,6 +73,7 @@ export interface PropertyFilters {
   cities: string[]
   property_types: string[]
   discount_min: number | null
+  modality_categories: string[]
 }
 
 export interface Favorite {
@@ -108,6 +110,7 @@ export interface Evaluation {
   score: number | null
   recommendation: 'strong_buy' | 'consider' | 'risky' | 'avoid' | null
   summary: string | null
+  area_classification: 'nobre' | 'intermediário' | 'popular' | 'comunidade' | 'indefinido' | null
   location_notes: string | null
   condition_notes: string | null
   documents_notes: string | null

@@ -80,6 +80,7 @@ export const requestEvaluation = async (req: Request, res: Response) => {
         status: 'done',
         score: evaluation.score,
         summary: evaluation.summary,
+        area_classification: evaluation.area_classification,
         location_notes: evaluation.location_notes,
         condition_notes: evaluation.condition_notes,
         documents_notes: evaluation.documents_notes,

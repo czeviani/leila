@@ -1,10 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
-import { SlidersHorizontal, X, Search, MapPin } from 'lucide-react'
+import { SlidersHorizontal, X, Search, MapPin, ShoppingCart, Gavel, Users, Mail } from 'lucide-react'
 import { PropertyFilters } from '../../lib/api'
 import { useFilters, useSaveFilters, useCities } from '../../hooks/useProperties'
 
 const PROPERTY_TYPES = ['apartamento', 'casa', 'terreno', 'loja', 'galpão', 'sala', 'sobrado']
 const UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
+
+export const MODALITY_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string }> = {
+  compra_direta:    { label: 'Compra Direta',    icon: ShoppingCart, color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+  leilao_online:    { label: 'Leilão Online',    icon: Gavel,        color: 'text-blue-700',    bg: 'bg-blue-50',    border: 'border-blue-200'    },
+  leilao:           { label: 'Leilão',           icon: Users,        color: 'text-amber-700',   bg: 'bg-amber-50',   border: 'border-amber-200'   },
+  proposta_fechada: { label: 'Proposta Fechada', icon: Mail,         color: 'text-violet-700',  bg: 'bg-violet-50',  border: 'border-violet-200'  },
+}
 
 interface Props {
   onFilterChange: (params: Record<string, string | number | undefined>) => void
@@ -18,6 +25,7 @@ function filtersToParams(filters: PropertyFilters): Record<string, string | numb
   if (filters.cities?.length) params.city = filters.cities.join(',')
   if (filters.property_types?.length) params.type = filters.property_types.join(',')
   if (filters.discount_min) params.discount_min = filters.discount_min
+  if (filters.modality_categories?.length) params.modality = filters.modality_categories.join(',')
   return params
 }
 
@@ -35,6 +43,7 @@ export default function FilterPanel({ onFilterChange }: Props) {
   const [selectedCities, setSelectedCities] = useState<string[]>([])
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const [discountMin, setDiscountMin] = useState('')
+  const [selectedModalities, setSelectedModalities] = useState<string[]>([])
 
   // City autocomplete
   const [citySearch, setCitySearch] = useState('')
@@ -51,6 +60,7 @@ export default function FilterPanel({ onFilterChange }: Props) {
     if (savedFilters.cities?.length) setSelectedCities(savedFilters.cities)
     if (savedFilters.property_types?.length) setSelectedTypes(savedFilters.property_types)
     if (savedFilters.discount_min) setDiscountMin(String(savedFilters.discount_min))
+    if (savedFilters.modality_categories?.length) setSelectedModalities(savedFilters.modality_categories)
 
     const params = filtersToParams(savedFilters)
     if (Object.keys(params).length > 0) onFilterChange(params)
@@ -76,6 +86,7 @@ export default function FilterPanel({ onFilterChange }: Props) {
   const removeCity = (city: string) => setSelectedCities(prev => prev.filter(c => c !== city))
   const toggleState = (uf: string) => setSelectedStates(prev => prev.includes(uf) ? prev.filter(s => s !== uf) : [...prev, uf])
   const toggleType = (t: string) => setSelectedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
+  const toggleModality = (m: string) => setSelectedModalities(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m])
 
   const apply = () => {
     const filters: PropertyFilters = {
@@ -85,6 +96,7 @@ export default function FilterPanel({ onFilterChange }: Props) {
       cities: selectedCities,
       property_types: selectedTypes,
       discount_min: discountMin ? Number(discountMin) : null,
+      modality_categories: selectedModalities,
     }
     saveFilters.mutate(filters)
     onFilterChange(filtersToParams(filters))
@@ -94,15 +106,15 @@ export default function FilterPanel({ onFilterChange }: Props) {
   const reset = () => {
     setPriceMin(''); setPriceMax(''); setSelectedStates([])
     setSelectedCities([]); setSelectedTypes([]); setDiscountMin('')
-    setCitySearch('')
-    const empty: PropertyFilters = { price_min: null, price_max: null, states: [], cities: [], property_types: [], discount_min: null }
+    setCitySearch(''); setSelectedModalities([])
+    const empty: PropertyFilters = { price_min: null, price_max: null, states: [], cities: [], property_types: [], discount_min: null, modality_categories: [] }
     saveFilters.mutate(empty)
     onFilterChange({})
     setOpen(false)
   }
 
   const activeCount = selectedStates.length + selectedCities.length + selectedTypes.length +
-    (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (discountMin ? 1 : 0)
+    (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (discountMin ? 1 : 0) + selectedModalities.length
 
   const filteredSuggestions = citySuggestions.filter(c => !selectedCities.includes(c))
 
@@ -133,6 +145,31 @@ export default function FilterPanel({ onFilterChange }: Props) {
             <button onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
               <X size={15} />
             </button>
+          </div>
+
+          {/* Modality */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Tipo de Negociação</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {Object.entries(MODALITY_CONFIG).map(([key, cfg]) => {
+                const Icon = cfg.icon
+                const active = selectedModalities.includes(key)
+                return (
+                  <button
+                    key={key}
+                    onClick={() => toggleModality(key)}
+                    className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-medium transition-all ${
+                      active
+                        ? `${cfg.bg} ${cfg.color} ${cfg.border}`
+                        : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Icon size={12} className="flex-shrink-0" />
+                    {cfg.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Price */}

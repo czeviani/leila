@@ -10,7 +10,7 @@ const SORT_FIELDS: Record<string, string> = {
 
 export const getProperties = async (req: Request, res: Response) => {
   const {
-    state, city, type, price_min, price_max, discount_min,
+    state, city, type, price_min, price_max, discount_min, modality,
     page = 1, limit = 50,
     sort_by = 'discount_pct', sort_order = 'desc',
   } = req.query
@@ -44,6 +44,10 @@ export const getProperties = async (req: Request, res: Response) => {
   if (price_min) query = query.gte('auction_price', Number(price_min))
   if (price_max) query = query.lte('auction_price', Number(price_max))
   if (discount_min) query = query.gte('discount_pct', Number(discount_min))
+  if (modality) {
+    const modalities = String(modality).split(',').map(m => m.trim()).filter(Boolean)
+    query = modalities.length === 1 ? query.eq('auction_modality', modalities[0]) : query.in('auction_modality', modalities)
+  }
 
   const { data, error, count } = await query
 

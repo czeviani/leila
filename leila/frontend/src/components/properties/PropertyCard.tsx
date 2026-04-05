@@ -1,4 +1,4 @@
-import { ExternalLink, MapPin, TrendingDown, Ruler, Calendar, Sparkles, Check } from 'lucide-react'
+import { ExternalLink, MapPin, TrendingDown, Ruler, Calendar, Sparkles, Check, ShoppingCart, Gavel, Users, Mail } from 'lucide-react'
 import { Property } from '../../lib/api'
 
 interface Props {
@@ -18,6 +18,22 @@ const TYPE_CONFIG: Record<string, { label: string; bg: string; text: string; bor
   sala:        { label: 'Sala',     bg: 'bg-teal-100',   text: 'text-teal-700',   border: 'border-teal-200'   },
   sobrado:     { label: 'Sobrado',  bg: 'bg-rose-100',   text: 'text-rose-700',   border: 'border-rose-200'   },
   prédio:      { label: 'Prédio',   bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-200' },
+}
+
+// ── Modality config ────────────────────────────────────────────────────────
+const MODALITY_BADGE: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
+  compra_direta:    { label: 'Compra Direta',    icon: ShoppingCart, color: 'text-emerald-700', bg: 'bg-emerald-50' },
+  leilao_online:    { label: 'Leilão Online',    icon: Gavel,        color: 'text-blue-700',    bg: 'bg-blue-50'    },
+  leilao:           { label: 'Leilão',           icon: Users,        color: 'text-amber-700',   bg: 'bg-amber-50'   },
+  proposta_fechada: { label: 'Proposta',         icon: Mail,         color: 'text-violet-700',  bg: 'bg-violet-50'  },
+}
+
+// ── Area classification config ─────────────────────────────────────────────
+const AREA_BADGE: Record<string, { label: string; color: string; bg: string; dot: string }> = {
+  nobre:        { label: 'Nobre',        color: 'text-violet-700', bg: 'bg-violet-50', dot: 'bg-violet-500' },
+  intermediário: { label: 'Intermediária', color: 'text-blue-600',   bg: 'bg-blue-50',   dot: 'bg-blue-500'   },
+  popular:      { label: 'Popular',      color: 'text-amber-700',  bg: 'bg-amber-50',  dot: 'bg-amber-500'  },
+  comunidade:   { label: 'Comunidade',   color: 'text-red-600',    bg: 'bg-red-50',    dot: 'bg-red-500'    },
 }
 
 // ── Source color system ────────────────────────────────────────────────────
@@ -70,6 +86,9 @@ export default function PropertyCard({ property, isFavorite, onToggleFavorite, o
   const srcConf = source ? getSourceConfig(source.name) : null
   const rec = evaluation?.recommendation ? REC_CONFIG[evaluation.recommendation] : null
   const pricePerM2 = property.area_m2 && property.area_m2 > 0 ? property.auction_price / property.area_m2 : null
+  const modalityConf = property.auction_modality ? MODALITY_BADGE[property.auction_modality] : null
+  const areaConf = evaluation?.area_classification && evaluation.area_classification !== 'indefinido'
+    ? AREA_BADGE[evaluation.area_classification] : null
 
   const auctionDate = property.auction_date
     ? new Date(property.auction_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
@@ -102,6 +121,15 @@ export default function PropertyCard({ property, isFavorite, onToggleFavorite, o
             {source.name}
           </span>
         )}
+        {modalityConf && (() => {
+          const Icon = modalityConf.icon
+          return (
+            <span className={`flex items-center gap-0.5 text-[10px] font-medium px-2 py-0.5 rounded-lg border border-transparent ${modalityConf.bg} ${modalityConf.color}`}>
+              <Icon size={9} />
+              {modalityConf.label}
+            </span>
+          )
+        })()}
       </div>
 
       {/* Body */}
@@ -172,17 +200,25 @@ export default function PropertyCard({ property, isFavorite, onToggleFavorite, o
 
         {/* AI evaluation badge */}
         {evaluation?.status === 'done' && rec && (
-          <div className={`mt-2.5 pt-2.5 border-t border-slate-100 flex items-center justify-between -mx-3.5 px-3.5 pb-0 ${rec.bg}`}>
-            <div className="flex items-center gap-1.5">
-              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${rec.dot}`} />
-              <span className={`text-[11px] font-semibold ${rec.text}`}>
-                {evaluation.recommendation ? REC_LABELS[evaluation.recommendation] : ''}
-              </span>
+          <div className={`mt-2.5 pt-2 border-t border-slate-100 -mx-3.5 px-3.5 pb-0 ${rec.bg}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${rec.dot}`} />
+                <span className={`text-[11px] font-semibold ${rec.text}`}>
+                  {evaluation.recommendation ? REC_LABELS[evaluation.recommendation] : ''}
+                </span>
+              </div>
+              {evaluation.score != null && (
+                <span className={`text-sm font-bold ${SCORE_COLOR(evaluation.score)}`}>
+                  {evaluation.score.toFixed(1)}<span className="text-slate-400 font-normal text-[10px]">/10</span>
+                </span>
+              )}
             </div>
-            {evaluation.score != null && (
-              <span className={`text-sm font-bold ${SCORE_COLOR(evaluation.score)}`}>
-                {evaluation.score.toFixed(1)}<span className="text-slate-400 font-normal text-[10px]">/10</span>
-              </span>
+            {areaConf && (
+              <div className="flex items-center gap-1 mt-1 pb-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${areaConf.dot}`} />
+                <span className={`text-[10px] font-medium ${areaConf.color}`}>{areaConf.label}</span>
+              </div>
             )}
           </div>
         )}
