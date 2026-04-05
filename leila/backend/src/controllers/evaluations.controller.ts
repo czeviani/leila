@@ -47,9 +47,16 @@ export const requestEvaluation = async (req: Request, res: Response) => {
   if (propError || !property) return res.status(404).json({ error: 'Property not found' })
 
   // Mark as processing
-  await supabaseAdmin
+  const { error: insertError } = await supabaseAdmin
     .from('leila_evaluations')
     .insert({ property_id, status: 'processing' })
+
+  if (insertError) {
+    console.error('[evaluation] insert failed:', insertError.message, 'property_id:', property_id)
+    return res.status(500).json({ error: 'Failed to start evaluation: ' + insertError.message })
+  }
+
+  console.log('[evaluation] started for property', property_id)
 
   // Run evaluation async (don't await in response)
   evaluateProperty({
@@ -67,7 +74,7 @@ export const requestEvaluation = async (req: Request, res: Response) => {
     edital_url: property.edital_url,
     source_name: property.leila_sources?.name ?? 'Desconhecida',
   }).then(async (evaluation) => {
-    await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from('leila_evaluations')
       .update({
         status: 'done',
@@ -84,12 +91,20 @@ export const requestEvaluation = async (req: Request, res: Response) => {
         evaluated_at: new Date().toISOString(),
       })
       .eq('property_id', property_id)
+    if (updateError) {
+      console.error('[evaluation] DB update failed for property', property_id, updateError.message)
+    } else {
+      console.log('[evaluation] done for property', property_id, '| score:', evaluation.score)
+    }
   }).catch(async (err) => {
-    console.error('Evaluation failed for property', property_id, err)
-    await supabaseAdmin
+    console.error('[evaluation] FAILED for property', property_id, err.message)
+    const { error: updateError } = await supabaseAdmin
       .from('leila_evaluations')
       .update({ status: 'error', summary: err.message })
       .eq('property_id', property_id)
+    if (updateError) {
+      console.error('[evaluation] could not set error status for property', property_id, updateError.message)
+    }
   })
 
   return res.status(202).json({ message: 'Evaluation started', property_id })

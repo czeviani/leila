@@ -25,6 +25,7 @@ export const useProperty = (id: string) =>
       if (data?.leila_evaluations?.[0]?.status === 'processing') return 3000
       return false
     },
+    refetchIntervalInBackground: true,
   })
 
 export const useFilters = () =>
@@ -63,6 +64,38 @@ export const useRequestEvaluation = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (property_id: string) => api.evaluations.request(property_id),
+    onMutate: async (property_id) => {
+      await qc.cancelQueries({ queryKey: ['property', property_id] })
+      const previous = qc.getQueryData<import('../lib/api').Property>(['property', property_id])
+      qc.setQueryData<import('../lib/api').Property>(['property', property_id], (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          leila_evaluations: [{
+            id: 'optimistic',
+            property_id,
+            status: 'processing' as const,
+            score: null,
+            recommendation: null,
+            summary: null,
+            location_notes: null,
+            condition_notes: null,
+            documents_notes: null,
+            risks: [],
+            highlights: [],
+            price_per_m2: null,
+            financial_data: null,
+            evaluated_at: null,
+          }],
+        }
+      })
+      return { previous }
+    },
+    onError: (_err, property_id, context) => {
+      if (context?.previous !== undefined) {
+        qc.setQueryData(['property', property_id], context.previous)
+      }
+    },
     onSuccess: (_data, property_id) => {
       qc.invalidateQueries({ queryKey: ['property', property_id] })
       qc.invalidateQueries({ queryKey: ['favorites'] })

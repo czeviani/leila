@@ -149,14 +149,16 @@ Responda APENAS com JSON válido neste formato exato (sem markdown, sem texto an
 
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 2048,
+    max_tokens: 4096,
     messages: [{ role: 'user', content: prompt }],
   })
 
   const content = message.content[0]
   if (content.type !== 'text') throw new Error('Unexpected response type from Claude')
 
-  const jsonMatch = content.text.match(/\{[\s\S]*\}/)
+  // Strip markdown code fences if present, then extract JSON
+  const stripped = content.text.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim()
+  const jsonMatch = stripped.match(/\{[\s\S]*\}/)
   if (!jsonMatch) throw new Error('Could not parse JSON from evaluation response')
 
   return JSON.parse(jsonMatch[0]) as PropertyEvaluation
