@@ -7,7 +7,7 @@ import {
   ArrowRight, Loader2, RefreshCw, Building2,
   DollarSign, BarChart3, Home
 } from 'lucide-react'
-import { useFavorites, useToggleFavorite, useRequestEvaluation } from '../hooks/useProperties'
+import { useFavorites, useToggleFavorite, useRequestEvaluation, useBulkEvaluate } from '../hooks/useProperties'
 import { Evaluation, EvaluationFinancialData, Property } from '../lib/api'
 
 function formatBRL(value: number) {
@@ -438,6 +438,7 @@ export default function FavoritesPage() {
   const { data: favorites, isLoading } = useFavorites()
   const toggleFav = useToggleFavorite()
   const requestEval = useRequestEvaluation()
+  const bulkEvaluate = useBulkEvaluate()
 
   const properties = favorites?.map(f => f.leila_properties).filter(Boolean) ?? []
   const favoriteIds = new Set(favorites?.map(f => f.property_id) ?? [])
@@ -457,12 +458,13 @@ export default function FavoritesPage() {
   }, [hasPending, qc])
 
   const handleEvaluateAll = () => {
-    favorites?.forEach(f => {
-      const ev = f.leila_properties?.leila_evaluations?.[0]
-      if (!ev || ev.status === 'error') {
-        requestEval.mutate(f.property_id)
-      }
-    })
+    const ids = favorites
+      ?.filter(f => {
+        const ev = f.leila_properties?.leila_evaluations?.[0]
+        return !ev || ev.status === 'error'
+      })
+      .map(f => f.property_id) ?? []
+    if (ids.length > 0) bulkEvaluate.mutate(ids)
   }
 
   const unevaluatedCount = favorites?.filter(f => {
@@ -506,12 +508,12 @@ export default function FavoritesPage() {
           {unevaluatedCount > 0 && (
             <button
               onClick={handleEvaluateAll}
-              disabled={requestEval.isPending}
+              disabled={bulkEvaluate.isPending}
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold bg-slate-900 text-white rounded-xl hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-slate-900/20 flex-shrink-0"
             >
-              <Sparkles size={14} />
-              {requestEval.isPending
-                ? 'Solicitando...'
+              <Sparkles size={14} className={bulkEvaluate.isPending ? 'animate-pulse' : ''} />
+              {bulkEvaluate.isPending
+                ? `Iniciando ${unevaluatedCount > 1 ? `${unevaluatedCount} análises` : 'análise'}...`
                 : `Avaliar ${unevaluatedCount > 1 ? `${unevaluatedCount} imóveis` : 'imóvel'}`}
             </button>
           )}

@@ -21,7 +21,7 @@ export const getProperties = async (req: Request, res: Response) => {
 
   let query = req.supabase!
     .from('leila_properties')
-    .select('*, leila_sources(name, icon_url)', { count: 'exact' })
+    .select('*, leila_sources(name, icon_url), leila_evaluations(*)', { count: 'exact' })
     .order(sortField, { ascending, nullsFirst: false })
     .range(offset, offset + Number(limit) - 1)
 
