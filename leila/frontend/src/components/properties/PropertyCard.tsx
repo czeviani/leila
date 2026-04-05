@@ -88,8 +88,9 @@ export default function PropertyCard({ property, isFavorite, onToggleFavorite, o
   const rec = evaluation?.recommendation ? REC_CONFIG[evaluation.recommendation] : null
   const pricePerM2 = property.area_m2 && property.area_m2 > 0 ? property.auction_price / property.area_m2 : null
   const modalityConf = property.auction_modality ? MODALITY_BADGE[property.auction_modality] : null
-  const areaConf = evaluation?.area_classification && evaluation.area_classification !== 'indefinido'
-    ? AREA_BADGE[evaluation.area_classification] : null
+  // Prioridade: IA (evaluation) > heurística (scraper) > null
+  const effectiveArea = evaluation?.area_classification ?? property.area_classification
+  const areaConf = effectiveArea && effectiveArea !== 'indefinido' ? AREA_BADGE[effectiveArea] : null
 
   const auctionDate = property.auction_date
     ? new Date(property.auction_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })

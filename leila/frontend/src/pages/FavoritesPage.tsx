@@ -255,7 +255,9 @@ function EvaluationCard({
   const isPending = evaluation?.status === 'pending' || evaluation?.status === 'processing'
   const isDone = evaluation?.status === 'done'
   const isError = evaluation?.status === 'error'
-  const areaConf = evaluation?.area_classification ? AREA_CONFIG[evaluation.area_classification] : null
+  // Prioridade: IA (evaluation) > heurística (property) > null
+  const effectiveArea = evaluation?.area_classification ?? property.area_classification
+  const areaConf = effectiveArea ? AREA_CONFIG[effectiveArea] : null
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -284,6 +286,10 @@ function EvaluationCard({
                 <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${areaConf.bg} ${areaConf.color} ${areaConf.border}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${areaConf.dot}`} />
                   {areaConf.label}
+                  {evaluation?.area_classification
+                    ? <span title="Classificado pela IA" className="opacity-60">✦</span>
+                    : <span title="Classificação estimada" className="opacity-40">~</span>
+                  }
                 </span>
               )}
             </div>

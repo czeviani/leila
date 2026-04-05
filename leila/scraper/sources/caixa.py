@@ -25,6 +25,7 @@ from typing import Optional
 from curl_cffi.requests import AsyncSession
 
 from .base import BaseSource, ScrapedProperty
+from .area_classifier import classify_area
 
 SOURCE_ID = "caixa"
 BASE_URL = "https://venda-imoveis.caixa.gov.br"
@@ -263,6 +264,14 @@ class CaixaSource(BaseSource):
         )
         auction_modality = _normalize_modality(raw_modality)
 
+        area_classification = classify_area(
+            address=address or None,
+            city=city or None,
+            state=uf,
+            appraised_value=appraised_value,
+            area_m2=_parse_area(normalized.get("área total") or normalized.get("area total") or ""),
+        )
+
         return ScrapedProperty(
             source_id=SOURCE_ID,
             external_id=f"{uf}-{external_id}",
@@ -279,6 +288,7 @@ class CaixaSource(BaseSource):
             description=normalized.get("descrição") or normalized.get("descricao") or None,
             edital_url=edital_url,
             auction_modality=auction_modality,
+            area_classification=area_classification,
             raw_data=dict(normalized),
         )
 

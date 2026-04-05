@@ -53,6 +53,7 @@ export interface Property {
   auction_date: string | null
   auction_status: string
   auction_modality: string | null
+  area_classification: string | null   // heurística do scraper; IA sobrescreve via leila_evaluations.area_classification
   scraped_at: string
   leila_sources?: Pick<Source, 'name' | 'icon_url'>
   leila_evaluations?: Evaluation | null
