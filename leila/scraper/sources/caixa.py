@@ -57,22 +57,27 @@ PROPERTY_TYPE_MAP = {
 
 # Mapeia modalidade de venda da Caixa para categorias padronizadas
 MODALITY_MAP: dict[str, str] = {
-    # Compra Direta — paga e o imóvel é seu, sem lances
+    # Compra Direta — preço fixo, paga e o imóvel é seu sem concorrência
     "venda direta":               "compra_direta",
     "venda online":               "compra_direta",
     "venda direta online":        "compra_direta",
-    # Leilão Online — lances online em tempo real
+    # 2ª Praça+ — leilão judicial 2º round ou mais, lance mínimo ~60% do avaliado
+    "2ª praça":                   "segunda_praca",
+    "2a praca":                   "segunda_praca",
+    "3ª praça":                   "segunda_praca",   # agrupado com 2ª+ para simplificar
+    "3a praca":                   "segunda_praca",
+    # 1ª Praça — primeiro round judicial, lance mínimo = valor de avaliação
+    "1ª praça":                   "primeira_praca",
+    "1a praca":                   "primeira_praca",
+    "licitação":                  "primeira_praca",  # licitação genérica da Caixa
+    "leilão judicial":            "primeira_praca",
+    "leilão extrajudicial":       "primeira_praca",
+    "leilão":                     "primeira_praca",
+    # Leilão Online — lances em tempo real pela internet
     "licitação aberta":           "leilao_online",
     "licitação aberta online":    "leilao_online",
     "licitação online":           "leilao_online",
     "leilão online":              "leilao_online",
-    # Leilão — com leiloeiro oficial (presencial ou híbrido)
-    "licitação":                  "leilao",
-    "1ª praça":                   "leilao",
-    "2ª praça":                   "leilao",
-    "leilão":                     "leilao",
-    "leilão judicial":            "leilao",
-    "leilão extrajudicial":       "leilao",
     # Proposta Fechada — banco escolhe a melhor proposta enviada
     "proposta online":            "proposta_fechada",
     "concorrência":               "proposta_fechada",

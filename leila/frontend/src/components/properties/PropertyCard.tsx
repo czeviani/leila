@@ -1,4 +1,4 @@
-import { ExternalLink, MapPin, TrendingDown, Ruler, Calendar, Sparkles, Check, ShoppingCart, Gavel, Users, Mail } from 'lucide-react'
+import { ExternalLink, MapPin, TrendingDown, Ruler, Calendar, Sparkles, Check, ShoppingCart, Gavel, Users, Mail, Tag } from 'lucide-react'
 import { Property } from '../../lib/api'
 
 interface Props {
@@ -22,10 +22,11 @@ const TYPE_CONFIG: Record<string, { label: string; bg: string; text: string; bor
 
 // ── Modality config ────────────────────────────────────────────────────────
 const MODALITY_BADGE: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
-  compra_direta:    { label: 'Compra Direta',    icon: ShoppingCart, color: 'text-emerald-700', bg: 'bg-emerald-50' },
-  leilao_online:    { label: 'Leilão Online',    icon: Gavel,        color: 'text-blue-700',    bg: 'bg-blue-50'    },
-  leilao:           { label: 'Leilão',           icon: Users,        color: 'text-amber-700',   bg: 'bg-amber-50'   },
-  proposta_fechada: { label: 'Proposta',         icon: Mail,         color: 'text-violet-700',  bg: 'bg-violet-50'  },
+  compra_direta:    { label: 'Compra Direta', icon: ShoppingCart, color: 'text-emerald-700', bg: 'bg-emerald-50' },
+  segunda_praca:    { label: '2ª Praça',       icon: Tag,          color: 'text-sky-700',     bg: 'bg-sky-50'     },
+  leilao_online:    { label: 'Leilão Online',  icon: Gavel,        color: 'text-blue-700',    bg: 'bg-blue-50'    },
+  primeira_praca:   { label: '1ª Praça',       icon: Users,        color: 'text-amber-700',   bg: 'bg-amber-50'   },
+  proposta_fechada: { label: 'Proposta',       icon: Mail,         color: 'text-violet-700',  bg: 'bg-violet-50'  },
 }
 
 // ── Area classification config ─────────────────────────────────────────────

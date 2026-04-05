@@ -1,30 +1,37 @@
 import { useSources, useToggleSource, useRunScraper, useFilters, useSaveFilters } from '../hooks/useProperties'
-import { RefreshCw, CheckCircle2, XCircle, Globe, Info, ShoppingCart, Gavel, Users, Mail } from 'lucide-react'
+import { RefreshCw, CheckCircle2, XCircle, Globe, Info, ShoppingCart, Gavel, Users, Mail, Tag } from 'lucide-react'
 import { MODALITY_CONFIG } from '../components/filters/FilterPanel'
 
-const MODALITY_DETAILS: Record<string, { description: string; examples: string }> = {
+const MODALITY_DETAILS: Record<string, { description: string; examples: string; tip?: string }> = {
   compra_direta: {
-    description: 'Pague o valor anunciado e o imóvel é seu. Sem concorrência, sem lances.',
-    examples: 'Caixa: Venda Direta / Venda Online',
+    description: 'Preço fixo anunciado. Você paga e o imóvel é seu — sem concorrência, sem lances.',
+    examples: 'Caixa: Venda Direta, Venda Online',
+  },
+  segunda_praca: {
+    description: 'Segundo round ou mais do leilão judicial. Lance mínimo ≈ 60% da avaliação. Maiores descontos.',
+    examples: 'Caixa/BB/Santander: 2ª Praça, 3ª Praça',
+    tip: 'Melhor oportunidade de desconto real',
   },
   leilao_online: {
-    description: 'Faça lances pela internet e dispute com outros compradores em tempo real.',
+    description: 'Lances em tempo real pela internet. Qualquer pessoa pode participar no horário marcado.',
     examples: 'Caixa: Licitação Aberta Online',
   },
-  leilao: {
-    description: 'Leilão com leiloeiro oficial. Você vence com o maior lance.',
-    examples: 'Caixa: Licitação Aberta (1ª/2ª Praça)',
+  primeira_praca: {
+    description: 'Primeiro round do leilão judicial. Lance mínimo = valor de avaliação. Se não houver lances, vai para a 2ª Praça com preço menor.',
+    examples: 'Caixa/BB: 1ª Praça',
+    tip: 'Lance mínimo no valor cheio — pode não valer a pena aguardar a 2ª Praça',
   },
   proposta_fechada: {
-    description: 'Envie uma proposta ao banco. O banco escolhe a melhor oferta recebida.',
-    examples: 'Caixa: Proposta Online',
+    description: 'Envie sua proposta ao banco pelo portal. O banco escolhe a melhor oferta recebida.',
+    examples: 'Caixa: Proposta Online, Concorrência',
   },
 }
 
 const ICON_MAP: Record<string, React.ElementType> = {
-  compra_direta: ShoppingCart,
-  leilao_online: Gavel,
-  leilao: Users,
+  compra_direta:    ShoppingCart,
+  segunda_praca:    Tag,
+  leilao_online:    Gavel,
+  primeira_praca:   Users,
   proposta_fechada: Mail,
 }
 
@@ -94,6 +101,9 @@ export default function SettingsPage() {
                     <div className="min-w-0">
                       <p className={`text-sm font-semibold ${isActive ? cfg.color : 'text-slate-800'}`}>{cfg.label}</p>
                       <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{detail?.description}</p>
+                      {detail?.tip && (
+                        <p className={`text-[11px] font-semibold mt-1 ${isActive ? cfg.color : 'text-slate-400'}`}>↳ {detail.tip}</p>
+                      )}
                       {detail?.examples && (
                         <p className="text-[11px] text-slate-400 mt-1 font-mono">{detail.examples}</p>
                       )}

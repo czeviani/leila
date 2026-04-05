@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { SlidersHorizontal, X, Search, MapPin, ShoppingCart, Gavel, Users, Mail } from 'lucide-react'
+import { SlidersHorizontal, X, Search, MapPin, ShoppingCart, Gavel, Users, Mail, Tag } from 'lucide-react'
 import { PropertyFilters } from '../../lib/api'
 import { useFilters, useSaveFilters, useCities } from '../../hooks/useProperties'
 
@@ -7,10 +7,11 @@ const PROPERTY_TYPES = ['apartamento', 'casa', 'terreno', 'loja', 'galpão', 'sa
 const UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
 
 export const MODALITY_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string }> = {
-  compra_direta:    { label: 'Compra Direta',    icon: ShoppingCart, color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-  leilao_online:    { label: 'Leilão Online',    icon: Gavel,        color: 'text-blue-700',    bg: 'bg-blue-50',    border: 'border-blue-200'    },
-  leilao:           { label: 'Leilão',           icon: Users,        color: 'text-amber-700',   bg: 'bg-amber-50',   border: 'border-amber-200'   },
-  proposta_fechada: { label: 'Proposta Fechada', icon: Mail,         color: 'text-violet-700',  bg: 'bg-violet-50',  border: 'border-violet-200'  },
+  compra_direta:    { label: 'Compra Direta',  icon: ShoppingCart, color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+  segunda_praca:    { label: '2ª Praça',        icon: Tag,          color: 'text-sky-700',     bg: 'bg-sky-50',     border: 'border-sky-200'     },
+  leilao_online:    { label: 'Leilão Online',   icon: Gavel,        color: 'text-blue-700',    bg: 'bg-blue-50',    border: 'border-blue-200'    },
+  primeira_praca:   { label: '1ª Praça',        icon: Users,        color: 'text-amber-700',   bg: 'bg-amber-50',   border: 'border-amber-200'   },
+  proposta_fechada: { label: 'Proposta',        icon: Mail,         color: 'text-violet-700',  bg: 'bg-violet-50',  border: 'border-violet-200'  },
 }
 
 interface Props {
