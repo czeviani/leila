@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import { evaluateProperty } from '../services/evaluator.service'
+import { evaluateProperty, LlmConfig } from '../services/evaluator.service'
 import { supabaseAdmin } from '../config/supabase'
 
 export const getEvaluation = async (req: Request, res: Response) => {
@@ -46,6 +46,18 @@ export const requestEvaluation = async (req: Request, res: Response) => {
 
   if (propError || !property) return res.status(404).json({ error: 'Property not found' })
 
+  // Resolve LLM config for this user (captured in closure — safe for async fire-and-forget)
+  const { data: userSettings } = await req.supabase!
+    .from('leila_settings')
+    .select('llm_provider, llm_model')
+    .eq('user_id', req.user!.id)
+    .single()
+
+  const llmConfig: LlmConfig = {
+    provider: (userSettings?.llm_provider ?? 'anthropic') as LlmConfig['provider'],
+    model: userSettings?.llm_model ?? 'claude-sonnet-4-6',
+  }
+
   // Mark as processing
   const { error: insertError } = await supabaseAdmin
     .from('leila_evaluations')
@@ -58,7 +70,7 @@ export const requestEvaluation = async (req: Request, res: Response) => {
 
   console.log('[evaluation] started for property', property_id)
 
-  // Run evaluation async (don't await in response)
+  // Run evaluation async (don't await in response) — llmConfig captured in closure
   evaluateProperty({
     id: property.id,
     title: property.title,
@@ -74,7 +86,7 @@ export const requestEvaluation = async (req: Request, res: Response) => {
     edital_url: property.edital_url,
     source_name: property.leila_sources?.name ?? 'Desconhecida',
     auction_modality: property.auction_modality ?? null,
-  }).then(async (evaluation) => {
+  }, llmConfig).then(async (evaluation) => {
     const { error: updateError } = await supabaseAdmin
       .from('leila_evaluations')
       .update({

@@ -1,9 +1,66 @@
 import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  maxRetries: 4,
-})
+export type LlmProvider = 'anthropic' | 'openrouter'
+
+export interface LlmConfig {
+  provider: LlmProvider
+  model: string
+}
+
+const DEFAULT_LLM_CONFIG: LlmConfig = {
+  provider: 'anthropic',
+  model: 'claude-sonnet-4-6',
+}
+
+// Lazy singletons — instanciados apenas quando usados
+let _anthropic: Anthropic | null = null
+let _openrouter: OpenAI | null = null
+
+function getAnthropicClient(): Anthropic {
+  if (!_anthropic) {
+    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 4 })
+  }
+  return _anthropic
+}
+
+function getOpenRouterClient(): OpenAI {
+  if (!_openrouter) {
+    _openrouter = new OpenAI({
+      baseURL: 'https://openrouter.ai/api/v1',
+      apiKey: process.env.OPENROUTER_API_KEY,
+    })
+  }
+  return _openrouter
+}
+
+async function callLlm(system: string, user: string, config: LlmConfig): Promise<string> {
+  if (config.provider === 'openrouter') {
+    const client = getOpenRouterClient()
+    const res = await client.chat.completions.create({
+      model: config.model,
+      max_tokens: 8000,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+    })
+    return res.choices[0]?.message?.content ?? ''
+  }
+
+  // Default: Anthropic
+  const client = getAnthropicClient()
+  const res = await client.messages.create({
+    model: config.model,
+    max_tokens: 8000,
+    system,
+    messages: [{ role: 'user', content: user }],
+  })
+  const block = res.content[0]
+  if (block.type !== 'text') throw new Error('Unexpected response type from Anthropic')
+  return block.text
+}
 
 export interface InvestmentAnalysis {
   resumo_executivo: {
@@ -158,22 +215,25 @@ const MODALITY_INFO: Record<string, { label: string; nota: string }> = {
   },
 }
 
-export const evaluateProperty = async (property: {
-  id: string
-  title: string
-  address: string | null
-  city: string | null
-  state: string | null
-  property_type: string | null
-  auction_price: number
-  appraised_value: number | null
-  discount_pct: number | null
-  area_m2: number | null
-  description: string | null
-  edital_url?: string | null
-  source_name: string
-  auction_modality: string | null
-}): Promise<PropertyEvaluation> => {
+export const evaluateProperty = async (
+  property: {
+    id: string
+    title: string
+    address: string | null
+    city: string | null
+    state: string | null
+    property_type: string | null
+    auction_price: number
+    appraised_value: number | null
+    discount_pct: number | null
+    area_m2: number | null
+    description: string | null
+    edital_url?: string | null
+    source_name: string
+    auction_modality: string | null
+  },
+  config: LlmConfig = DEFAULT_LLM_CONFIG,
+): Promise<PropertyEvaluation> => {
 
   const endereco = [property.address, property.city, property.state].filter(Boolean).join(', ') || 'Não informado'
   const tipo = property.property_type ?? 'não informado'
@@ -297,17 +357,9 @@ SCHEMA JSON OBRIGATÓRIO:
   }
 }`
 
-  const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 8000,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: 'user', content: userPrompt }],
-  })
+  const rawText = await callLlm(SYSTEM_PROMPT, userPrompt, config)
 
-  const content = message.content[0]
-  if (content.type !== 'text') throw new Error('Unexpected response type from Claude')
-
-  const stripped = content.text.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim()
+  const stripped = rawText.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim()
   const jsonMatch = stripped.match(/\{[\s\S]*\}/)
   if (!jsonMatch) throw new Error('Could not parse JSON from evaluation response')
 

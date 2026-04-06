@@ -8,6 +8,7 @@ import filtersRouter from './routes/filters'
 import favoritesRouter from './routes/favorites'
 import evaluationsRouter from './routes/evaluations'
 import scraperRouter from './routes/scraper'
+import settingsRouter from './routes/settings'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -25,6 +26,7 @@ app.use('/api/filters', authMiddleware, filtersRouter)
 app.use('/api/favorites', authMiddleware, favoritesRouter)
 app.use('/api/evaluations', authMiddleware, evaluationsRouter)
 app.use('/api/scraper', authMiddleware, scraperRouter)
+app.use('/api/settings', authMiddleware, settingsRouter)
 
 app.listen(PORT, () => {
   console.log(`Leila backend running on port ${PORT}`)

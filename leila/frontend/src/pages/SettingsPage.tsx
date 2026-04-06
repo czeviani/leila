@@ -1,6 +1,8 @@
-import { useSources, useToggleSource, useRunScraper, useFilters, useSaveFilters } from '../hooks/useProperties'
-import { RefreshCw, CheckCircle2, XCircle, Globe, Info, ShoppingCart, Gavel, Users, Mail, Tag } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useSources, useToggleSource, useRunScraper, useFilters, useSaveFilters, useLlmSettings, useSaveLlmSettings } from '../hooks/useProperties'
+import { RefreshCw, CheckCircle2, XCircle, Globe, Info, ShoppingCart, Gavel, Users, Mail, Tag, Cpu, Check } from 'lucide-react'
 import { MODALITY_CONFIG } from '../components/filters/FilterPanel'
+import { LLM_PROVIDERS, LlmProvider } from '../lib/api'
 
 const MODALITY_DETAILS: Record<string, { description: string; examples: string; tip?: string }> = {
   compra_direta: {
@@ -42,6 +44,41 @@ export default function SettingsPage() {
   const runScraper = useRunScraper()
   const saveFilters = useSaveFilters()
 
+  // LLM settings state
+  const { data: llmSettings, isLoading: llmLoading } = useLlmSettings()
+  const saveLlmSettings = useSaveLlmSettings()
+  const [selectedProvider, setSelectedProvider] = useState<LlmProvider>('anthropic')
+  const [selectedModel, setSelectedModel] = useState<string>('claude-sonnet-4-6')
+  const [llmSaved, setLlmSaved] = useState(false)
+
+  useEffect(() => {
+    if (llmSettings) {
+      setSelectedProvider(llmSettings.llm_provider)
+      setSelectedModel(llmSettings.llm_model)
+    }
+  }, [llmSettings])
+
+  const handleProviderChange = (provider: LlmProvider) => {
+    setSelectedProvider(provider)
+    setSelectedModel(LLM_PROVIDERS[provider].models[0].id)
+  }
+
+  const llmDirty =
+    selectedProvider !== llmSettings?.llm_provider ||
+    selectedModel !== llmSettings?.llm_model
+
+  const handleLlmSave = () => {
+    saveLlmSettings.mutate(
+      { llm_provider: selectedProvider, llm_model: selectedModel },
+      {
+        onSuccess: () => {
+          setLlmSaved(true)
+          setTimeout(() => setLlmSaved(false), 2500)
+        },
+      },
+    )
+  }
+
   const activeSources = sources?.filter(s => s.active).length ?? 0
   const activeModalities: string[] = savedFilters?.modality_categories ?? []
 
@@ -62,6 +99,98 @@ export default function SettingsPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
+
+        {/* LLM settings card */}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center">
+                <Cpu size={14} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Modelo de IA</h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Provider e modelo usado nas avaliações de imóveis
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-5 py-5 space-y-4">
+            {llmLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="w-5 h-5 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin" />
+              </div>
+            ) : (
+              <>
+                {/* Provider select */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">Provider</label>
+                  <div className="flex gap-2">
+                    {(Object.keys(LLM_PROVIDERS) as LlmProvider[]).map(p => (
+                      <button
+                        key={p}
+                        onClick={() => handleProviderChange(p)}
+                        className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-semibold border transition-all ${
+                          selectedProvider === p
+                            ? 'bg-slate-900 text-white border-slate-900'
+                            : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400'
+                        }`}
+                      >
+                        {LLM_PROVIDERS[p].label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Model select */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1.5">Modelo</label>
+                  <select
+                    value={selectedModel}
+                    onChange={e => setSelectedModel(e.target.value)}
+                    className="w-full py-2.5 px-3 rounded-xl text-sm text-slate-800 border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/20 focus:border-slate-400 transition-all"
+                  >
+                    {LLM_PROVIDERS[selectedProvider].models.map(m => (
+                      <option key={m.id} value={m.id}>{m.label}</option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                    {selectedProvider === 'openrouter'
+                      ? 'Requer OPENROUTER_API_KEY configurada no backend. Qualidade da análise varia por modelo.'
+                      : 'Requer ANTHROPIC_API_KEY no backend. Claude Sonnet 4.6 é o recomendado para análises.'}
+                  </p>
+                </div>
+
+                {/* Save button */}
+                <div className="flex items-center justify-between pt-1">
+                  <p className="text-xs text-slate-400">
+                    {llmSettings
+                      ? `Atual: ${LLM_PROVIDERS[llmSettings.llm_provider]?.label} — ${llmSettings.llm_model}`
+                      : 'Padrão: Anthropic — claude-sonnet-4-6'}
+                  </p>
+                  <button
+                    onClick={handleLlmSave}
+                    disabled={!llmDirty || saveLlmSettings.isPending}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                      llmSaved
+                        ? 'bg-emerald-500 text-white'
+                        : llmDirty
+                          ? 'bg-slate-900 text-white hover:bg-slate-800'
+                          : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                    }`}
+                  >
+                    {llmSaved
+                      ? <><Check size={13} /> Salvo</>
+                      : saveLlmSettings.isPending
+                        ? 'Salvando...'
+                        : 'Salvar'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
 
         {/* Modality preferences card */}
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">

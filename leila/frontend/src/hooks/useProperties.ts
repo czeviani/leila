@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api, Favorite, PropertyFilters } from '../lib/api'
+import { api, Favorite, PropertyFilters, LlmSettings } from '../lib/api'
 
 export const useProperties = (params: Record<string, string | number | undefined> = {}) =>
   useQuery({
@@ -176,5 +176,20 @@ export const useRunScraper = () => {
       qc.invalidateQueries({ queryKey: ['properties'] })
       qc.invalidateQueries({ queryKey: ['sources'] })
     },
+  })
+}
+
+export const useLlmSettings = () =>
+  useQuery({
+    queryKey: ['llm-settings'],
+    queryFn: api.settings.get,
+  })
+
+export const useSaveLlmSettings = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (settings: Pick<LlmSettings, 'llm_provider' | 'llm_model'>) =>
+      api.settings.save(settings),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['llm-settings'] }),
   })
 }

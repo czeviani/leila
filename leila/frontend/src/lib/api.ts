@@ -192,6 +192,39 @@ export interface ScrapeResult {
   errors: number
 }
 
+// ── LLM Settings ──────────────────────────────────────────────────────────────
+
+export const LLM_PROVIDERS = {
+  anthropic: {
+    label: 'Anthropic',
+    models: [
+      { id: 'claude-sonnet-4-6',         label: 'Claude Sonnet 4.6 (recomendado)' },
+      { id: 'claude-opus-4-6',           label: 'Claude Opus 4.6 (mais capaz)' },
+      { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (econômico)' },
+    ],
+  },
+  openrouter: {
+    label: 'OpenRouter',
+    models: [
+      { id: 'openai/gpt-4o',                         label: 'GPT-4o' },
+      { id: 'openai/gpt-4o-mini',                    label: 'GPT-4o Mini (econômico)' },
+      { id: 'google/gemini-2.0-flash-001',           label: 'Gemini 2.0 Flash' },
+      { id: 'google/gemini-2.5-pro-preview-03-25',   label: 'Gemini 2.5 Pro' },
+      { id: 'meta-llama/llama-3.3-70b-instruct',     label: 'Llama 3.3 70B' },
+      { id: 'deepseek/deepseek-chat-v3-0324',        label: 'DeepSeek V3' },
+      { id: 'anthropic/claude-sonnet-4-5',           label: 'Claude Sonnet 4.5 (via OR)' },
+    ],
+  },
+} as const
+
+export type LlmProvider = keyof typeof LLM_PROVIDERS
+
+export interface LlmSettings {
+  user_id?: string
+  llm_provider: LlmProvider
+  llm_model: string
+}
+
 // ── Sources ────────────────────────────────────────────────────────────────
 
 export const api = {
@@ -253,5 +286,15 @@ export const api = {
     runAll: () => apiFetch<Record<string, ScrapeResult>>('/api/scraper/run/all', { method: 'POST' }),
     runSource: (source_id: string) =>
       apiFetch<ScrapeResult>(`/api/scraper/run/${source_id}`, { method: 'POST' }),
+  },
+
+  // ── LLM Settings ─────────────────────────────────────────────────────────
+  settings: {
+    get: () => apiFetch<LlmSettings>('/api/settings'),
+    save: (settings: Pick<LlmSettings, 'llm_provider' | 'llm_model'>) =>
+      apiFetch<LlmSettings>('/api/settings', {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+      }),
   },
 }
