@@ -26,6 +26,7 @@ from curl_cffi.requests import AsyncSession
 
 from .base import BaseSource, ScrapedProperty
 from .area_classifier import classify_area
+from .description_parser import parse_description
 
 SOURCE_ID = "caixa"
 BASE_URL = "https://venda-imoveis.caixa.gov.br"
@@ -264,13 +265,35 @@ class CaixaSource(BaseSource):
         )
         auction_modality = _normalize_modality(raw_modality)
 
+        raw_area = normalized.get("área total") or normalized.get("area total") or ""
+        area_m2 = _parse_area(raw_area)
+
         area_classification = classify_area(
             address=address or None,
             city=city or None,
             state=uf,
             appraised_value=appraised_value,
-            area_m2=_parse_area(normalized.get("área total") or normalized.get("area total") or ""),
+            area_m2=area_m2,
         )
+
+        description = normalized.get("descrição") or normalized.get("descricao") or None
+
+        # Camada 1: extração heurística zero-custo a partir da descrição
+        parsed = parse_description(description)
+
+        # Área útil: preferir campo explícito do CSV se existir, senão usar o parser
+        useful_area_raw = (
+            normalized.get("área privativa") or
+            normalized.get("area privativa") or
+            normalized.get("área útil") or
+            normalized.get("area util") or
+            ""
+        )
+        useful_area_m2 = _parse_area(useful_area_raw) or parsed.useful_area_m2
+
+        # Se área total do CSV é zero/None, usar área privativa como área_m2
+        if not area_m2 or area_m2 == 0.0:
+            area_m2 = useful_area_m2
 
         return ScrapedProperty(
             source_id=SOURCE_ID,
@@ -281,15 +304,23 @@ class CaixaSource(BaseSource):
             state=uf,
             zip_code=normalized.get("cep") or None,
             property_type=_normalize_type(raw_type) if raw_type else None,
-            area_m2=_parse_area(normalized.get("área total") or normalized.get("area total") or ""),
+            area_m2=area_m2,
             appraised_value=appraised_value,
             auction_price=auction_price,
             discount_pct=discount_pct,
-            description=normalized.get("descrição") or normalized.get("descricao") or None,
+            description=description,
             edital_url=edital_url,
             auction_modality=auction_modality,
             area_classification=area_classification,
             raw_data=dict(normalized),
+            # Campos de enriquecimento heurístico
+            bedrooms=parsed.bedrooms,
+            bathrooms=parsed.bathrooms,
+            parking_spots=parsed.parking_spots,
+            is_occupied=parsed.is_occupied,
+            property_condition=parsed.property_condition,
+            useful_area_m2=useful_area_m2,
+            features=parsed.features,
         )
 
     async def scrape(self) -> list[ScrapedProperty]:

@@ -54,6 +54,11 @@ export interface Property {
   auction_status: string
   auction_modality: string | null
   area_classification: string | null   // heurística do scraper; IA sobrescreve via leila_evaluations.area_classification
+  bedrooms: number | null
+  bathrooms: number | null
+  parking_spots: number | null
+  useful_area_m2: number | null
+  is_occupied: boolean | null
   scraped_at: string
   leila_sources?: Pick<Source, 'name' | 'icon_url'>
   leila_evaluations?: Evaluation | null
