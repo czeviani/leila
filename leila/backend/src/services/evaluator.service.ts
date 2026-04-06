@@ -2,6 +2,88 @@ import Anthropic from '@anthropic-ai/sdk'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+export interface InvestmentAnalysis {
+  resumo_executivo: {
+    veredicto: 'COMPRAR' | 'NEGOCIAR' | 'EVITAR'
+    score_geral: number
+    frase_decisiva: string
+  }
+  preco_justo: {
+    valor_minimo_regiao: number
+    valor_mediano_regiao: number
+    valor_maximo_regiao: number
+    preco_justo_este_imovel: number
+    preco_pedido: number
+    percentual_acima_abaixo_mercado: number
+    margem_negociacao_estimada_pct: number
+  }
+  potencial_pos_reforma: {
+    custo_reforma_minimo: number
+    custo_reforma_mediano: number
+    custo_reforma_maximo: number
+    valor_imovel_pos_reforma_minimo: number
+    valor_imovel_pos_reforma_mediano: number
+    valor_imovel_pos_reforma_maximo: number
+    ganho_bruto_estimado_minimo: number
+    ganho_bruto_estimado_mediano: number
+    ganho_bruto_estimado_maximo: number
+    roi_bruto_pct: number
+    prazo_reforma_meses_estimado: number
+  }
+  analise_aluguel: {
+    aluguel_mensal_minimo_regiao: number
+    aluguel_mensal_mediano_regiao: number
+    aluguel_mensal_maximo_regiao: number
+    aluguel_esperado_pos_reforma: number
+    yield_bruto_anual_pct: number
+    vacancia_media_regiao_meses: number
+    tempo_absorcao_mercado_dias: number
+  }
+  viabilidade_financeira: {
+    investimento_total_estimado: number
+    payback_venda_meses: number
+    payback_aluguel_anos: number
+    tir_estimada_venda_pct: number
+    tir_estimada_aluguel_pct: number
+    comparativo_cdi_atual_pct: number
+    supera_cdi: boolean
+  }
+  riscos: Array<{
+    categoria: string
+    descricao: string
+    severidade: 'ALTO' | 'MÉDIO' | 'BAIXO'
+    probabilidade_pct: number
+    mitigacao: string
+  }>
+  indicadores_mercado: {
+    liquidez_regiao: 'ALTA' | 'MÉDIA' | 'BAIXA'
+    demanda_locacao: 'ALTA' | 'MÉDIA' | 'BAIXA'
+    tendencia_preco_12m: 'SUBINDO' | 'ESTÁVEL' | 'CAINDO'
+    variacao_preco_12m_estimada_pct: number
+    perfil_comprador_alvo: string
+    concorrencia_oferta_similar: 'ALTA' | 'MÉDIA' | 'BAIXA'
+    tempo_medio_venda_regiao_dias: number
+  }
+  checklist_due_diligence: Array<{
+    item: string
+    prioridade: 'CRÍTICO' | 'IMPORTANTE' | 'RECOMENDADO'
+    observacao: string
+  }>
+  recomendacao_reforma: {
+    escopo_minimo: string
+    escopo_recomendado: string
+    itens_alto_impacto: string[]
+    itens_evitar: string[]
+    alerta_reforma: string
+  }
+  metadata: {
+    regiao_referencia: string
+    confianca_analise: 'ALTA' | 'MÉDIA' | 'BAIXA'
+    ressalvas: string
+  }
+}
+
+// Legacy interface — kept for backward compat with old evaluations already in DB
 export interface EvaluationFinancialData {
   estimated_total_cost: number
   total_cost_breakdown: {
@@ -31,8 +113,17 @@ export interface PropertyEvaluation {
   highlights: string[]
   recommendation: 'strong_buy' | 'consider' | 'risky' | 'avoid'
   price_per_m2: number | null
-  financial_data: EvaluationFinancialData | null
+  financial_data: InvestmentAnalysis | null
 }
+
+const SYSTEM_PROMPT = `Você é um analista imobiliário especializado em imóveis para investimento com reforma no Brasil.
+Seu trabalho é avaliar imóveis com frieza técnica e precisão de mercado — sem floreios, sem linguagem
+de corretor. O usuário vai reformar e vender ou alugar. Ele precisa de números, probabilidades e riscos reais.
+
+Você SEMPRE responde exclusivamente em JSON válido, sem texto antes ou depois, sem markdown, sem blocos de código.
+Siga rigorosamente o schema fornecido. Todos os campos são obrigatórios.
+Calibre seus valores com base na cidade, bairro e tipo do imóvel informado.
+Seja específico — "provavelmente vai valorizar" não é uma análise, é conversa de corretor.`
 
 export const evaluateProperty = async (property: {
   id: string
@@ -50,94 +141,159 @@ export const evaluateProperty = async (property: {
   source_name: string
 }): Promise<PropertyEvaluation> => {
 
-  const pricePerM2 = property.area_m2 && property.area_m2 > 0
-    ? (property.auction_price / property.area_m2).toFixed(2)
-    : 'N/D'
+  const endereco = [property.address, property.city, property.state].filter(Boolean).join(', ') || 'Não informado'
+  const tipo = property.property_type ?? 'não informado'
+  const area_m2 = property.area_m2 ? `${property.area_m2}` : 'não informado'
 
-  const appraised = property.appraised_value
-    ? `R$ ${property.appraised_value.toLocaleString('pt-BR')}`
-    : 'N/D'
+  const infoExtra = [
+    property.description ? `Descrição: ${property.description}` : null,
+    property.appraised_value ? `Valor de avaliação (PTAM): R$ ${property.appraised_value.toLocaleString('pt-BR')}` : null,
+    property.discount_pct != null ? `Desconto sobre avaliação: ${property.discount_pct.toFixed(1)}%` : null,
+    property.edital_url ? `Edital: ${property.edital_url}` : null,
+    `Fonte do leilão: ${property.source_name}`,
+  ].filter(Boolean).join('\n')
 
-  const prompt = `Você é um analista sênior de investimentos imobiliários em leilões no Brasil. Responda de forma técnica, direta e objetiva — sem introduções, sem enrolação.
+  const userPrompt = `Analise este imóvel para investimento com reforma e retorne APENAS o JSON abaixo preenchido.
 
-## DADOS
+DADOS DO IMÓVEL:
+- Endereço / Região: ${endereco}
+- Tipo: ${tipo}
+- Área: ${area_m2} m²
+- Estado atual: inferir com base na descrição e tipo (imóvel proveniente de leilão)
+- Preço pedido: R$ ${property.auction_price.toLocaleString('pt-BR')}
+- Objetivo do investidor: ambos (venda e aluguel)
+- Informações adicionais: ${infoExtra || 'nenhuma'}
 
-- Fonte: ${property.source_name}
-- Título: ${property.title}
-- Endereço: ${[property.address, property.city, property.state].filter(Boolean).join(', ') || 'N/D'}
-- Tipo: ${property.property_type ?? 'N/D'}
-- Área: ${property.area_m2 ? `${property.area_m2} m²` : 'N/D'}
-- Avaliação (PTAM): ${appraised}
-- Lance mínimo: R$ ${property.auction_price.toLocaleString('pt-BR')}
-- Desconto: ${property.discount_pct != null ? `${property.discount_pct.toFixed(1)}%` : 'N/D'}
-- Preço/m²: ${pricePerM2 !== 'N/D' ? `R$ ${Number(pricePerM2).toLocaleString('pt-BR')}` : 'N/D'}
-- Descrição: ${property.description ?? 'Sem descrição.'}
-${property.edital_url ? `- Edital: ${property.edital_url}` : ''}
-
-## ANÁLISE REQUERIDA
-
-1. **Precificação**: Compare preço/m² com mercado local. Calcule custo total (lance + ITBI 3% + cartório ~1,5% + comissão leiloeiro 5%). Estime aluguel mensal e yield bruto anual.
-
-2. **Localização**: Identifique capital/região metropolitana/interior. Classifique o perfil do bairro como: nobre (alta renda, valorização histórica), intermediário (classe média, infraestrutura boa), popular (classe baixa/média-baixa, infraestrutura básica), ou comunidade (área de favela, invasão ou alta vulnerabilidade).
-
-3. **Condição**: Estime estado físico com base no tipo e descrição. Identifique ocupação e necessidade de reforma.
-
-4. **Jurídico**: Avalie tipo de praça, origem da dívida, riscos de ônus e segurança do título.
-
-## CRITÉRIOS DE SCORE
-- 9-10: Desconto >40%, localização premium, baixo risco jurídico, yield >8%
-- 7-8: Desconto 25-40%, boa localização, riscos gerenciáveis
-- 5-6: Desconto <25% ou risco moderado, yield <6%
-- 3-4: Problemas jurídicos relevantes ou localização fraca
-- 0-2: Alto risco jurídico, preço acima do mercado ou problemas graves
-
-## FORMATO DE RESPOSTA
-
-JSON válido apenas (sem markdown, sem texto fora do JSON):
+SCHEMA JSON OBRIGATÓRIO:
 
 {
-  "score": <0.0-10.0>,
-  "summary": "<2 frases técnicas e diretas: principal atrativo/risco e veredicto>",
-  "area_classification": "<nobre|intermediário|popular|comunidade|indefinido>",
-  "location_notes": "<1-2 frases: tipo da cidade, perfil do bairro, potencial de valorização>",
-  "condition_notes": "<1-2 frases: estado estimado, ocupação, reforma necessária>",
-  "documents_notes": "<1-2 frases: tipo de praça/leilão, nível de risco jurídico, ônus relevantes>",
-  "risks": ["<risco acionável 1>", "<risco acionável 2>", "<risco acionável 3>"],
-  "highlights": ["<ponto positivo concreto 1>", "<ponto positivo concreto 2>", "<ponto positivo concreto 3>"],
-  "recommendation": "<strong_buy|consider|risky|avoid>",
-  "price_per_m2": <número ou null>,
-  "financial_data": {
-    "estimated_total_cost": <lance + ITBI + cartório + comissão>,
-    "total_cost_breakdown": {
-      "arrematacao": <valor do lance>,
-      "itbi": <ITBI 3%>,
-      "itbi_pct": 3.0,
-      "registro_cartorio": <estimativa cartório>,
-      "comissao_leiloeiro": <5% do lance>,
-      "custo_total": <soma total>
-    },
-    "market_avg_price_m2": <preço médio/m² estimado para tipo+cidade, ou null>,
-    "price_vs_market_pct": <% abaixo(-) ou acima(+) do mercado, ou null>,
-    "rental_estimate_monthly": <aluguel mensal estimado em R$, ou null>,
-    "rental_yield_annual_pct": <yield bruto anual %, ou null>,
-    "financial_verdict": "<2 frases: custo total real vs mercado, yield estimado e veredicto financeiro>",
-    "liquidity_assessment": "<alta|media|baixa>"
+  "resumo_executivo": {
+    "veredicto": "COMPRAR | NEGOCIAR | EVITAR",
+    "score_geral": <0-100>,
+    "frase_decisiva": "<uma linha que resume o por quê do veredicto, sem rodeios>"
+  },
+  "preco_justo": {
+    "valor_minimo_regiao": <número em reais>,
+    "valor_mediano_regiao": <número em reais>,
+    "valor_maximo_regiao": <número em reais>,
+    "preco_justo_este_imovel": <número em reais>,
+    "preco_pedido": <número em reais>,
+    "percentual_acima_abaixo_mercado": <número, negativo = abaixo do mercado>,
+    "margem_negociacao_estimada_pct": <número percentual recomendado para oferta>
+  },
+  "potencial_pos_reforma": {
+    "custo_reforma_minimo": <número em reais>,
+    "custo_reforma_mediano": <número em reais>,
+    "custo_reforma_maximo": <número em reais>,
+    "valor_imovel_pos_reforma_minimo": <número em reais>,
+    "valor_imovel_pos_reforma_mediano": <número em reais>,
+    "valor_imovel_pos_reforma_maximo": <número em reais>,
+    "ganho_bruto_estimado_minimo": <número>,
+    "ganho_bruto_estimado_mediano": <número>,
+    "ganho_bruto_estimado_maximo": <número>,
+    "roi_bruto_pct": <número percentual — ganho bruto / (compra + reforma)>,
+    "prazo_reforma_meses_estimado": <número>
+  },
+  "analise_aluguel": {
+    "aluguel_mensal_minimo_regiao": <número>,
+    "aluguel_mensal_mediano_regiao": <número>,
+    "aluguel_mensal_maximo_regiao": <número>,
+    "aluguel_esperado_pos_reforma": <número>,
+    "yield_bruto_anual_pct": <número — aluguel anual / valor do imóvel reformado>,
+    "vacancia_media_regiao_meses": <número>,
+    "tempo_absorcao_mercado_dias": <número estimado para alugar após reforma>
+  },
+  "viabilidade_financeira": {
+    "investimento_total_estimado": <compra + reforma mediana>,
+    "payback_venda_meses": <número>,
+    "payback_aluguel_anos": <número>,
+    "tir_estimada_venda_pct": <número — taxa interna de retorno anualizada>,
+    "tir_estimada_aluguel_pct": <número — considerando 10 anos de aluguel + venda>,
+    "comparativo_cdi_atual_pct": 14.75,
+    "supera_cdi": <true | false — para a melhor estratégia entre venda e aluguel>
+  },
+  "riscos": [
+    {
+      "categoria": "<Legal | Estrutural | Mercado | Liquidez | Regulatório | Reforma | Vizinhança>",
+      "descricao": "<descrição objetiva do risco>",
+      "severidade": "ALTO | MÉDIO | BAIXO",
+      "probabilidade_pct": <número>,
+      "mitigacao": "<ação concreta para reduzir o risco>"
+    }
+  ],
+  "indicadores_mercado": {
+    "liquidez_regiao": "ALTA | MÉDIA | BAIXA",
+    "demanda_locacao": "ALTA | MÉDIA | BAIXA",
+    "tendencia_preco_12m": "SUBINDO | ESTÁVEL | CAINDO",
+    "variacao_preco_12m_estimada_pct": <número>,
+    "perfil_comprador_alvo": "<descrição do perfil>",
+    "concorrencia_oferta_similar": "ALTA | MÉDIA | BAIXA",
+    "tempo_medio_venda_regiao_dias": <número>
+  },
+  "checklist_due_diligence": [
+    {
+      "item": "<nome do item>",
+      "prioridade": "CRÍTICO | IMPORTANTE | RECOMENDADO",
+      "observacao": "<o que verificar especificamente>"
+    }
+  ],
+  "recomendacao_reforma": {
+    "escopo_minimo": "<o mínimo para valorizar e vender/alugar>",
+    "escopo_recomendado": "<reforma ideal custo-benefício>",
+    "itens_alto_impacto": ["<item 1>", "<item 2>", "<item 3>"],
+    "itens_evitar": ["<item que não compensa o investimento>"],
+    "alerta_reforma": "<risco específico de reforma neste tipo/região>"
+  },
+  "metadata": {
+    "regiao_referencia": "<cidade e bairro usados como base>",
+    "confianca_analise": "ALTA | MÉDIA | BAIXA",
+    "ressalvas": "<o que pode mudar esta análise>"
   }
 }`
 
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 4096,
-    messages: [{ role: 'user', content: prompt }],
+    max_tokens: 8000,
+    system: SYSTEM_PROMPT,
+    messages: [{ role: 'user', content: userPrompt }],
   })
 
   const content = message.content[0]
   if (content.type !== 'text') throw new Error('Unexpected response type from Claude')
 
-  // Strip markdown code fences if present, then extract JSON
   const stripped = content.text.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim()
   const jsonMatch = stripped.match(/\{[\s\S]*\}/)
   if (!jsonMatch) throw new Error('Could not parse JSON from evaluation response')
 
-  return JSON.parse(jsonMatch[0]) as PropertyEvaluation
+  const analysis = JSON.parse(jsonMatch[0]) as InvestmentAnalysis
+
+  const verdictMap: Record<string, 'strong_buy' | 'consider' | 'risky' | 'avoid'> = {
+    COMPRAR: 'strong_buy',
+    NEGOCIAR: 'consider',
+    EVITAR: 'avoid',
+  }
+
+  const criticalDocs = analysis.checklist_due_diligence
+    ?.filter(i => i.prioridade === 'CRÍTICO')
+    .map(i => i.item)
+    .join('; ') || ''
+
+  return {
+    score: Math.min(10, Math.max(0, (analysis.resumo_executivo?.score_geral ?? 0) / 10)),
+    summary: analysis.resumo_executivo?.frase_decisiva ?? '',
+    area_classification: 'indefinido',
+    location_notes: [
+      analysis.metadata?.regiao_referencia,
+      analysis.indicadores_mercado?.perfil_comprador_alvo,
+    ].filter(Boolean).join(' — '),
+    condition_notes: analysis.recomendacao_reforma?.escopo_recomendado ?? '',
+    documents_notes: criticalDocs,
+    risks: analysis.riscos?.map(r => r.descricao) ?? [],
+    highlights: analysis.recomendacao_reforma?.itens_alto_impacto ?? [],
+    recommendation: verdictMap[analysis.resumo_executivo?.veredicto] ?? 'consider',
+    price_per_m2: property.area_m2 && property.area_m2 > 0
+      ? Math.round(property.auction_price / property.area_m2)
+      : null,
+    financial_data: analysis,
+  }
 }

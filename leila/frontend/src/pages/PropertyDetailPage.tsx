@@ -1,23 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Heart, ExternalLink, MapPin, Home, TrendingDown, Sparkles, CheckCircle, AlertTriangle, Calendar } from 'lucide-react'
+import { ArrowLeft, Heart, ExternalLink, MapPin, Home, TrendingDown, Sparkles, AlertTriangle, Calendar } from 'lucide-react'
 import { useProperty, useFavorites, useToggleFavorite, useRequestEvaluation } from '../hooks/useProperties'
+import InvestmentDashboard from '../components/evaluator/InvestmentDashboard'
 
 function formatBRL(v: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
 }
 
-const RECOMMENDATION_MAP = {
-  strong_buy: { label: 'Ótimo negócio', color: 'bg-emerald-50 text-emerald-700 border border-emerald-200' },
-  consider: { label: 'Considerar', color: 'bg-blue-50 text-blue-700 border border-blue-200' },
-  risky: { label: 'Arriscado', color: 'bg-amber-50 text-amber-700 border border-amber-200' },
-  avoid: { label: 'Evitar', color: 'bg-red-50 text-red-700 border border-red-200' },
-}
-
-const SCORE_COLORS = (score: number) => {
-  if (score >= 7.5) return 'text-emerald-600'
-  if (score >= 5) return 'text-amber-600'
-  return 'text-red-500'
-}
 
 export default function PropertyDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -63,7 +52,6 @@ export default function PropertyDetailPage() {
 
   const isFav = favorites?.some(f => f.property_id === property.id) ?? false
   const evaluation = property.leila_evaluations ?? undefined
-  const recInfo = evaluation?.recommendation ? RECOMMENDATION_MAP[evaluation.recommendation] : null
 
   return (
     <div className="min-h-full bg-slate-50">
@@ -199,9 +187,9 @@ export default function PropertyDetailPage() {
         )}
 
         {/* AI Evaluation */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="rounded-2xl overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div className="flex items-center justify-between px-1 py-3">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center">
                 <Sparkles size={14} className="text-white" />
@@ -228,99 +216,47 @@ export default function PropertyDetailPage() {
             )}
           </div>
 
-          <div className="p-5">
-            {!evaluation && (
-              <div className="text-center py-8">
-                <p className="text-sm text-slate-500">Clique em <strong className="text-slate-700">Avaliar com IA</strong> para gerar uma análise completa deste imóvel.</p>
-              </div>
-            )}
+          {!evaluation && (
+            <div className="text-center py-8 bg-white border border-slate-200 rounded-2xl">
+              <p className="text-sm text-slate-500">Clique em <strong className="text-slate-700">Avaliar com IA</strong> para gerar uma análise completa deste imóvel.</p>
+            </div>
+          )}
 
-            {evaluation?.status === 'processing' && (
-              <div className="flex flex-col items-center justify-center gap-3 py-8">
-                <span className="w-5 h-5 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin" />
-                <p className="text-sm text-slate-500">Analisando imóvel com IA... (~40 segundos)</p>
-                <p className="text-xs text-slate-400">A página atualiza automaticamente</p>
-              </div>
-            )}
-
-            {evaluation?.status === 'error' && (
-              <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
-                <AlertTriangle size={16} className="text-red-500 flex-shrink-0" />
-                <p className="text-sm text-red-700">Erro ao gerar a avaliação. Tente novamente.</p>
-              </div>
-            )}
-
-            {evaluation?.status === 'done' && (
-              <div className="space-y-5">
-                {/* Score + recommendation */}
-                <div className="flex items-center gap-4 pb-5 border-b border-slate-100">
-                  {evaluation.score != null && (
-                    <div className="text-center">
-                      <span className={`text-4xl font-bold tracking-tight ${SCORE_COLORS(evaluation.score)}`}>
-                        {evaluation.score.toFixed(1)}
-                      </span>
-                      <p className="text-xs text-slate-400 mt-0.5">/10</p>
-                    </div>
-                  )}
-                  {recInfo && (
-                    <span className={`text-sm font-semibold px-3 py-1.5 rounded-full ${recInfo.color}`}>
-                      {recInfo.label}
-                    </span>
-                  )}
+          {evaluation?.status === 'processing' && (
+            <div className="flex flex-col items-center justify-center gap-3 py-10 bg-[#0d1117] rounded-2xl">
+              {/* Skeleton shimmer */}
+              <div className="w-full px-5 space-y-3 animate-pulse">
+                <div className="h-24 bg-gray-800 rounded-xl" />
+                <div className="grid grid-cols-3 gap-2">
+                  {[1,2,3].map(i => <div key={i} className="h-16 bg-gray-800 rounded-xl" />)}
                 </div>
-
-                {evaluation.summary && (
-                  <p className="text-sm text-slate-700 leading-relaxed">{evaluation.summary}</p>
-                )}
-
-                {/* Notes */}
-                {[
-                  { label: 'Localização', value: evaluation.location_notes },
-                  { label: 'Condições', value: evaluation.condition_notes },
-                  { label: 'Documentação', value: evaluation.documents_notes },
-                ].filter(n => n.value).map(note => (
-                  <div key={note.label} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{note.label}</p>
-                    <p className="text-sm text-slate-700">{note.value}</p>
-                  </div>
-                ))}
-
-                {/* Highlights */}
-                {evaluation.highlights?.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Pontos Positivos</p>
-                    <ul className="space-y-2">
-                      {evaluation.highlights.map((h, i) => (
-                        <li key={i} className="flex items-start gap-3 text-sm text-slate-700">
-                          <div className="w-5 h-5 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <CheckCircle size={11} className="text-emerald-600" />
-                          </div>
-                          {h}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Risks */}
-                {evaluation.risks?.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Riscos</p>
-                    <ul className="space-y-2">
-                      {evaluation.risks.map((r, i) => (
-                        <li key={i} className="flex items-start gap-3 text-sm text-slate-700">
-                          <div className="w-5 h-5 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <AlertTriangle size={11} className="text-amber-600" />
-                          </div>
-                          {r}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                <div className="h-20 bg-gray-800 rounded-xl" />
+                <div className="grid grid-cols-2 gap-2">
+                  {[1,2,3,4].map(i => <div key={i} className="h-12 bg-gray-800 rounded-xl" />)}
+                </div>
               </div>
-            )}
-          </div>
+              <p className="text-sm text-gray-500 mt-2">Analisando com IA... (~40 segundos)</p>
+              <p className="text-xs text-gray-600">A página atualiza automaticamente</p>
+            </div>
+          )}
+
+          {evaluation?.status === 'error' && (
+            <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-xl">
+              <AlertTriangle size={16} className="text-red-500 flex-shrink-0" />
+              <p className="text-sm text-red-700">Erro ao gerar a avaliação. Tente novamente.</p>
+            </div>
+          )}
+
+          {evaluation?.status === 'done' && evaluation.financial_data && (
+            <InvestmentDashboard analysis={evaluation.financial_data} />
+          )}
+
+          {evaluation?.status === 'done' && !evaluation.financial_data && (
+            <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+              <AlertTriangle size={16} className="text-amber-500 flex-shrink-0" />
+              <p className="text-sm text-amber-700">Análise indisponível — tente reavaliar o imóvel.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -87,21 +87,84 @@ export interface Favorite {
 }
 
 export interface EvaluationFinancialData {
-  estimated_total_cost: number
-  total_cost_breakdown: {
-    arrematacao: number
-    itbi: number
-    itbi_pct: number
-    registro_cartorio: number
-    comissao_leiloeiro: number
-    custo_total: number
+  resumo_executivo: {
+    veredicto: 'COMPRAR' | 'NEGOCIAR' | 'EVITAR'
+    score_geral: number
+    frase_decisiva: string
   }
-  market_avg_price_m2: number | null
-  price_vs_market_pct: number | null
-  rental_estimate_monthly: number | null
-  rental_yield_annual_pct: number | null
-  financial_verdict: string
-  liquidity_assessment: 'alta' | 'media' | 'baixa'
+  preco_justo: {
+    valor_minimo_regiao: number
+    valor_mediano_regiao: number
+    valor_maximo_regiao: number
+    preco_justo_este_imovel: number
+    preco_pedido: number
+    percentual_acima_abaixo_mercado: number
+    margem_negociacao_estimada_pct: number
+  }
+  potencial_pos_reforma: {
+    custo_reforma_minimo: number
+    custo_reforma_mediano: number
+    custo_reforma_maximo: number
+    valor_imovel_pos_reforma_minimo: number
+    valor_imovel_pos_reforma_mediano: number
+    valor_imovel_pos_reforma_maximo: number
+    ganho_bruto_estimado_minimo: number
+    ganho_bruto_estimado_mediano: number
+    ganho_bruto_estimado_maximo: number
+    roi_bruto_pct: number
+    prazo_reforma_meses_estimado: number
+  }
+  analise_aluguel: {
+    aluguel_mensal_minimo_regiao: number
+    aluguel_mensal_mediano_regiao: number
+    aluguel_mensal_maximo_regiao: number
+    aluguel_esperado_pos_reforma: number
+    yield_bruto_anual_pct: number
+    vacancia_media_regiao_meses: number
+    tempo_absorcao_mercado_dias: number
+  }
+  viabilidade_financeira: {
+    investimento_total_estimado: number
+    payback_venda_meses: number
+    payback_aluguel_anos: number
+    tir_estimada_venda_pct: number
+    tir_estimada_aluguel_pct: number
+    comparativo_cdi_atual_pct: number
+    supera_cdi: boolean
+  }
+  riscos: Array<{
+    categoria: string
+    descricao: string
+    severidade: 'ALTO' | 'MÉDIO' | 'BAIXO'
+    probabilidade_pct: number
+    mitigacao: string
+  }>
+  indicadores_mercado: {
+    liquidez_regiao: 'ALTA' | 'MÉDIA' | 'BAIXA'
+    demanda_locacao: 'ALTA' | 'MÉDIA' | 'BAIXA'
+    tendencia_preco_12m: 'SUBINDO' | 'ESTÁVEL' | 'CAINDO'
+    variacao_preco_12m_estimada_pct: number
+    perfil_comprador_alvo: string
+    concorrencia_oferta_similar: 'ALTA' | 'MÉDIA' | 'BAIXA'
+    tempo_medio_venda_regiao_dias: number
+  }
+  checklist_due_diligence: Array<{
+    item: string
+    prioridade: 'CRÍTICO' | 'IMPORTANTE' | 'RECOMENDADO'
+    observacao: string
+  }>
+  recomendacao_reforma: {
+    escopo_minimo: string
+    escopo_recomendado: string
+    itens_alto_impacto: string[]
+    itens_evitar: string[]
+    alerta_reforma: string
+  }
+  metadata: {
+    regiao_referencia: string
+    confianca_analise: 'ALTA' | 'MÉDIA' | 'BAIXA'
+    ressalvas: string
+  }
 }
 
 export interface Evaluation {
