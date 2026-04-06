@@ -83,49 +83,45 @@ interface RangeBarProps {
 
 function RangeBar({ min, max, markers }: RangeBarProps) {
   const span = Math.max(max - min, 1)
-  const pct = (v: number) => Math.max(0, Math.min(100, ((v - min) / span) * 100))
+  const pct = (v: number) => Math.max(2, Math.min(98, ((v - min) / span) * 100))
+  const primary = markers.filter(m => m.primary)
 
   return (
-    <div className="relative">
+    <div>
       {/* Track */}
-      <div className="relative h-2 bg-gray-800 rounded-full my-4">
-        {markers.map((m, i) => (
+      <div className="relative h-1.5 bg-gray-800 rounded-full my-3">
+        {primary.map((m, i) => (
           <div
             key={i}
             className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full"
             style={{
               left: `${pct(m.value)}%`,
-              width: m.primary ? '14px' : '10px',
-              height: m.primary ? '14px' : '10px',
+              width: '12px',
+              height: '12px',
               backgroundColor: m.color,
-              zIndex: m.primary ? 2 : 1,
-              boxShadow: m.primary ? `0 0 0 3px rgba(0,0,0,0.5), 0 0 8px ${m.color}60` : undefined,
+              boxShadow: `0 0 0 2px rgba(0,0,0,0.6), 0 0 8px ${m.color}50`,
+              zIndex: 2,
             }}
           />
         ))}
       </div>
-      {/* Labels */}
-      <div className="relative h-8">
-        {markers.map((m, i) => (
-          <div
-            key={i}
-            className="absolute flex flex-col items-center"
-            style={{
-              left: `${pct(m.value)}%`,
-              transform: 'translateX(-50%)',
-              top: 0,
-            }}
-          >
-            <span
-              className="text-[10px] font-mono leading-tight text-center whitespace-nowrap"
-              style={{ color: m.color }}
-            >
-              {BRL(m.value)}
-            </span>
-            <span className="text-[9px] text-gray-600 leading-tight">{m.label}</span>
-          </div>
-        ))}
+      {/* Min / Max axis labels */}
+      <div className="flex justify-between text-[10px] font-mono text-gray-600 -mt-1 mb-2">
+        <span>{BRL(min)}</span>
+        <span>{BRL(max)}</span>
       </div>
+      {/* Primary marker legend */}
+      {primary.length > 0 && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+          {primary.map((m, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: m.color }} />
+              <span className="text-[10px] text-gray-500">{m.label}:</span>
+              <span className="text-[10px] font-mono font-semibold" style={{ color: m.color }}>{BRL(m.value)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -276,7 +272,6 @@ export default function InvestmentDashboard({ analysis }: Props) {
             min={preco.valor_minimo_regiao}
             max={preco.valor_maximo_regiao}
             markers={[
-              { value: preco.valor_minimo_regiao, label: 'Mín. região', color: '#6b7280' },
               { value: preco.preco_justo_este_imovel, label: 'Preço justo', color: '#f59e0b', primary: true },
               {
                 value: preco.preco_pedido,
@@ -284,7 +279,6 @@ export default function InvestmentDashboard({ analysis }: Props) {
                 color: preco.preco_pedido > preco.preco_justo_este_imovel ? '#ef4444' : '#10b981',
                 primary: true,
               },
-              { value: preco.valor_maximo_regiao, label: 'Máx. região', color: '#6b7280' },
             ]}
           />
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
@@ -379,9 +373,7 @@ export default function InvestmentDashboard({ analysis }: Props) {
             min={aluguel.aluguel_mensal_minimo_regiao}
             max={aluguel.aluguel_mensal_maximo_regiao}
             markers={[
-              { value: aluguel.aluguel_mensal_minimo_regiao, label: 'Mín.', color: '#6b7280' },
-              { value: aluguel.aluguel_esperado_pos_reforma, label: 'Esperado', color: '#f59e0b', primary: true },
-              { value: aluguel.aluguel_mensal_maximo_regiao, label: 'Máx.', color: '#6b7280' },
+              { value: aluguel.aluguel_esperado_pos_reforma, label: 'Esperado pós-reforma', color: '#f59e0b', primary: true },
             ]}
           />
           <div className="flex items-center gap-3 mt-3">

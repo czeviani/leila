@@ -1,6 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  maxRetries: 4,
+})
 
 export interface InvestmentAnalysis {
   resumo_executivo: {
@@ -123,7 +126,37 @@ de corretor. O usuário vai reformar e vender ou alugar. Ele precisa de números
 Você SEMPRE responde exclusivamente em JSON válido, sem texto antes ou depois, sem markdown, sem blocos de código.
 Siga rigorosamente o schema fornecido. Todos os campos são obrigatórios.
 Calibre seus valores com base na cidade, bairro e tipo do imóvel informado.
-Seja específico — "provavelmente vai valorizar" não é uma análise, é conversa de corretor.`
+Seja específico — "provavelmente vai valorizar" não é uma análise, é conversa de corretor.
+Seja conservador e crítico: oportunidades ruins são muito mais comuns que boas em leilão.
+
+CALIBRAÇÃO REGIONAL DE CUSTOS DE REFORMA (aplique sempre, nunca use valor genérico):
+- Interior e cidades pequenas: R$900–1.400/m² (mínimo viável), R$1.500–2.500/m² (reforma completa)
+- Capitais e cidades médias (Goiânia, Fortaleza, Recife, Manaus, etc.): R$1.300–2.000/m² (mínimo), R$2.500–4.000/m² (completo)
+- Grandes centros (SP, RJ, BSB, Curitiba, POA, BH): R$1.800–3.000/m² (mínimo), R$4.000–7.000/m²+ (completo)
+Usar custo de reforma fora da faixa da cidade invalida toda a análise financeira.`
+
+const MODALITY_INFO: Record<string, { label: string; nota: string }> = {
+  compra_direta: {
+    label: 'Compra Direta',
+    nota: 'Preço fixo — o valor acima É o preço final, sem concorrência. Use-o diretamente como custo de aquisição.',
+  },
+  segunda_praca: {
+    label: '2ª Praça',
+    nota: 'Lance mínimo é ~60% do valor de avaliação. O preço acima é o mínimo; pode haver concorrência. Use como custo base, mas considere que pode subir 5–20% em leilões disputados.',
+  },
+  leilao_online: {
+    label: 'Leilão Online',
+    nota: 'Lances em tempo real — o preço acima é o lance mínimo atual, NÃO o preço final. O preço final pode ser significativamente maior dependendo da disputa. Incorpore como risco explícito nos cálculos.',
+  },
+  primeira_praca: {
+    label: '1ª Praça',
+    nota: 'Lance mínimo = valor de avaliação. Desconto real é mínimo ou inexistente. O preço acima é o valor de avaliação — analise como se fosse compra a mercado, pois raramente há barganha.',
+  },
+  proposta_fechada: {
+    label: 'Proposta Fechada',
+    nota: 'Banco seleciona a melhor oferta entre propostas lacradas. Preço referencial — o banco pode aceitar ou não. Considere que outros compradores podem oferecer mais.',
+  },
+}
 
 export const evaluateProperty = async (property: {
   id: string
@@ -139,11 +172,17 @@ export const evaluateProperty = async (property: {
   description: string | null
   edital_url?: string | null
   source_name: string
+  auction_modality: string | null
 }): Promise<PropertyEvaluation> => {
 
   const endereco = [property.address, property.city, property.state].filter(Boolean).join(', ') || 'Não informado'
   const tipo = property.property_type ?? 'não informado'
   const area_m2 = property.area_m2 ? `${property.area_m2}` : 'não informado'
+
+  const modality = property.auction_modality ? (MODALITY_INFO[property.auction_modality] ?? null) : null
+  const modalityLine = modality
+    ? `- Modalidade: ${modality.label} — ${modality.nota}`
+    : '- Modalidade: não informada'
 
   const infoExtra = [
     property.description ? `Descrição: ${property.description}` : null,
@@ -160,9 +199,16 @@ DADOS DO IMÓVEL:
 - Tipo: ${tipo}
 - Área: ${area_m2} m²
 - Estado atual: inferir com base na descrição e tipo (imóvel proveniente de leilão)
-- Preço pedido: R$ ${property.auction_price.toLocaleString('pt-BR')}
+- Preço pedido / lance mínimo: R$ ${property.auction_price.toLocaleString('pt-BR')}
+${modalityLine}
 - Objetivo do investidor: ambos (venda e aluguel)
 - Informações adicionais: ${infoExtra || 'nenhuma'}
+
+CRITÉRIO OBRIGATÓRIO PARA VEREDICTO — avalie TODOS os fatores, não apenas preço:
+- COMPRAR (score ≥ 70): preço pedido ≤ preço justo estimado, nenhum risco ALTO em Legal ou Estrutural, liquidez da região ALTA ou MÉDIA, ao menos uma estratégia (venda ou aluguel) supera o CDI, modalidade com preço previsível (compra_direta ou segunda_praca preferencialmente).
+- NEGOCIAR (score 45–69): preço acima do justo mas com margem real de negociação > 10%, OU riscos MÉDIOS gerenciáveis, OU yield marginal vs CDI, OU modalidade competitiva que pode elevar o preço. Só indique NEGOCIAR se existe condição real para melhorar o negócio.
+- EVITAR (score < 45): qualquer risco ALTO em Legal ou Estrutural com probabilidade > 35%, OU preço pedido > 15% acima do preço justo sem margem negociável, OU área com liquidez BAIXA + tendência de queda, OU modalidade de leilão onde preço final esperado elimina a margem, OU desconto insuficiente para cobrir custos de transação + reforma.
+Seja conservador: em caso de dúvida, prefira EVITAR. Imóvel de leilão sem desconto real não é oportunidade.
 
 SCHEMA JSON OBRIGATÓRIO:
 

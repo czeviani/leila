@@ -73,6 +73,7 @@ export const requestEvaluation = async (req: Request, res: Response) => {
     description: property.description,
     edital_url: property.edital_url,
     source_name: property.leila_sources?.name ?? 'Desconhecida',
+    auction_modality: property.auction_modality ?? null,
   }).then(async (evaluation) => {
     const { error: updateError } = await supabaseAdmin
       .from('leila_evaluations')
