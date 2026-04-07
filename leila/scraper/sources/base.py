@@ -51,6 +51,15 @@ class ScrapedProperty:
     area_classification: Optional[str] = None  # nobre | intermediário | popular | comunidade | indefinido
     raw_data: dict = field(default_factory=dict)
 
+    # Campos de enriquecimento (heurística — Camada 1)
+    bedrooms: Optional[int] = None
+    bathrooms: Optional[int] = None
+    parking_spots: Optional[int] = None
+    is_occupied: Optional[bool] = None
+    property_condition: Optional[str] = None  # precario | habitavel | reformado | novo
+    useful_area_m2: Optional[float] = None
+    features: dict = field(default_factory=dict)
+
 
 @dataclass
 class ScrapeResult:

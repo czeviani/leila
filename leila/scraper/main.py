@@ -11,13 +11,14 @@ import os
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
 from sources import SOURCES
 from sources.base import ScrapedProperty, ScrapeResult
 from proxy.manager import proxy_count
+from enrichment import enrich_properties
 
 load_dotenv()
 
@@ -66,6 +67,14 @@ async def _upsert_properties(properties: list[ScrapedProperty]) -> ScrapeResult:
             "auction_modality": prop.auction_modality,
             "area_classification": prop.area_classification,
             "raw_data": prop.raw_data,
+            # Enriquecimento heurístico (Camada 1)
+            "bedrooms": prop.bedrooms,
+            "bathrooms": prop.bathrooms,
+            "parking_spots": prop.parking_spots,
+            "is_occupied": prop.is_occupied,
+            "property_condition": prop.property_condition,
+            "useful_area_m2": prop.useful_area_m2,
+            "features": prop.features or {},
             "scraped_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
@@ -126,7 +135,7 @@ async def scrape_all():
 
 
 @app.post("/scrape/{source_id}")
-async def scrape_source(source_id: str):
+async def scrape_source(source_id: str, background_tasks: BackgroundTasks):
     if source_id not in SOURCES:
         raise HTTPException(status_code=404, detail=f"Source '{source_id}' not found")
 
@@ -140,7 +149,38 @@ async def scrape_source(source_id: str):
     await _update_source_timestamp(source_id)
 
     print(f"[Scraper] {source_id} done: {result}")
+
+    # Dispara enriquecimento IA em background (não bloqueia a resposta)
+    if os.getenv("ANTHROPIC_API_KEY"):
+        background_tasks.add_task(_run_enrichment)
+    else:
+        print("[Scraper] ANTHROPIC_API_KEY não configurado — pulando enriquecimento IA")
+
     return result.__dict__
+
+
+def _run_enrichment():
+    """Executa o enriquecimento IA em background (síncrono → thread pool)."""
+    try:
+        stats = enrich_properties(_get_supabase())
+        print(f"[Enrichment] Concluído: {stats}")
+    except Exception as e:
+        print(f"[Enrichment] Erro no background: {e}")
+
+
+@app.post("/enrich")
+async def enrich_endpoint(dry_run: bool = False):
+    """
+    Enriquece propriedades sem dados estruturados usando IA (Haiku).
+
+    - dry_run=true: processa mas não salva no banco (para testes)
+    - Só processa properties com bedrooms=NULL e ai_enriched_at=NULL
+    """
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY não configurado")
+
+    stats = enrich_properties(_get_supabase(), dry_run=dry_run)
+    return stats
 
 
 if __name__ == "__main__":

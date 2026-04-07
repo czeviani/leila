@@ -8,3 +8,4 @@ supabase==2.7.4
 python-dotenv==1.0.1
 tenacity==9.0.0
 fake-useragent==1.5.1
+anthropic>=0.40.0

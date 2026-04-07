@@ -305,7 +305,9 @@ export default function InvestmentDashboard({ analysis }: Props) {
         <Section title="Potencial Pós-Reforma">
           <div className="grid grid-cols-3 gap-2">
             {reformaScenarios.map((s, i) => {
-              const ganhoColor = (s.ganho ?? 0) > 0 ? 'text-emerald-400' : 'text-red-400'
+              const ganho = s.ganho ?? 0
+              const ganhoColor = ganho > 0 ? 'text-emerald-400' : 'text-red-400'
+              const ganhoLabel = ganho < 0 ? 'Prejuízo bruto' : 'Ganho bruto'
               const roiPct = reforma.roi_bruto_pct
               const barWidth = Math.min(100, Math.max(0, (roiPct / (CDI * 2)) * 100))
               return (
@@ -321,7 +323,7 @@ export default function InvestmentDashboard({ analysis }: Props) {
                       <p className="text-xs font-mono text-gray-300">{s.valor != null ? BRL(s.valor) : '—'}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-600">Ganho bruto</p>
+                      <p className="text-[10px] text-gray-600">{ganhoLabel}</p>
                       <p className={`text-sm font-mono font-bold ${ganhoColor}`}>
                         {s.ganho != null ? BRL(s.ganho) : '—'}
                       </p>
@@ -403,6 +405,30 @@ export default function InvestmentDashboard({ analysis }: Props) {
       {/* ── SEÇÃO 5: Viabilidade Financeira ─────────────────────────────── */}
       {viab && (
         <Section title="Viabilidade Financeira">
+          {/* Custos de transação */}
+          {viab.custos_transacao && (
+            <div className="mb-3 bg-gray-900 border border-gray-800 rounded-xl p-3">
+              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Custos de Transação (além do lance)</p>
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                <div>
+                  <p className="text-[10px] text-gray-600">ITBI (2%)</p>
+                  <p className="text-xs font-mono text-gray-400">{BRL(viab.custos_transacao.itbi)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-600">Leiloeiro (5%)</p>
+                  <p className="text-xs font-mono text-gray-400">{BRL(viab.custos_transacao.comissao_leiloeiro)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-600">Cartório (0,5%)</p>
+                  <p className="text-xs font-mono text-gray-400">{BRL(viab.custos_transacao.registro_cartorio)}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-gray-800">
+                <p className="text-[10px] text-gray-500">Total de custos adicionais</p>
+                <p className="text-sm font-mono font-bold text-red-400">{BRL(viab.custos_transacao.total)}</p>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-3 gap-2">
             {[
               { label: 'Investimento total', value: BRL(viab.investimento_total_estimado), mono: true },
@@ -585,6 +611,9 @@ export default function InvestmentDashboard({ analysis }: Props) {
           <div className="space-y-1">
             <p className="text-[11px] text-gray-600">
               Referência: <span className="text-gray-500">{metadata.regiao_referencia}</span>
+              {metadata.classificacao_regional && (
+                <> · Região: <span className="text-gray-500">{metadata.classificacao_regional.replace('_', ' ')}</span></>
+              )}
               {' · '}Confiança: <Badge label={metadata.confianca_analise} />
             </p>
             {metadata.ressalvas && (

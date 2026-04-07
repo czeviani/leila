@@ -66,10 +66,10 @@ const AREA_CONFIG: Record<string, { label: string; color: string; bg: string; bo
   indefinido:   { label: 'Área Indefinida',   color: 'text-slate-500',  bg: 'bg-slate-100', border: 'border-slate-200',  dot: 'bg-slate-400'  },
 }
 
-const LIQUIDITY_CONFIG = {
-  alta:  { label: 'Alta',  color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-  media: { label: 'Média', color: 'text-amber-700',   bg: 'bg-amber-50',   border: 'border-amber-200'   },
-  baixa: { label: 'Baixa', color: 'text-red-700',     bg: 'bg-red-50',     border: 'border-red-200'     },
+const LIQUIDITY_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  ALTA:  { label: 'Alta',  color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+  MÉDIA: { label: 'Média', color: 'text-amber-700',   bg: 'bg-amber-50',   border: 'border-amber-200'   },
+  BAIXA: { label: 'Baixa', color: 'text-red-700',     bg: 'bg-red-50',     border: 'border-red-200'     },
 }
 
 const SCORE_RING_COLOR = (score: number) => {
@@ -134,7 +134,11 @@ function SectionCard({
 }
 
 function FinancialCard({ fd, pricePerM2 }: { fd: EvaluationFinancialData; pricePerM2: number | null }) {
-  const liquidity = fd.liquidity_assessment ? LIQUIDITY_CONFIG[fd.liquidity_assessment] : null
+  const liquidez = fd.indicadores_mercado?.liquidez_regiao
+  const liquidity = liquidez ? LIQUIDITY_CONFIG[liquidez] : null
+  const yield_pct = fd.analise_aluguel?.yield_bruto_anual_pct
+  const vsMarket = fd.preco_justo?.percentual_acima_abaixo_mercado
+  const CDI = fd.viabilidade_financeira?.comparativo_cdi_atual_pct ?? 14.75
 
   return (
     <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
@@ -152,14 +156,16 @@ function FinancialCard({ fd, pricePerM2 }: { fd: EvaluationFinancialData; priceP
 
       {/* Metrics grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
-        <div className="bg-white rounded-lg border border-slate-100 p-2.5">
-          <div className="flex items-center gap-1 mb-1">
-            <Banknote size={10} className="text-slate-400" />
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Custo Total</p>
+        {fd.viabilidade_financeira?.investimento_total_estimado != null && (
+          <div className="bg-white rounded-lg border border-slate-100 p-2.5">
+            <div className="flex items-center gap-1 mb-1">
+              <Banknote size={10} className="text-slate-400" />
+              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Investimento Total</p>
+            </div>
+            <p className="text-sm font-bold text-slate-900">{formatBRLCompact(fd.viabilidade_financeira.investimento_total_estimado)}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">lance + custos + reforma</p>
           </div>
-          <p className="text-sm font-bold text-slate-900">{formatBRLCompact(fd.estimated_total_cost)}</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">lance + taxas</p>
-        </div>
+        )}
 
         {pricePerM2 && (
           <div className="bg-white rounded-lg border border-slate-100 p-2.5">
@@ -168,70 +174,52 @@ function FinancialCard({ fd, pricePerM2 }: { fd: EvaluationFinancialData; priceP
               <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Preço/m²</p>
             </div>
             <p className="text-sm font-bold text-slate-900">R$ {pricePerM2.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</p>
-            {fd.price_vs_market_pct != null && (
-              <p className={`text-[10px] mt-0.5 font-semibold ${fd.price_vs_market_pct < 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                {fd.price_vs_market_pct < 0 ? '▼' : '▲'} {Math.abs(fd.price_vs_market_pct).toFixed(1)}% vs. mercado
+            {vsMarket != null && (
+              <p className={`text-[10px] mt-0.5 font-semibold ${vsMarket < 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                {vsMarket < 0 ? '▼' : '▲'} {Math.abs(vsMarket).toFixed(1)}% vs. mercado
               </p>
             )}
           </div>
         )}
 
-        {fd.market_avg_price_m2 && (
-          <div className="bg-white rounded-lg border border-slate-100 p-2.5">
+        {fd.potencial_pos_reforma?.ganho_bruto_estimado_mediano != null && (
+          <div className={`rounded-lg border p-2.5 ${fd.potencial_pos_reforma.ganho_bruto_estimado_mediano > 0 ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
             <div className="flex items-center gap-1 mb-1">
-              <TrendingUp size={10} className="text-slate-400" />
-              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">Mercado/m²</p>
+              <TrendingUp size={10} className={fd.potencial_pos_reforma.ganho_bruto_estimado_mediano > 0 ? 'text-emerald-500' : 'text-red-500'} />
+              <p className={`text-[10px] font-medium uppercase tracking-wider ${fd.potencial_pos_reforma.ganho_bruto_estimado_mediano > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {fd.potencial_pos_reforma.ganho_bruto_estimado_mediano > 0 ? 'Ganho Bruto' : 'Prejuízo Bruto'}
+              </p>
             </div>
-            <p className="text-sm font-bold text-slate-900">R$ {fd.market_avg_price_m2.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">estimativa</p>
+            <p className={`text-sm font-bold ${fd.potencial_pos_reforma.ganho_bruto_estimado_mediano > 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+              {formatBRLCompact(fd.potencial_pos_reforma.ganho_bruto_estimado_mediano)}
+            </p>
+            <p className="text-[10px] text-slate-400 mt-0.5">cenário realista</p>
           </div>
         )}
 
-        {fd.rental_yield_annual_pct != null && (
-          <div className={`rounded-lg border p-2.5 ${fd.rental_yield_annual_pct >= 6 ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-100'}`}>
+        {yield_pct != null && (
+          <div className={`rounded-lg border p-2.5 ${yield_pct >= CDI ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-100'}`}>
             <div className="flex items-center gap-1 mb-1">
-              <Percent size={10} className={fd.rental_yield_annual_pct >= 6 ? 'text-emerald-500' : 'text-slate-400'} />
-              <p className={`text-[10px] font-medium uppercase tracking-wider ${fd.rental_yield_annual_pct >= 6 ? 'text-emerald-600' : 'text-slate-400'}`}>Yield Anual</p>
+              <Percent size={10} className={yield_pct >= CDI ? 'text-emerald-500' : 'text-slate-400'} />
+              <p className={`text-[10px] font-medium uppercase tracking-wider ${yield_pct >= CDI ? 'text-emerald-600' : 'text-slate-400'}`}>Yield Aluguel</p>
             </div>
-            <p className={`text-sm font-bold ${fd.rental_yield_annual_pct >= 6 ? 'text-emerald-700' : 'text-slate-900'}`}>{fd.rental_yield_annual_pct.toFixed(1)}% a.a.</p>
-            {fd.rental_estimate_monthly && (
-              <p className="text-[10px] text-slate-400 mt-0.5">~{formatBRLCompact(fd.rental_estimate_monthly)}/mês</p>
+            <p className={`text-sm font-bold ${yield_pct >= CDI ? 'text-emerald-700' : 'text-slate-900'}`}>{yield_pct.toFixed(1)}% a.a.</p>
+            {fd.analise_aluguel?.aluguel_esperado_pos_reforma && (
+              <p className="text-[10px] text-slate-400 mt-0.5">~{formatBRLCompact(fd.analise_aluguel.aluguel_esperado_pos_reforma)}/mês</p>
             )}
           </div>
         )}
       </div>
 
-      {/* Cost breakdown */}
-      {fd.total_cost_breakdown && (
-        <div className="bg-white rounded-lg border border-slate-100 p-3 mb-3">
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Composição do Custo</p>
-          <div className="space-y-1.5">
-            {[
-              { label: 'Arrematação', value: fd.total_cost_breakdown.arrematacao },
-              { label: `ITBI (${fd.total_cost_breakdown.itbi_pct}%)`, value: fd.total_cost_breakdown.itbi },
-              { label: 'Registro em Cartório', value: fd.total_cost_breakdown.registro_cartorio },
-              { label: 'Comissão do Leiloeiro (5%)', value: fd.total_cost_breakdown.comissao_leiloeiro },
-            ].filter(item => item.value > 0).map(item => (
-              <div key={item.label} className="flex items-center justify-between">
-                <span className="text-[11px] text-slate-500">{item.label}</span>
-                <span className="text-[11px] font-medium text-slate-700">{formatBRL(item.value)}</span>
-              </div>
-            ))}
-            <div className="flex items-center justify-between border-t border-slate-100 pt-1.5 mt-1">
-              <span className="text-xs font-semibold text-slate-700">Total</span>
-              <span className="text-xs font-bold text-slate-900">{formatBRL(fd.estimated_total_cost)}</span>
-            </div>
+      {/* Verdict phrase */}
+      {fd.resumo_executivo?.frase_decisiva && (
+        <div className="bg-slate-900 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <DollarSign size={13} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-slate-300 leading-relaxed">{fd.resumo_executivo.frase_decisiva}</p>
           </div>
         </div>
       )}
-
-      {/* Financial verdict */}
-      <div className="bg-slate-900 rounded-lg p-3">
-        <div className="flex items-start gap-2">
-          <DollarSign size={13} className="text-emerald-400 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-slate-300 leading-relaxed">{fd.financial_verdict}</p>
-        </div>
-      </div>
     </div>
   )
 }
@@ -492,25 +480,29 @@ function EvaluationCard({
                 </div>
                 <div>
                   <InfoRow label="Lance mínimo" value={formatBRL(property.auction_price)} />
-                  <InfoRow label="Custo total estimado" value={formatBRL(evaluation.financial_data.estimated_total_cost)} />
+                  {evaluation.financial_data.viabilidade_financeira?.custos_transacao?.total != null && (
+                    <InfoRow label="Custos de transação" value={formatBRL(evaluation.financial_data.viabilidade_financeira.custos_transacao.total)} />
+                  )}
+                  {evaluation.financial_data.viabilidade_financeira?.investimento_total_estimado != null && (
+                    <InfoRow label="Investimento total (c/ reforma)" value={formatBRL(evaluation.financial_data.viabilidade_financeira.investimento_total_estimado)} />
+                  )}
                   {pricePerM2 && <InfoRow label="Preço/m² (lance)" value={`R$ ${pricePerM2.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`} />}
-                  {evaluation.financial_data.market_avg_price_m2 && <InfoRow label="Média mercado/m²" value={`R$ ${evaluation.financial_data.market_avg_price_m2.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`} />}
-                  {evaluation.financial_data.price_vs_market_pct != null && (
+                  {evaluation.financial_data.preco_justo?.percentual_acima_abaixo_mercado != null && (
                     <InfoRow
                       label="vs. Mercado"
-                      value={`${evaluation.financial_data.price_vs_market_pct < 0 ? '' : '+'}${evaluation.financial_data.price_vs_market_pct.toFixed(1)}%`}
-                      highlight={evaluation.financial_data.price_vs_market_pct < 0}
+                      value={`${evaluation.financial_data.preco_justo.percentual_acima_abaixo_mercado < 0 ? '' : '+'}${evaluation.financial_data.preco_justo.percentual_acima_abaixo_mercado.toFixed(1)}%`}
+                      highlight={evaluation.financial_data.preco_justo.percentual_acima_abaixo_mercado < 0}
                     />
                   )}
-                  {evaluation.financial_data.rental_yield_annual_pct != null && (
+                  {evaluation.financial_data.analise_aluguel?.yield_bruto_anual_pct != null && (
                     <InfoRow
                       label="Yield bruto anual"
-                      value={`${evaluation.financial_data.rental_yield_annual_pct.toFixed(1)}% a.a.`}
-                      highlight={evaluation.financial_data.rental_yield_annual_pct >= 6}
+                      value={`${evaluation.financial_data.analise_aluguel.yield_bruto_anual_pct.toFixed(1)}% a.a.`}
+                      highlight={evaluation.financial_data.analise_aluguel.yield_bruto_anual_pct >= (evaluation.financial_data.viabilidade_financeira?.comparativo_cdi_atual_pct ?? 14.75)}
                     />
                   )}
-                  {evaluation.financial_data.rental_estimate_monthly && (
-                    <InfoRow label="Aluguel estimado" value={`~${formatBRLCompact(evaluation.financial_data.rental_estimate_monthly)}/mês`} />
+                  {evaluation.financial_data.analise_aluguel?.aluguel_esperado_pos_reforma != null && (
+                    <InfoRow label="Aluguel estimado" value={`~${formatBRLCompact(evaluation.financial_data.analise_aluguel.aluguel_esperado_pos_reforma)}/mês`} />
                   )}
                 </div>
               </div>

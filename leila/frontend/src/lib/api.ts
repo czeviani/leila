@@ -129,6 +129,12 @@ export interface EvaluationFinancialData {
     tempo_absorcao_mercado_dias: number
   }
   viabilidade_financeira: {
+    custos_transacao?: {
+      itbi: number
+      comissao_leiloeiro: number
+      registro_cartorio: number
+      total: number
+    }
     investimento_total_estimado: number
     payback_venda_meses: number
     payback_aluguel_anos: number
@@ -167,6 +173,7 @@ export interface EvaluationFinancialData {
   }
   metadata: {
     regiao_referencia: string
+    classificacao_regional?: 'GRANDE_CENTRO' | 'CAPITAL_MEDIA' | 'INTERIOR'
     confianca_analise: 'ALTA' | 'MÉDIA' | 'BAIXA'
     ressalvas: string
   }
