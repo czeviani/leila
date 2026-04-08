@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RefreshCw, Search, Home, TrendingDown, DollarSign, Maximize2, Clock, ArrowUpDown } from 'lucide-react'
-import { useProperties, useFavorites, useToggleFavorite, useRunScraper } from '../hooks/useProperties'
+import { useProperties, useFavorites, useToggleFavorite, useRunScraper, useSources } from '../hooks/useProperties'
 import PropertyCard from '../components/properties/PropertyCard'
 import FilterPanel from '../components/filters/FilterPanel'
 
@@ -44,8 +44,28 @@ export default function PropertiesPage() {
 
   const { data, isLoading, isError } = useProperties(queryParams)
   const { data: favorites } = useFavorites()
+  const { data: sources } = useSources()
   const toggleFav = useToggleFavorite()
   const runScraper = useRunScraper()
+
+  const lastScrapedAt = sources
+    ?.map(s => s.last_scraped_at)
+    .filter(Boolean)
+    .sort()
+    .at(-1) ?? null
+
+  const lastScrapedLabel = (() => {
+    if (!lastScrapedAt) return null
+    const diffMs = Date.now() - new Date(lastScrapedAt).getTime()
+    const mins = Math.floor(diffMs / 60_000)
+    const hours = Math.floor(diffMs / 3_600_000)
+    const days = Math.floor(diffMs / 86_400_000)
+    if (mins < 2) return 'há poucos minutos'
+    if (mins < 60) return `há ${mins} min`
+    if (hours < 24) return `há ${hours}h`
+    if (days === 1) return 'há 1 dia'
+    return `há ${days} dias`
+  })()
 
   const favoriteIds = new Set(favorites?.map(f => f.property_id) ?? [])
 
@@ -74,14 +94,19 @@ export default function PropertiesPage() {
                 : 'Buscando imóveis...'}
             </p>
           </div>
-          <button
-            onClick={handleScrape}
-            disabled={runScraper.isPending}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 shadow-sm"
-          >
-            <RefreshCw size={15} className={runScraper.isPending ? 'animate-spin' : ''} />
-            {runScraper.isPending ? 'Buscando...' : 'Atualizar dados'}
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              onClick={handleScrape}
+              disabled={runScraper.isPending}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border border-slate-200 rounded-xl text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 shadow-sm"
+            >
+              <RefreshCw size={15} className={runScraper.isPending ? 'animate-spin' : ''} />
+              {runScraper.isPending ? 'Buscando...' : 'Atualizar dados'}
+            </button>
+            {lastScrapedLabel && !runScraper.isPending && (
+              <p className="text-[11px] text-slate-400">Atualizado {lastScrapedLabel}</p>
+            )}
+          </div>
         </div>
 
         {/* Search + Filter bar */}
