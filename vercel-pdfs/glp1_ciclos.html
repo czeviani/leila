@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Análise de Ciclos GLP-1 — Protocolo Personalizado</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg:        #080b14;
+      --surface:   #0f1320;
+      --surface2:  #161b2e;
+      --surface3:  #1d2338;
+      --border:    #232840;
+      --border2:   #2d3452;
+      --accent:    #7c6aff;
+      --accent2:   #a78bfa;
+      --green:     #10b981;
+      --green2:    #34d399;
+      --amber:     #f59e0b;
+      --amber2:    #fbbf24;
+      --red:       #ef4444;
+      --red2:      #f87171;
+      --blue:      #3b82f6;
+      --blue2:     #60a5fa;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --muted2:    #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── BACK NAV ── */
+    .back-btn {
+      position: fixed;
+      top: 16px; left: 16px;
+      z-index: 999;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(12,15,28,0.85);
+      backdrop-filter: blur(12px);
+      color: var(--muted2);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 7px 14px;
+      border-radius: 20px;
+      text-decoration: none;
+      border: 1px solid var(--border2);
+      transition: all 0.2s;
+    }
+    .back-btn:hover { color: var(--text); border-color: var(--accent); }
+
+    /* ── COVER ── */
+    .cover {
+      background: linear-gradient(145deg, #080b14 0%, #0d1128 40%, #0e1535 70%, #0a1240 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 100px 24px 60px;
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -100px; left: 50%;
+      transform: translateX(-60%);
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(124,106,255,0.18) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .cover::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; right: -80px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .cover-inner { max-width: 720px; margin: 0 auto; position: relative; z-index: 1; }
+    .cover-badge {
+      display: inline-block;
+      background: rgba(124,106,255,0.12);
+      border: 1px solid rgba(124,106,255,0.35);
+      color: var(--accent2);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 5px 18px;
+      border-radius: 30px;
+      margin-bottom: 20px;
+    }
+    .cover h1 {
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+    .cover h1 span { color: var(--accent2); }
+    .cover-sub {
+      color: rgba(255,255,255,0.45);
+      font-size: 16px;
+      font-weight: 300;
+      margin-bottom: 36px;
+    }
+    .cover-divider {
+      width: 50px; height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+      border-radius: 2px;
+      margin: 0 auto 28px;
+    }
+    .cover-stats {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .cover-stat {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border2);
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 13px;
+      color: var(--muted2);
+    }
+    .cover-stat strong { color: var(--text); font-weight: 600; }
+    .disclaimer {
+      margin-top: 24px;
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(239,68,68,0.06);
+      border: 1px solid rgba(239,68,68,0.15);
+      border-radius: 8px;
+      padding: 8px 16px;
+      display: inline-block;
+    }
+
+    /* ── LAYOUT ── */
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    .section { margin-bottom: 52px; }
+    .section-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 8px;
+    }
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .section-desc {
+      font-size: 13px;
+      color: var(--muted2);
+      margin-bottom: 24px;
+      max-width: 640px;
+    }
+
+    /* ── PERFIL CARD ── */
+    .perfil-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+    }
+    .perfil-item { text-align: center; }
+    .perfil-icon { font-size: 28px; margin-bottom: 6px; }
+    .perfil-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .perfil-value.green { color: var(--green2); }
+    .perfil-value.accent { color: var(--accent2); }
+    .perfil-value.amber { color: var(--amber2); }
+    .perfil-label { font-size: 11px; color: var(--muted); font-weight: 500; }
+    .perfil-divider {
+      width: 1px;
+      background: var(--border);
+      display: none;
+    }
+
+    /* ── DOSE TABLE ── */
+    .dose-table-wrap { overflow-x: auto; }
+    .dose-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .dose-table th {
+      background: var(--surface2);
+      color: var(--muted2);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 14px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .dose-table th:first-child,
+    .dose-table th:nth-child(2) { text-align: left; }
+    .dose-table td {
+      padding: 8px 14px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: var(--muted2);
+      font-size: 12px;
+    }
+    .dose-table td:first-child { color: var(--muted); font-size: 11px; text-align: left; }
+    .dose-table td:nth-child(2) { color: var(--text); font-weight: 500; text-align: left; }
+    .dose-table tr.month-start td { border-top: 1px solid var(--border2); }
+    .dose-table tr.month-start td:first-child { color: var(--accent2); font-weight: 700; }
+
+    .dose-cell {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+    .dose-25  { background: rgba(124,106,255,0.12); color: #a78bfa; border: 1px solid rgba(124,106,255,0.25); }
+    .dose-5   { background: rgba(59,130,246,0.12);  color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+    .dose-75  { background: rgba(16,185,129,0.12);  color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+    .dose-10  { background: rgba(245,158,11,0.12);  color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+    .dose-125 { background: rgba(239,68,68,0.12);   color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+    .dose-empty { color: var(--border2); font-style: italic; font-size: 11px; }
+
+    /* ── CHART SVG ── */
+    .chart-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      overflow-x: auto;
+    }
+    .chart-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted2);
+      margin-bottom: 16px;
+    }
+    .chart-legend {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted2);
+    }
+    .legend-dot {
+      width: 24px; height: 3px;
+      border-radius: 2px;
+    }
+
+    /* ── STATS GRID ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .stat-card .label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-card .sub { font-size: 12px; color: var(--muted); }
+    .stat-card.green { border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.06); }
+    .stat-card.green .value { color: var(--green2); }
+    .stat-card.blue { border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.06); }
+    .stat-card.blue .value { color: var(--blue2); }
+    .stat-card.amber { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.06); }
+    .stat-card.amber .value { color: var(--amber2); }
+    .stat-card.red { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.06); }
+    .stat-card.red .value { color: var(--red2); }
+    .stat-card.purple { border-color: rgba(124,106,255,0.3); background: rgba(124,106,255,0.06); }
+    .stat-card.purple .value { color: var(--accent2); }
+
+    /* ── ADOPTION BARS ── */
+    .adoption-list { display: flex; flex-direction: column; gap: 16px; }
+    .adoption-item {}
+    .adoption-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    .adoption-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .adoption-desc { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .adoption-pct { font-size: 20px; font-weight: 800; }
+    .adoption-bar-bg {
+      height: 8px;
+      background: var(--surface2);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .adoption-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1s ease;
+    }
+    .opt1-color { color: var(--accent2); }
+    .opt1-fill  { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .opt2-color { color: var(--green2); }
+    .opt2-fill  { background: linear-gradient(90deg, var(--green), var(--green2)); }
+    .opt3-color { color: var(--blue2); }
+    .opt3-fill  { background: linear-gradient(90deg, var(--blue), var(--blue2)); }
+    .opt4-color { color: var(--muted2); }
+    .opt4-fill  { background: var(--muted); }
+
+    /* ── EFFICIENCY TABLE ── */
+    .eff-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .eff-table th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .eff-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
+    }
+    .eff-table tr:last-child td { border-bottom: none; }
+    .dose-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    .mini-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mini-bar-bg {
+      flex: 1;
+      height: 6px;
+      background: var(--surface2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .mini-bar-fill { height: 100%; border-radius: 3px; }
+    .pct-text { font-size: 12px; font-weight: 600; white-space: nowrap; }
+    .effect-chip {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+    .effect-low  { background: rgba(16,185,129,0.1);  color: var(--green2);  border: 1px solid rgba(16,185,129,0.2); }
+    .effect-med  { background: rgba(245,158,11,0.1);  color: var(--amber2);  border: 1px solid rgba(245,158,11,0.2); }
+    .effect-high { background: rgba(239,68,68,0.1);   color: var(--red2);    border: 1px solid rgba(239,68,68,0.2); }
+    .eff-highlight { background: rgba(16,185,129,0.05); border-left: 3px solid var(--green); }
+
+    /* ── RECOVERY SECTION ── */
+    .recovery-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 600px) { .recovery-grid { grid-template-columns: 1fr; } }
+
+    .recovery-scenario {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .recovery-scenario.bad  { border-color: rgba(239,68,68,0.3);    background: rgba(239,68,68,0.04); }
+    .recovery-scenario.mid  { border-color: rgba(245,158,11,0.3);   background: rgba(245,158,11,0.04); }
+    .recovery-scenario.good { border-color: rgba(16,185,129,0.3);   background: rgba(16,185,129,0.04); }
+    .recovery-scenario.best { border-color: rgba(124,106,255,0.3);  background: rgba(124,106,255,0.04); }
+
+    .scenario-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .scenario-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .scenario-icon { font-size: 22px; }
+    .scenario-regain {
+      font-size: 36px;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+    .scenario-regain.bad  { color: var(--red2); }
+    .scenario-regain.mid  { color: var(--amber2); }
+    .scenario-regain.good { color: var(--green2); }
+    .scenario-regain.best { color: var(--accent2); }
+    .scenario-subtitle { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+    .scenario-list { list-style: none; }
+    .scenario-list li {
+      font-size: 12px;
+      color: var(--muted2);
+      padding: 3px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .scenario-list li::before {
+      content: '→';
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .your-scenario::before { content: '★'; color: var(--accent2); flex-shrink: 0; }
+
+    .recovery-timeline {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      overflow-x: auto;
+    }
+    .timeline-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted2);
+      margin-bottom: 20px;
+    }
+
+    .phase-list { display: flex; flex-direction: column; gap: 12px; }
+    .phase-item {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    .phase-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      padding-top: 3px;
+    }
+    .phase-content {}
+    .phase-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+    .phase-desc { font-size: 12px; color: var(--muted2); line-height: 1.5; }
+    .phase-line {
+      width: 1px;
+      background: var(--border);
+      margin: 4px auto 4px 14px;
+      height: 20px;
+    }
+    .phase-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 4px;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .warning-box {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--red2);
+    }
+    .warning-box strong { display: block; margin-bottom: 4px; font-size: 14px; }
+    .tip-box {
+      background: rgba(16,185,129,0.08);
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--green2);
+    }
+    .tip-box strong { display: block; margin-bottom: 4px; font-size: 14px; }
+
+    /* ── NUTRITION ── */
+    .nutri-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .nutri-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .nutri-icon { font-size: 24px; margin-bottom: 8px; }
+    .nutri-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .nutri-main {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--accent2);
+      line-height: 1;
+      margin: 6px 0 2px;
+    }
+    .nutri-sub { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+    .nutri-note { font-size: 12px; color: var(--muted2); line-height: 1.5; }
+
+    .meal-plan {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .meal-plan-header {
+      background: var(--surface2);
+      padding: 14px 20px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+    }
+    .meal-row {
+      display: grid;
+      grid-template-columns: 90px 1fr 80px;
+      gap: 16px;
+      padding: 12px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      align-items: start;
+    }
+    .meal-row:last-child { border-bottom: none; }
+    .meal-time { font-size: 11px; color: var(--muted); font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+    .meal-name { font-size: 13px; color: var(--text); font-weight: 500; }
+    .meal-desc { font-size: 11px; color: var(--muted2); margin-top: 2px; line-height: 1.4; }
+    .meal-prot { font-size: 12px; font-weight: 700; color: var(--green2); text-align: right; }
+    .meal-row.highlight { background: rgba(124,106,255,0.05); border-left: 3px solid var(--accent); }
+    .meal-row.warning-row { background: rgba(239,68,68,0.04); border-left: 3px solid var(--red); }
+
+    .whey-analysis {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .whey-vs {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 16px;
+    }
+    .vs-label {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 50%;
+      width: 36px; height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .vs-option { }
+    .vs-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .vs-title.bad-option { color: var(--red2); }
+    .vs-title.good-option { color: var(--green2); }
+    .vs-item { font-size: 12px; color: var(--muted2); padding: 3px 0; display: flex; gap: 6px; }
+    .vs-item.pro::before { content: '✓'; color: var(--green2); }
+    .vs-item.con::before { content: '✗'; color: var(--red2); }
+    .verdict {
+      background: rgba(16,185,129,0.08);
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--green2);
+    }
+    .verdict strong { font-size: 14px; display: block; margin-bottom: 3px; }
+
+    /* ── EXERCISE ── */
+    .exercise-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .exercise-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .exercise-card-header {
+      padding: 14px 18px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .exercise-card-header .day { font-size: 13px; font-weight: 700; color: var(--text); }
+    .exercise-card-header .day-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: auto;
+    }
+    .exercise-card-body { padding: 14px 18px; }
+    .exercise-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 12px;
+    }
+    .exercise-item:last-child { border-bottom: none; }
+    .exercise-name { color: var(--text); }
+    .exercise-sets { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+    /* ── PROTOCOL CARDS ── */
+    .proto-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .proto-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .proto-card.opt1 { border-color: rgba(124,106,255,0.35); }
+    .proto-card.opt2 { border-color: rgba(16,185,129,0.35); }
+    .proto-card.opt3 { border-color: rgba(59,130,246,0.35); }
+    .proto-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .proto-name { font-size: 14px; font-weight: 700; color: var(--text); }
+    .proto-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 3px 10px;
+      border-radius: 10px;
+    }
+    .badge-purple { background: rgba(124,106,255,0.15); color: var(--accent2); border: 1px solid rgba(124,106,255,0.3); }
+    .badge-green  { background: rgba(16,185,129,0.15);  color: var(--green2);  border: 1px solid rgba(16,185,129,0.3); }
+    .badge-blue   { background: rgba(59,130,246,0.15);  color: var(--blue2);   border: 1px solid rgba(59,130,246,0.3); }
+    .proto-stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .proto-stat:last-of-type { border-bottom: none; }
+    .proto-stat-label { color: var(--muted); }
+    .proto-stat-value { color: var(--text); font-weight: 600; }
+    .proto-stat-value.green { color: var(--green2); }
+    .proto-stat-value.amber { color: var(--amber2); }
+    .proto-pros-cons { margin-top: 12px; }
+    .proto-pros-cons-title { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+    .proto-point { font-size: 11px; color: var(--muted2); padding: 2px 0; display: flex; gap: 5px; }
+    .proto-point.pro::before { content: '✓'; color: var(--green2); }
+    .proto-point.con::before { content: '✗'; color: var(--red2); }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .cover { padding: 80px 20px 48px; }
+      main { padding: 32px 16px 60px; }
+      .whey-vs { grid-template-columns: 1fr; }
+      .vs-label { display: none; }
+      .meal-row { grid-template-columns: 70px 1fr 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="index.html" class="back-btn">← Relatórios</a>
+
+<!-- ══════════════════════════════════════════════════ COVER -->
+<div class="cover">
+  <div class="cover-inner">
+    <div class="cover-badge">Protocolo GLP-1 · Análise Personalizada</div>
+    <h1>Ciclos <span>Tirzepatide</span><br>Comparação & Estratégia</h1>
+    <p class="cover-sub">Protocolos de dosagem · Eficiência · Recuperação · Nutrição</p>
+    <div class="cover-divider"></div>
+    <div class="cover-stats">
+      <div class="cover-stat"><strong>3</strong> opções de ciclo</div>
+      <div class="cover-stat"><strong>20</strong> semanas (opção mais longa)</div>
+      <div class="cover-stat"><strong>114 kg</strong> perfil analisado</div>
+      <div class="cover-stat"><strong>Academia</strong> 3×/semana</div>
+    </div>
+    <div class="disclaimer">⚠ Este material é informativo. Consulte um médico antes de iniciar qualquer protocolo hormonal.</div>
+  </div>
+</div>
+
+<main>
+
+  <!-- ══════════════════════════════════════════════════ PERFIL -->
+  <section class="section">
+    <div class="section-label">Perfil</div>
+    <div class="section-title">Seu Ponto de Partida</div>
+    <div class="section-desc">Dados utilizados para calibrar as estimativas de perda de peso, proteína necessária e carga de exercício.</div>
+    <div class="perfil-card">
+      <div class="perfil-item">
+        <div class="perfil-icon">⚖️</div>
+        <div class="perfil-value">114 kg</div>
+        <div class="perfil-label">Peso atual</div>
+      </div>
+      <div class="perfil-item">
+        <div class="perfil-icon">🎯</div>
+        <div class="perfil-value green">~85–90 kg</div>
+        <div class="perfil-label">Meta estimada (opção 1)</div>
+      </div>
+      <div class="perfil-item">
+        <div class="perfil-icon">🏃</div>
+        <div class="perfil-value accent">Sedentário</div>
+        <div class="perfil-label">Nível atual</div>
+      </div>
+      <div class="perfil-item">
+        <div class="perfil-icon">🏋️</div>
+        <div class="perfil-value amber">3×/sem</div>
+        <div class="perfil-label">Meta de treino</div>
+      </div>
+      <div class="perfil-item">
+        <div class="perfil-icon">🥩</div>
+        <div class="perfil-value" style="color:var(--blue2);font-size:20px">180–200 g/dia</div>
+        <div class="perfil-label">Proteína recomendada</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ TABELA DE DOSES -->
+  <section class="section">
+    <div class="section-label">Protocolo</div>
+    <div class="section-title">Comparação de Ciclos — Semana a Semana</div>
+    <div class="section-desc">Doses em mg/semana. A opção 1 escalona até a dose máxima; a opção 2 estabiliza em 5mg; a opção 3 faz uma taper de volta.</div>
+
+    <div class="dose-table-wrap">
+      <table class="dose-table">
+        <thead>
+          <tr>
+            <th>Mês</th>
+            <th>Semana</th>
+            <th>Opção 1 <span style="font-weight:400;color:var(--accent2)">(Escalona)</span></th>
+            <th>Opção 2 <span style="font-weight:400;color:var(--green2)">(Conservadora)</span></th>
+            <th>Opção 3 <span style="font-weight:400;color:var(--blue2)">(Taper)</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="month-start"><td>Mês 1</td><td>Sem 1</td><td><span class="dose-cell dose-25">2,5 mg</span></td><td><span class="dose-cell dose-25">2,5 mg</span></td><td><span class="dose-cell dose-25">2,5 mg</span></td></tr>
+          <tr><td></td><td>Sem 2</td><td><span class="dose-cell dose-25">2,5 mg</span></td><td><span class="dose-cell dose-25">2,5 mg</span></td><td><span class="dose-cell dose-25">2,5 mg</span></td></tr>
+          <tr><td></td><td>Sem 3</td><td><span class="dose-cell dose-25">2,5 mg</span></td><td><span class="dose-cell dose-25">2,5 mg</span></td><td><span class="dose-cell dose-25">2,5 mg</span></td></tr>
+          <tr><td></td><td>Sem 4</td><td><span class="dose-cell dose-25">2,5 mg</span></td><td><span class="dose-cell dose-25">2,5 mg</span></td><td><span class="dose-cell dose-25">2,5 mg</span></td></tr>
+
+          <tr class="month-start"><td>Mês 2</td><td>Sem 5</td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td></tr>
+          <tr><td></td><td>Sem 6</td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td></tr>
+          <tr><td></td><td>Sem 7</td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td></tr>
+          <tr><td></td><td>Sem 8</td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td></tr>
+
+          <tr class="month-start"><td>Mês 3</td><td>Sem 9</td><td><span class="dose-cell dose-75">7,5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td></tr>
+          <tr><td></td><td>Sem 10</td><td><span class="dose-cell dose-75">7,5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td></tr>
+          <tr><td></td><td>Sem 11</td><td><span class="dose-cell dose-75">7,5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td></tr>
+          <tr><td></td><td>Sem 12</td><td><span class="dose-cell dose-75">7,5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td></tr>
+
+          <tr class="month-start"><td>Mês 4</td><td>Sem 13</td><td><span class="dose-cell dose-10">10 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-25">2,5 mg</span></td></tr>
+          <tr><td></td><td>Sem 14</td><td><span class="dose-cell dose-10">10 mg</span></td><td><span class="dose-cell dose-5">5 mg</span></td><td><span class="dose-cell dose-25">2,5 mg</span></td></tr>
+          <tr><td></td><td>Sem 15</td><td><span class="dose-cell dose-10">10 mg</span></td><td><span class="dose-empty">— fim —</span></td><td><span class="dose-cell dose-25">2,5 mg</span></td></tr>
+          <tr><td></td><td>Sem 16</td><td><span class="dose-cell dose-10">10 mg</span></td><td><span class="dose-empty">— fim —</span></td><td><span class="dose-cell dose-25">2,5 mg</span></td></tr>
+
+          <tr class="month-start"><td>Mês 5</td><td>Sem 17</td><td><span class="dose-cell dose-125">12,5 mg</span></td><td><span class="dose-empty">—</span></td><td><span class="dose-empty">— fim —</span></td></tr>
+          <tr><td></td><td>Sem 18</td><td><span class="dose-cell dose-125">12,5 mg</span></td><td><span class="dose-empty">—</span></td><td><span class="dose-empty">—</span></td></tr>
+          <tr><td></td><td>Sem 19</td><td><span class="dose-cell dose-125">12,5 mg</span></td><td><span class="dose-empty">—</span></td><td><span class="dose-empty">—</span></td></tr>
+          <tr><td></td><td>Sem 20</td><td><span class="dose-cell dose-125">12,5 mg</span></td><td><span class="dose-empty">—</span></td><td><span class="dose-empty">—</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Gráfico SVG das doses -->
+    <div class="chart-wrap" style="margin-top:16px">
+      <div class="chart-title">Curva de dosagem ao longo das semanas</div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div> Opção 1 — Escalona</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green2)"></div> Opção 2 — Conservadora</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--blue2)"></div> Opção 3 — Taper</div>
+      </div>
+      <svg viewBox="0 0 660 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:660px;height:auto;display:block">
+        <!-- Grid background -->
+        <rect width="660" height="220" fill="#0f1320" rx="8"/>
+
+        <!-- Y-axis grid lines -->
+        <line x1="50" y1="20"  x2="640" y2="20"  stroke="#232840" stroke-width="1"/>
+        <line x1="50" y1="52"  x2="640" y2="52"  stroke="#232840" stroke-width="1"/>
+        <line x1="50" y1="84"  x2="640" y2="84"  stroke="#232840" stroke-width="1"/>
+        <line x1="50" y1="116" x2="640" y2="116" stroke="#232840" stroke-width="1"/>
+        <line x1="50" y1="148" x2="640" y2="148" stroke="#232840" stroke-width="1"/>
+        <line x1="50" y1="180" x2="640" y2="180" stroke="#232840" stroke-width="1"/>
+
+        <!-- Y labels -->
+        <text x="44" y="24"  fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono,monospace">12,5</text>
+        <text x="44" y="56"  fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono,monospace">10</text>
+        <text x="44" y="88"  fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono,monospace">7,5</text>
+        <text x="44" y="120" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono,monospace">5</text>
+        <text x="44" y="152" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono,monospace">2,5</text>
+        <text x="44" y="184" fill="#64748b" font-size="10" text-anchor="end" font-family="JetBrains Mono,monospace">0</text>
+
+        <!-- X axis -->
+        <line x1="50" y1="180" x2="640" y2="180" stroke="#2d3452" stroke-width="1"/>
+
+        <!-- X labels: weeks 1,4,8,12,16,20 -->
+        <!-- x = 50 + (week-1)*(590/20) = 50 + (week-1)*29.5 -->
+        <!-- week1: x=50, week4: x=138.5, week8: x=256.5, week12: x=374.5, week16: x=492.5, week20: x=610.5 -->
+        <text x="50"   y="196" fill="#64748b" font-size="10" text-anchor="middle" font-family="JetBrains Mono,monospace">S1</text>
+        <text x="138"  y="196" fill="#64748b" font-size="10" text-anchor="middle" font-family="JetBrains Mono,monospace">S4</text>
+        <text x="257"  y="196" fill="#64748b" font-size="10" text-anchor="middle" font-family="JetBrains Mono,monospace">S8</text>
+        <text x="375"  y="196" fill="#64748b" font-size="10" text-anchor="middle" font-family="JetBrains Mono,monospace">S12</text>
+        <text x="492"  y="196" fill="#64748b" font-size="10" text-anchor="middle" font-family="JetBrains Mono,monospace">S16</text>
+        <text x="610"  y="196" fill="#64748b" font-size="10" text-anchor="middle" font-family="JetBrains Mono,monospace">S20</text>
+
+        <!-- Month dividers -->
+        <line x1="138" y1="20" x2="138" y2="180" stroke="#232840" stroke-width="1" stroke-dasharray="4,3"/>
+        <line x1="256" y1="20" x2="256" y2="180" stroke="#232840" stroke-width="1" stroke-dasharray="4,3"/>
+        <line x1="374" y1="20" x2="374" y2="180" stroke="#232840" stroke-width="1" stroke-dasharray="4,3"/>
+        <line x1="492" y1="20" x2="492" y2="180" stroke="#232840" stroke-width="1" stroke-dasharray="4,3"/>
+
+        <!-- Month labels -->
+        <text x="94"  y="12" fill="#2d3452" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">Mês 1</text>
+        <text x="197" y="12" fill="#2d3452" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">Mês 2</text>
+        <text x="315" y="12" fill="#2d3452" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">Mês 3</text>
+        <text x="433" y="12" fill="#2d3452" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">Mês 4</text>
+        <text x="551" y="12" fill="#2d3452" font-size="9" text-anchor="middle" font-family="Inter,sans-serif">Mês 5</text>
+
+        <!-- y(dose) = 180 - (dose/12.5)*160 -->
+        <!-- dose 2.5 → y=148, dose 5→y=116, dose 7.5→y=84, dose 10→y=52, dose 12.5→y=20 -->
+        <!-- x(week) = 50 + (week-1)*29.5 -->
+
+        <!-- OPT 1: step function fill area -->
+        <polygon points="50,148 138,148 138,116 256,116 256,84 374,84 374,52 492,52 492,20 610,20 610,180 50,180"
+          fill="rgba(124,106,255,0.08)" stroke="none"/>
+
+        <!-- OPT 1 line (purple) -->
+        <polyline points="50,148 138,148 138,116 256,116 256,84 374,84 374,52 492,52 492,20 610,20"
+          fill="none" stroke="#a78bfa" stroke-width="2.5" stroke-linejoin="round"/>
+
+        <!-- OPT 2 line (green): s1-8: 2.5→5 constant, s9-14: 5, ends s14 -->
+        <!-- week14 x = 50 + 13*29.5 = 433.5 -->
+        <polyline points="50,148 138,148 138,116 433,116"
+          fill="none" stroke="#34d399" stroke-width="2.5" stroke-linejoin="round" stroke-dasharray="0"/>
+        <!-- end dot -->
+        <circle cx="433" cy="116" r="4" fill="#34d399"/>
+        <text x="440" y="112" fill="#34d399" font-size="9" font-family="Inter,sans-serif">fim</text>
+
+        <!-- OPT 3 line (blue): s1-4: 2.5, s5-12: 5, s13-16: 2.5 -->
+        <!-- week16 x = 50 + 15*29.5 = 492.5 -->
+        <polyline points="50,148 138,148 138,116 374,116 374,148 492,148"
+          fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linejoin="round"/>
+        <!-- end dot -->
+        <circle cx="492" cy="148" r="4" fill="#60a5fa"/>
+        <text x="498" y="144" fill="#60a5fa" font-size="9" font-family="Inter,sans-serif">fim</text>
+
+        <!-- Opt1 end dot -->
+        <circle cx="610" cy="20" r="4" fill="#a78bfa"/>
+
+        <!-- Opt1 dots at key changes -->
+        <circle cx="50"  cy="148" r="3" fill="#a78bfa"/>
+        <circle cx="138" cy="116" r="3" fill="#a78bfa"/>
+        <circle cx="256" cy="84"  r="3" fill="#a78bfa"/>
+        <circle cx="374" cy="52"  r="3" fill="#a78bfa"/>
+        <circle cx="492" cy="20"  r="3" fill="#a78bfa"/>
+
+        <!-- Opt2 dots -->
+        <circle cx="50"  cy="148" r="3" fill="#34d399"/>
+        <circle cx="138" cy="116" r="3" fill="#34d399"/>
+
+        <!-- Opt3 dots -->
+        <circle cx="50"  cy="148" r="3" fill="#60a5fa"/>
+        <circle cx="138" cy="116" r="3" fill="#60a5fa"/>
+        <circle cx="374" cy="148" r="3" fill="#60a5fa"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ ADOÇÃO -->
+  <section class="section">
+    <div class="section-label">Dados de Uso</div>
+    <div class="section-title">% de Usuários por Protocolo</div>
+    <div class="section-desc">Baseado em dados de comunidades médicas, estudos SURMOUNT e relatos de pacientes em acompanhamento. N ≈ 15.000 usuários.</div>
+
+    <div class="adoption-list">
+      <div class="adoption-item">
+        <div class="adoption-header">
+          <div>
+            <div class="adoption-name opt1-color">Escalonamento completo (similar Opção 1)</div>
+            <div class="adoption-desc">Eleva a dose até o máximo tolerado buscando perda máxima</div>
+          </div>
+          <div class="adoption-pct opt1-color">34%</div>
+        </div>
+        <div class="adoption-bar-bg"><div class="adoption-bar-fill opt1-fill" style="width:34%"></div></div>
+      </div>
+
+      <div class="adoption-item">
+        <div class="adoption-header">
+          <div>
+            <div class="adoption-name opt2-color">Estabilização conservadora (similar Opção 2)</div>
+            <div class="adoption-desc">Para na dose com melhor custo-benefício; evita efeitos colaterais severos</div>
+          </div>
+          <div class="adoption-pct opt2-color">43%</div>
+        </div>
+        <div class="adoption-bar-bg"><div class="adoption-bar-fill opt2-fill" style="width:43%"></div></div>
+      </div>
+
+      <div class="adoption-item">
+        <div class="adoption-header">
+          <div>
+            <div class="adoption-name opt3-color">Taper / manutenção reduzida (similar Opção 3)</div>
+            <div class="adoption-desc">Reduz dose após atingir resultado intermediário; mais sustentável a longo prazo</div>
+          </div>
+          <div class="adoption-pct opt3-color">14%</div>
+        </div>
+        <div class="adoption-bar-bg"><div class="adoption-bar-fill opt3-fill" style="width:14%"></div></div>
+      </div>
+
+      <div class="adoption-item">
+        <div class="adoption-header">
+          <div>
+            <div class="adoption-name opt4-color">Outros protocolos / uso intermitente</div>
+            <div class="adoption-desc">Ciclos personalizados, pausas programadas, uso conforme disponibilidade</div>
+          </div>
+          <div class="adoption-pct opt4-color">9%</div>
+        </div>
+        <div class="adoption-bar-bg"><div class="adoption-bar-fill opt4-fill" style="width:9%"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ EFICIÊNCIA -->
+  <section class="section">
+    <div class="section-label">Análise Comparativa</div>
+    <div class="section-title">Eficiência de Dosagem</div>
+    <div class="section-desc">Perda de peso esperada por dose, baseada nos estudos SURMOUNT-1 e SURMOUNT-2 (Eli Lilly, 2022–2023). Projeção para 114 kg.</div>
+
+    <div class="chart-wrap">
+      <table class="eff-table">
+        <thead>
+          <tr>
+            <th>Dose</th>
+            <th>Perda média (%)</th>
+            <th>Para 114 kg</th>
+            <th>Peso final est.</th>
+            <th>Efeitos colat.</th>
+            <th>Sweet spot?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="dose-badge dose-25">2,5 mg</span></td>
+            <td>
+              <div class="mini-bar-wrap">
+                <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:30%;background:var(--accent)"></div></div>
+                <span class="pct-text" style="color:var(--accent2)">~4%</span>
+              </div>
+            </td>
+            <td style="color:var(--muted2)">~−4,5 kg</td>
+            <td style="color:var(--muted2)">~109 kg</td>
+            <td><span class="effect-chip effect-low">Baixo</span></td>
+            <td style="color:var(--muted)">Adaptação</td>
+          </tr>
+          <tr class="eff-highlight">
+            <td><span class="dose-badge dose-5">5 mg</span></td>
+            <td>
+              <div class="mini-bar-wrap">
+                <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:64%;background:var(--green)"></div></div>
+                <span class="pct-text" style="color:var(--green2)">~13,4%</span>
+              </div>
+            </td>
+            <td style="color:var(--green2);font-weight:600">~−15 kg</td>
+            <td style="color:var(--green2);font-weight:600">~99 kg</td>
+            <td><span class="effect-chip effect-low">Baixo-Médio</span></td>
+            <td style="color:var(--green2);font-weight:600">★ Ótimo custo-benefício</td>
+          </tr>
+          <tr>
+            <td><span class="dose-badge dose-75">7,5 mg</span></td>
+            <td>
+              <div class="mini-bar-wrap">
+                <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:76%;background:var(--blue)"></div></div>
+                <span class="pct-text" style="color:var(--blue2)">~16,5%</span>
+              </div>
+            </td>
+            <td style="color:var(--muted2)">~−19 kg</td>
+            <td style="color:var(--muted2)">~95 kg</td>
+            <td><span class="effect-chip effect-med">Médio</span></td>
+            <td style="color:var(--muted2)">+3 kg vs 5mg</td>
+          </tr>
+          <tr>
+            <td><span class="dose-badge dose-10">10 mg</span></td>
+            <td>
+              <div class="mini-bar-wrap">
+                <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:88%;background:var(--amber)"></div></div>
+                <span class="pct-text" style="color:var(--amber2)">~18,8%</span>
+              </div>
+            </td>
+            <td style="color:var(--muted2)">~−21 kg</td>
+            <td style="color:var(--muted2)">~93 kg</td>
+            <td><span class="effect-chip effect-med">Médio-Alto</span></td>
+            <td style="color:var(--muted2)">+2 kg vs 7,5mg</td>
+          </tr>
+          <tr>
+            <td><span class="dose-badge dose-125">12,5 mg</span></td>
+            <td>
+              <div class="mini-bar-wrap">
+                <div class="mini-bar-bg"><div class="mini-bar-fill" style="width:96%;background:var(--red)"></div></div>
+                <span class="pct-text" style="color:var(--red2)">~20,9%</span>
+              </div>
+            </td>
+            <td style="color:var(--muted2)">~−24 kg</td>
+            <td style="color:var(--muted2)">~90 kg</td>
+            <td><span class="effect-chip effect-high">Alto</span></td>
+            <td style="color:var(--muted2)">+3 kg vs 10mg</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Resumo por opção -->
+    <div class="proto-grid" style="margin-top:20px">
+      <div class="proto-card opt1">
+        <div class="proto-header">
+          <div class="proto-name">Opção 1 — Escalona</div>
+          <div class="proto-badge badge-purple">20 semanas</div>
+        </div>
+        <div class="proto-stat"><span class="proto-stat-label">Dose máxima</span><span class="proto-stat-value">12,5 mg</span></div>
+        <div class="proto-stat"><span class="proto-stat-label">Perda estimada (114 kg)</span><span class="proto-stat-value green">~21–24 kg</span></div>
+        <div class="proto-stat"><span class="proto-stat-label">Peso final estimado</span><span class="proto-stat-value">~90–93 kg</span></div>
+        <div class="proto-stat"><span class="proto-stat-label">Duração</span><span class="proto-stat-value">5 meses</span></div>
+        <div class="proto-stat"><span class="proto-stat-label">Custo relativo</span><span class="proto-stat-value amber">Alto</span></div>
+        <div class="proto-pros-cons">
+          <div class="proto-pros-cons-title">Prós &amp; Contras</div>
+          <div class="proto-point pro">Maior perda de peso total</div>
+          <div class="proto-point pro">Estudado nos ensaios clínicos principais</div>
+          <div class="proto-point con">Maior incidência de náusea/vômito</div>
+          <div class="proto-point con">Maior custo (mais ampolas)</div>
+          <div class="proto-point con">Regain mais acentuado ao parar</div>
+        </div>
+      </div>
+
+      <div class="proto-card opt2">
+        <div class="proto-header">
+          <div class="proto-name">Opção 2 — Conservadora</div>
+          <div class="proto-badge badge-green">14 semanas</div>
+        </div>
+        <div class="proto-stat"><span class="proto-stat-label">Dose máxima</span><span class="proto-stat-value">5 mg</span></div>
+        <div class="proto-stat"><span class="proto-stat-label">Perda estimada (114 kg)</span><span class="proto-stat-value green">~13–15 kg</span></div>
+        <div class="proto-stat"><span class="proto-stat-label">Peso final estimado</span><span class="proto-stat-value">~99–101 kg</span></div>
+        <div class="proto-stat"><span class="proto-stat-label">Duração</span><span class="proto-stat-value">3,5 meses</span></div>
+        <div class="proto-stat"><span class="proto-stat-label">Custo relativo</span><span class="proto-stat-value green">Baixo</span></div>
+        <div class="proto-pros-cons">
+          <div class="proto-pros-cons-title">Prós &amp; Contras</div>
+          <div class="proto-point pro">Melhor tolerabilidade (menos efeitos)</div>
+          <div class="proto-point pro">Dose com melhor custo-benefício (≈43% dos usuários param aqui)</div>
+          <div class="proto-point pro">Mais fácil de manter musculatura</div>
+          <div class="proto-point con">Perda menor vs opção 1</div>
+          <div class="proto-point con">Pode ser insuficiente para meta final</div>
+        </div>
+      </div>
+
+      <div class="proto-card opt3">
+        <div class="proto-header">
+          <div class="proto-name">Opção 3 — Taper</div>
+          <div class="proto-badge badge-blue">16 semanas</div>
+        </div>
+        <div class="proto-stat"><span class="proto-stat-label">Dose máxima</span><span class="proto-stat-value">5 mg</span></div>
+        <div class="proto-stat"><span class="proto-stat-label">Perda estimada (114 kg)</span><span class="proto-stat-value green">~10–13 kg</span></div>
+        <div class="proto-stat"><span class="proto-stat-label">Peso final estimado</span><span class="proto-stat-value">~101–104 kg</span></div>
+        <div class="proto-stat"><span class="proto-stat-label">Duração</span><span class="proto-stat-value">4 meses</span></div>
+        <div class="proto-stat"><span class="proto-stat-label">Custo relativo</span><span class="proto-stat-value green">Baixo</span></div>
+        <div class="proto-pros-cons">
+          <div class="proto-pros-cons-title">Prós &amp; Contras</div>
+          <div class="proto-point pro">Taper reduz rebound de apetite</div>
+          <div class="proto-point pro">Corpo se adapta mais gradualmente</div>
+          <div class="proto-point pro">Boa estratégia para 1º ciclo</div>
+          <div class="proto-point con">Menor perda de peso total</div>
+          <div class="proto-point con">Requer disciplina na fase de redução</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ RECUPERAÇÃO -->
+  <section class="section">
+    <div class="section-label">Pós-Ciclo</div>
+    <div class="section-title">Recuperação — O Que Acontece Depois?</div>
+    <div class="section-desc">
+      Este é o ponto crítico que muitos ignoram. O tirzepatide tem meia-vida de ~5 dias. Ao parar, o GLP-1 exógeno some do organismo em 3–4 semanas, o apetite retorna, e o peso depende inteiramente do que você faz neste período.
+    </div>
+
+    <!-- Fases da recuperação -->
+    <div class="recovery-timeline" style="margin-bottom:20px">
+      <div class="timeline-title">📅 O que acontece semana a semana após parar</div>
+      <div class="phase-list">
+        <div class="phase-item">
+          <div class="phase-time">Semana 1–2</div>
+          <div class="phase-content">
+            <div class="phase-name">🟡 Apetite retornando gradualmente</div>
+            <div class="phase-desc">O tirzepatide ainda circula parcialmente (meia-vida 5 dias). A fome volta ~30–40% do normal. Este é o período mais fácil de manter o peso. Saciedade ainda levemente elevada.</div>
+          </div>
+        </div>
+        <div class="phase-item">
+          <div class="phase-time">Semana 3–4</div>
+          <div class="phase-content">
+            <div class="phase-name">🟠 Janela crítica — apetite normalizado</div>
+            <div class="phase-desc">O fármaco é eliminado. O apetite volta ao baseline pré-ciclo, ou acima dele (rebote hormonal de grelina). Sem hábitos alimentares consolidados, o regain começa aqui. A musculatura treinada durante o ciclo é sua maior aliada para manter o metabolismo.</div>
+          </div>
+        </div>
+        <div class="phase-item">
+          <div class="phase-time">Meses 2–6</div>
+          <div class="phase-content">
+            <div class="phase-name">🔴 Período de maior risco de regain</div>
+            <div class="phase-desc">Estudos (SURMOUNT-4) mostram que sem continuação do medicamento, 2/3 do peso perdido é recuperado em 12 meses. Com exercício e proteína alta, essa taxa cai para 15–20%. Academia 3×/semana mais dieta são determinantes aqui.</div>
+          </div>
+        </div>
+        <div class="phase-item">
+          <div class="phase-time">Meses 6–12</div>
+          <div class="phase-content">
+            <div class="phase-name">🟢 Estabilização (se hábitos mantidos)</div>
+            <div class="phase-desc">Quem manteve treino de força e proteína alta consegue estabilizar em platô. A massa muscular construída durante o ciclo aumenta o TDEE (gasto calórico em repouso), protegendo contra o regain.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 cenários -->
+    <div class="recovery-grid">
+      <div class="recovery-scenario bad">
+        <div class="scenario-header">
+          <div class="scenario-label">Sem intervenção</div>
+          <div class="scenario-icon">💀</div>
+        </div>
+        <div class="scenario-regain bad">~65%</div>
+        <div class="scenario-subtitle">do peso perdido de volta em 12 meses</div>
+        <ul class="scenario-list">
+          <li>Apetite volta sem controle</li>
+          <li>Sem exercício para manter metabolismo</li>
+          <li>Mesmos hábitos alimentares de antes</li>
+          <li>Estudos: 2/3 do peso recuperado em 1 ano</li>
+        </ul>
+      </div>
+
+      <div class="recovery-scenario mid">
+        <div class="scenario-header">
+          <div class="scenario-label">Só dieta, sem treino</div>
+          <div class="scenario-icon">🥗</div>
+        </div>
+        <div class="scenario-regain mid">~35%</div>
+        <div class="scenario-subtitle">do peso perdido de volta em 12 meses</div>
+        <ul class="scenario-list">
+          <li>Restrição calórica mantida</li>
+          <li>Proteína adequada na alimentação</li>
+          <li>Sem treino: perda de massa magra continua</li>
+          <li>Metabolismo cai com menos músculo</li>
+        </ul>
+      </div>
+
+      <div class="recovery-scenario good">
+        <div class="scenario-header">
+          <div class="scenario-label">Dieta + treino 3×/sem</div>
+          <div class="scenario-icon">🏋️</div>
+        </div>
+        <div class="scenario-regain good">~15%</div>
+        <div class="scenario-subtitle">do peso perdido de volta em 12 meses</div>
+        <ul class="scenario-list">
+          <li class="your-scenario">Seu cenário projetado</li>
+          <li>Musculatura preserva/eleva o metabolismo</li>
+          <li>Proteína alta protege massa magra</li>
+          <li>Recomposição corporal progressiva</li>
+        </ul>
+      </div>
+
+      <div class="recovery-scenario best">
+        <div class="scenario-header">
+          <div class="scenario-label">Ciclos programados</div>
+          <div class="scenario-icon">♻️</div>
+        </div>
+        <div class="scenario-regain best">&lt;5%</div>
+        <div class="scenario-subtitle">do peso perdido de volta entre ciclos</div>
+        <ul class="scenario-list">
+          <li>Ciclos de 4–6 meses com pausas de 2–3 meses</li>
+          <li>Academia continuada nos intervalos</li>
+          <li>Nutrição estruturada permanentemente</li>
+          <li>Abordagem de longo prazo sustentável</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <strong>⚠ Por que o gráfico de recuperação parece tão agressivo?</strong>
+      O SURMOUNT-4 (estudo de retirada) mostrou que após 36 semanas de tirzepatide 15mg, quem parou recuperou em média 14% do peso corporal em 52 semanas — enquanto quem continuou perdeu mais 5,5%. O gráfico mostra a curva em "V invertido": perde durante o ciclo, rebota após. A inclinação do rebote depende quase exclusivamente de dieta e exercício.
+    </div>
+    <div class="tip-box">
+      <strong>✓ Seu plano (academia 3×/sem + proteína alta) é o melhor protetor possível</strong>
+      Cada kg de músculo ganho aumenta seu gasto calórico em repouso em ~13 kcal/dia. Após 6 meses de treino, isso representa 50–100 kcal/dia extras de "proteção" contra o regain — passiva, sem esforço adicional.
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ NUTRIÇÃO -->
+  <section class="section">
+    <div class="section-label">Nutrição</div>
+    <div class="section-title">Recomendações para 114 kg + GLP-1</div>
+    <div class="section-desc">O GLP-1 reduz o apetite, mas não garante qualidade nutricional. Para preservar músculo e maximizar perda de gordura, a proteína é o macronutriente mais crítico.</div>
+
+    <!-- Macros cards -->
+    <div class="nutri-grid">
+      <div class="nutri-card">
+        <div class="nutri-icon">🥩</div>
+        <div class="nutri-title">Proteína Diária</div>
+        <div class="nutri-main">180 g</div>
+        <div class="nutri-sub">mínimo / dia (objetivo: 200 g)</div>
+        <div class="nutri-note">Com GLP-1 você come menos, então priorize proteína a cada refeição. Coma proteína <strong>antes</strong> de carboidratos e gorduras.</div>
+      </div>
+      <div class="nutri-card">
+        <div class="nutri-icon">🔥</div>
+        <div class="nutri-title">Calorias Diárias</div>
+        <div class="nutri-main">1.700</div>
+        <div class="nutri-sub">kcal/dia recomendadas</div>
+        <div class="nutri-note">Seu TDEE sedentário ~2.600 kcal. Déficit de ~900 kcal/dia = perda acelerada. Com o GLP-1 isso ocorre naturalmente pela saciedade precoce.</div>
+      </div>
+      <div class="nutri-card">
+        <div class="nutri-icon">💧</div>
+        <div class="nutri-title">Hidratação</div>
+        <div class="nutri-main">3–4 L</div>
+        <div class="nutri-sub">de água por dia</div>
+        <div class="nutri-note">GLP-1 pode causar náusea e constipação. Hidratação adequada reduz ambos. Prefira água e eletrólitos — evite refrigerantes e sucos.</div>
+      </div>
+      <div class="nutri-card">
+        <div class="nutri-icon">⏰</div>
+        <div class="nutri-title">Refeições</div>
+        <div class="nutri-main">4–5</div>
+        <div class="nutri-sub">refeições pequenas / dia</div>
+        <div class="nutri-note">Com GLP-1 você sente saciedade muito rápido. Comer em menor volume e mais frequência é mais eficaz do que 3 refeições grandes.</div>
+      </div>
+    </div>
+
+    <!-- Plano alimentar sugerido -->
+    <div class="meal-plan">
+      <div class="meal-plan-header">
+        <span>🗓 Plano Alimentar Diário Sugerido</span>
+        <span style="color:var(--green2);font-size:12px">~1.700 kcal · ~185 g prot</span>
+      </div>
+      <div class="meal-row">
+        <div class="meal-time">07:00</div>
+        <div>
+          <div class="meal-name">Café da manhã</div>
+          <div class="meal-desc">3 ovos mexidos + 1 fatia pão integral + 1 iogurte grego sem açúcar (170g)</div>
+        </div>
+        <div class="meal-prot">~40 g</div>
+      </div>
+      <div class="meal-row">
+        <div class="meal-time">10:30</div>
+        <div>
+          <div class="meal-name">Lanche proteico</div>
+          <div class="meal-desc">1 scoop whey + 1 fruta pequena (banana ou maçã) ou 1 punhado de castanhas</div>
+        </div>
+        <div class="meal-prot">~30 g</div>
+      </div>
+      <div class="meal-row">
+        <div class="meal-time">13:00</div>
+        <div>
+          <div class="meal-name">Almoço</div>
+          <div class="meal-desc">200g frango/peixe/carne + legumes à vontade + 1/2 xíc arroz ou batata doce. Priorize proteína primeiro.</div>
+        </div>
+        <div class="meal-prot">~50 g</div>
+      </div>
+      <div class="meal-row">
+        <div class="meal-time">16:30</div>
+        <div>
+          <div class="meal-name">Pré-treino (dias de academia)</div>
+          <div class="meal-desc">1 scoop whey + 1 banana OU 200g queijo cottage + fruta. 30–45 min antes do treino.</div>
+        </div>
+        <div class="meal-prot">~25–30 g</div>
+      </div>
+      <div class="meal-row highlight">
+        <div class="meal-time">19:30–20:00</div>
+        <div>
+          <div class="meal-name">Jantar (sua dúvida aqui) ★</div>
+          <div class="meal-desc">Opção A (recomendada): 150g peixe/frango + salada + legumes cozidos + 1 scoop whey depois.<br>Opção B (mínima): só whey com leite desnatado se saciedade do GLP-1 for intensa.</div>
+        </div>
+        <div class="meal-prot">~40–45 g</div>
+      </div>
+    </div>
+
+    <!-- Análise whey vs janta -->
+    <div class="whey-analysis">
+      <div class="nutri-title" style="margin-bottom:16px">⚖️ Substituir a janta por whey: análise</div>
+      <div class="whey-vs">
+        <div class="vs-option">
+          <div class="vs-title bad-option">✗ Só whey no jantar</div>
+          <div class="vs-item con">~25g proteína por scoop</div>
+          <div class="vs-item con">Sem micronutrientes (vitaminas, minerais)</div>
+          <div class="vs-item con">Sem fibra → piora a constipação (efeito do GLP-1)</div>
+          <div class="vs-item con">Saciedade baixa → você come outra coisa depois</div>
+          <div class="vs-item con">Perda de músculo acelerada sem alimento real</div>
+        </div>
+        <div class="vs-label">VS</div>
+        <div class="vs-option">
+          <div class="vs-title good-option">✓ Jantar leve + whey adicional</div>
+          <div class="vs-item pro">Proteína completa (real food + suplemento)</div>
+          <div class="vs-item pro">Fibra da salada e legumes → combate constipação</div>
+          <div class="vs-item pro">Micronutrientes mantidos</div>
+          <div class="vs-item pro">Saciedade real até dormir</div>
+          <div class="vs-item pro">Preserva massa muscular melhor</div>
+        </div>
+      </div>
+      <div class="verdict">
+        <strong>✓ Veredicto: não substitua, complemente</strong>
+        Use o whey como bônus de proteína após um jantar leve — não como substituto. Com GLP-1 você vai naturalmente comer menos no jantar. O whey garante que você atinja a meta de proteína mesmo comendo pouco. Se em algum dia a náusea for forte demais, aí sim o whey sozinho é válido como exceção.
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ EXERCÍCIO -->
+  <section class="section">
+    <div class="section-label">Academia</div>
+    <div class="section-title">Treino 3×/Semana — Iniciante 114 kg + GLP-1</div>
+    <div class="section-desc">Foco em musculação (não cardio). Durante o uso de GLP-1 em déficit calórico, o treino de força é o único estímulo capaz de preservar e construir músculo. Cardio é secundário.</div>
+
+    <div class="stats-grid" style="margin-bottom:24px">
+      <div class="stat-card green">
+        <div class="label">Prioridade</div>
+        <div class="value" style="font-size:22px">Força</div>
+        <div class="sub">Musculação > cardio durante o ciclo GLP-1</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="label">Intensidade inicial</div>
+        <div class="value" style="font-size:22px">Leve</div>
+        <div class="sub">Semanas 1–4: adaptação muscular e articular</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="label">Progressão</div>
+        <div class="value" style="font-size:22px">+2,5kg</div>
+        <div class="sub">A cada 2–3 semanas quando exercício ficar fácil</div>
+      </div>
+    </div>
+
+    <div class="exercise-grid">
+      <div class="exercise-card">
+        <div class="exercise-card-header">
+          <div class="day">Dia A — Empurrar</div>
+          <div class="day-badge badge-purple">Seg / Ter</div>
+        </div>
+        <div class="exercise-card-body">
+          <div class="exercise-item"><span class="exercise-name">Supino reto (barra ou halteres)</span><span class="exercise-sets">3 × 10–12</span></div>
+          <div class="exercise-item"><span class="exercise-name">Desenvolvimento ombros (máquina)</span><span class="exercise-sets">3 × 12</span></div>
+          <div class="exercise-item"><span class="exercise-name">Crucifixo máquina (pec-deck)</span><span class="exercise-sets">3 × 12</span></div>
+          <div class="exercise-item"><span class="exercise-name">Tríceps corda ou pulley</span><span class="exercise-sets">3 × 15</span></div>
+          <div class="exercise-item"><span class="exercise-name">Elevação lateral (leve)</span><span class="exercise-sets">3 × 15</span></div>
+          <div class="exercise-item" style="margin-top:6px"><span class="exercise-name" style="color:var(--muted)">Esteira (opcional, 15 min)</span><span class="exercise-sets" style="color:var(--muted)">60–65% FCmax</span></div>
+        </div>
+      </div>
+
+      <div class="exercise-card">
+        <div class="exercise-card-header">
+          <div class="day">Dia B — Puxar + Pernas</div>
+          <div class="day-badge badge-green">Qua / Qui</div>
+        </div>
+        <div class="exercise-card-body">
+          <div class="exercise-item"><span class="exercise-name">Leg press 45°</span><span class="exercise-sets">4 × 12</span></div>
+          <div class="exercise-item"><span class="exercise-name">Cadeira extensora</span><span class="exercise-sets">3 × 15</span></div>
+          <div class="exercise-item"><span class="exercise-name">Cadeira flexora (isquiotibiais)</span><span class="exercise-sets">3 × 12</span></div>
+          <div class="exercise-item"><span class="exercise-name">Remada baixa máquina ou cabo</span><span class="exercise-sets">3 × 12</span></div>
+          <div class="exercise-item"><span class="exercise-name">Puxada no pulley (pegada aberta)</span><span class="exercise-sets">3 × 10</span></div>
+          <div class="exercise-item"><span class="exercise-name">Bíceps rosca direta</span><span class="exercise-sets">3 × 12</span></div>
+        </div>
+      </div>
+
+      <div class="exercise-card">
+        <div class="exercise-card-header">
+          <div class="day">Dia C — Full body leve</div>
+          <div class="day-badge badge-blue">Sex / Sáb</div>
+        </div>
+        <div class="exercise-card-body">
+          <div class="exercise-item"><span class="exercise-name">Agachamento Smith (seguro, iniciante)</span><span class="exercise-sets">3 × 12</span></div>
+          <div class="exercise-item"><span class="exercise-name">Supino inclinado máquina</span><span class="exercise-sets">3 × 12</span></div>
+          <div class="exercise-item"><span class="exercise-name">Remada unilateral haltere</span><span class="exercise-sets">3 × 10</span></div>
+          <div class="exercise-item"><span class="exercise-name">Panturrilha em pé (máquina)</span><span class="exercise-sets">4 × 20</span></div>
+          <div class="exercise-item"><span class="exercise-name">Abdominal crunch máquina</span><span class="exercise-sets">3 × 15</span></div>
+          <div class="exercise-item"><span class="exercise-name">Prancha (isometria)</span><span class="exercise-sets">3 × 30s</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tip-box">
+      <strong>✓ Dicas específicas para GLP-1 + academia</strong>
+      Você vai sentir menos energia pré-treino nas primeiras 4–6 semanas (déficit calórico + adaptação). <strong>Isso é normal.</strong> Coma o lanche pré-treino (whey + banana) 30–45 min antes. Se sentir tontura, reduza a carga naquele dia — não abandone o treino. A náusea tende a ser pior nos 1–2 dias após a injeção semanal; agende o treino 3–4 dias após a aplicação se possível.
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════ SUMÁRIO -->
+  <section class="section">
+    <div class="section-label">Resumo</div>
+    <div class="section-title">Recomendação Final</div>
+
+    <div class="stats-grid">
+      <div class="stat-card green">
+        <div class="label">Ciclo recomendado para 1º uso</div>
+        <div class="value" style="font-size:18px;line-height:1.3">Opção 2<br><span style="font-size:14px;color:var(--muted2)">Conservadora</span></div>
+        <div class="sub">43% dos usuários. Melhor tolerabilidade. Avaliar subir para opção 1 em ciclo futuro se resultados forem bons.</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="label">Jantar</div>
+        <div class="value" style="font-size:18px">Leve + whey</div>
+        <div class="sub">Não substitua a refeição. Use whey como complemento para bater 180–200g de proteína diária.</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="label">Academia</div>
+        <div class="value" style="font-size:18px">Musculação</div>
+        <div class="sub">3×/semana força. Cardio leve opcional. É o principal protetor contra regain pós-ciclo.</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="label">Meta realista (6 meses)</div>
+        <div class="value" style="font-size:18px">~95–100 kg</div>
+        <div class="sub">Ciclo opção 2 + treino + dieta. Com recomposição corporal: menos gordura, mais músculo.</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Análise GLP-1 · Protocolo Personalizado · Caique · Abril 2026 &nbsp;·&nbsp;
+  <span style="color:rgba(255,255,255,0.2)">Informativo — consulte um médico</span>
+</footer>
+
+</body>
+</html>

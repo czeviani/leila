@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios — Caique</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap');
+
+        :root {
+            --bg: #0d0f1a;
+            --surface: #141726;
+            --surface2: #1e2235;
+            --border: #252a40;
+            --accent: #6366f1;
+            --accent2: #8b5cf6;
+            --green: #10b981;
+            --amber: #f59e0b;
+            --text: #e2e8f0;
+            --muted: #64748b;
+            --card-hover: #1a1e30;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── CAPA / HEADER ── */
+        header {
+            background: linear-gradient(145deg, #0d0f1a 0%, #141726 40%, #0f1535 70%, #13183d 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 64px 0 52px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -120px; left: -120px;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 65%);
+            pointer-events: none;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -100px; right: -100px;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 65%);
+            pointer-events: none;
+        }
+
+        .header-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .header-badge {
+            display: inline-block;
+            background: rgba(99,102,241,0.15);
+            border: 1px solid rgba(99,102,241,0.4);
+            color: #a5b4fc;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            padding: 6px 20px;
+            border-radius: 30px;
+            margin-bottom: 24px;
+        }
+
+        .header-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+            filter: drop-shadow(0 0 24px rgba(99,102,241,0.5));
+        }
+
+        h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 48px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -1px;
+            line-height: 1.1;
+            text-shadow: 0 2px 30px rgba(0,0,0,0.5);
+            margin-bottom: 12px;
+        }
+
+        h1 span { color: #a5b4fc; }
+
+        .subtitle {
+            color: rgba(255,255,255,0.55);
+            font-size: 16px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+            margin-bottom: 32px;
+        }
+
+        .header-divider {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 2px;
+            margin: 0 auto 28px;
+        }
+
+        .doc-count {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(99,102,241,0.12);
+            border: 1px solid rgba(99,102,241,0.3);
+            color: #a5b4fc;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        /* Main */
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 32px 24px 60px;
+        }
+
+        /* Search & Filter */
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+
+        .search-wrap {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 15px;
+            pointer-events: none;
+        }
+
+        #search {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 14px 10px 40px;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        #search::placeholder { color: var(--muted); }
+
+        #search:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        }
+
+        .filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+
+        .filter-btn.active {
+            background: rgba(99,102,241,0.15);
+            border-color: var(--accent);
+            color: #a5b4fc;
+        }
+
+        /* Stats bar */
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 28px;
+            padding: 14px 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .stat-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+        }
+
+        /* Period groups */
+        .period-group { margin-bottom: 8px; }
+
+        .period-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 0 2px;
+        }
+
+        .period-label {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #a5b4fc;
+        }
+
+        .period-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(99,102,241,0.4), transparent);
+        }
+
+        .period-badge {
+            font-size: 11px;
+            color: #a5b4fc;
+            background: rgba(99,102,241,0.1);
+            border: 1px solid rgba(99,102,241,0.25);
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        /* Cards */
+        .pdf-grid { display: grid; gap: 12px; margin-bottom: 20px; }
+
+        .pdf-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px 24px;
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+            transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s, background 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .pdf-card:hover {
+            border-color: var(--accent);
+            background: var(--card-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(99,102,241,0.1);
+        }
+
+        .pdf-icon {
+            width: 44px; height: 52px;
+            flex-shrink: 0;
+        }
+
+        .pdf-icon svg { width: 100%; height: 100%; }
+
+        .pdf-body { flex: 1; min-width: 0; }
+
+        .pdf-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .pdf-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .pdf-date {
+            font-size: 12px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .pdf-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .info-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 11px;
+            color: var(--muted);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 2px 9px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .tag-new {
+            background: rgba(16,185,129,0.12);
+            color: #34d399;
+            border: 1px solid rgba(16,185,129,0.25);
+        }
+
+        .tag-updated {
+            background: rgba(99,102,241,0.12);
+            color: #a5b4fc;
+            border: 1px solid rgba(99,102,241,0.25);
+        }
+
+        .tag-analise {
+            background: rgba(99,102,241,0.1);
+            color: #a5b4fc;
+            border: 1px solid rgba(99,102,241,0.2);
+        }
+
+        .tag-ranking {
+            background: rgba(245,158,11,0.12);
+            color: #fbbf24;
+            border: 1px solid rgba(245,158,11,0.25);
+        }
+
+        .tag-tecnico {
+            background: rgba(16,185,129,0.1);
+            color: #6ee7b7;
+            border: 1px solid rgba(16,185,129,0.2);
+        }
+
+        .tag-old {
+            background: rgba(100,116,139,0.1);
+            color: #94a3b8;
+            border: 1px solid rgba(100,116,139,0.2);
+        }
+
+        .tag-estetica {
+            background: rgba(233,69,96,0.1);
+            color: #f87171;
+            border: 1px solid rgba(233,69,96,0.25);
+        }
+
+        .pdf-desc {
+            font-size: 13px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .pdf-action {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(99,102,241,0.08);
+            border: 1px solid rgba(99,102,241,0.2);
+            color: #a5b4fc;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            white-space: nowrap;
+            align-self: center;
+        }
+
+        .pdf-card:hover .pdf-action {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        /* Empty state */
+        #empty-state {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+
+        #empty-state .empty-icon {
+            font-size: 44px;
+            margin-bottom: 14px;
+            opacity: 0.4;
+        }
+
+        #empty-state p { font-size: 15px; }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--muted);
+            font-size: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            h1 { font-size: 22px; }
+            .pdf-card { flex-wrap: wrap; padding: 16px; }
+            .pdf-action { width: 100%; justify-content: center; }
+            .pdf-icon { width: 36px; height: 42px; }
+            .controls { flex-direction: column; }
+            .search-wrap { min-width: unset; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-inner">
+        <div class="header-badge">Documentos & Análises</div>
+        <div class="header-icon">📄</div>
+        <h1>Relatórios <span>Caique</span></h1>
+        <p class="subtitle">Análises, levantamentos e diagnósticos técnicos</p>
+        <div class="header-divider"></div>
+        <div class="doc-count">
+            <span>●</span>
+            <span id="total-count">8 documentos disponíveis</span>
+        </div>
+    </div>
+</header>
+
+<main>
+
+    <div class="controls">
+        <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search" placeholder="Buscar por título ou categoria..." autocomplete="off">
+        </div>
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">Todos</button>
+            <button class="filter-btn" data-filter="analise">Análises</button>
+            <button class="filter-btn" data-filter="tecnico">Técnico</button>
+            <button class="filter-btn" data-filter="ranking">Rankings</button>
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat">
+            <span class="stat-dot" style="background:#10b981"></span>
+            <span>Atualizado em</span>
+            <span class="stat-value">18/04/2026</span>
+        </div>
+        <div class="stat">
+            <span class="stat-dot" style="background:#6366f1"></span>
+            <span>Exibindo:</span>
+            <span class="stat-value" id="showing-count">7</span>
+            <span>documentos</span>
+        </div>
+        <div class="stat">
+            <span class="stat-dot" style="background:#f59e0b"></span>
+            <span>Formato:</span>
+            <span class="stat-value">PDF</span>
+        </div>
+    </div>
+
+    <!-- Novo -->
+    <div class="period-group" id="group-novo">
+        <div class="period-header">
+            <span class="period-label">Novo</span>
+            <span class="period-line"></span>
+            <span class="period-badge">18/04/2026</span>
+        </div>
+        <div class="pdf-grid">
+
+            <a class="pdf-card" href="glp1_ciclos.html"
+               data-title="glp1 tirzepatide ciclo protocolo dosagem recuperação nutrição academia whey"
+               data-category="analise">
+                <div class="pdf-icon">
+                    <svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="48" height="56" rx="6" fill="#1e2235"/>
+                        <rect x="6" y="4" width="36" height="48" rx="4" fill="#22263a" stroke="#2d3148" stroke-width="1"/>
+                        <circle cx="24" cy="26" r="8" stroke="#7c6aff" stroke-width="1.5" opacity="0.8"/>
+                        <path d="M24 18v3M24 31v3M16 26h-3M35 26h-3" stroke="#7c6aff" stroke-width="1.5" stroke-linecap="round"/>
+                        <circle cx="24" cy="26" r="2.5" fill="#7c6aff" opacity="0.9"/>
+                        <text x="8" y="14" font-family="monospace" font-size="7" fill="#7c6aff" font-weight="bold">GLP</text>
+                        <rect x="28" y="3" width="16" height="9" rx="3" fill="#7c6aff"/>
+                        <text x="30" y="10" font-family="monospace" font-size="6" fill="white" font-weight="bold">NEW</text>
+                    </svg>
+                </div>
+                <div class="pdf-body">
+                    <div class="pdf-title">Ciclos GLP-1 — Protocolo Personalizado</div>
+                    <div class="pdf-meta">
+                        <span class="pdf-date">📅 18/04/2026</span>
+                        <div class="tags">
+                            <span class="tag tag-new">✦ Novo</span>
+                            <span class="tag tag-analise">Análise</span>
+                        </div>
+                    </div>
+                    <div class="pdf-desc">Comparação de 3 protocolos de tirzepatide (doses, duração, eficiência), recuperação pós-ciclo, recomendações nutricionais e treino para 114 kg + academia 3×/semana.</div>
+                </div>
+                <div class="pdf-action">Abrir →</div>
+            </a>
+
+        </div>
+    </div>
+
+    <!-- Março 2026 -->
+    <div class="period-group" id="group-hoje">
+        <div class="period-header">
+            <span class="period-label">Março 2026</span>
+            <span class="period-line"></span>
+            <span class="period-badge">25/03/2026</span>
+        </div>
+        <div class="pdf-grid">
+
+            <a class="pdf-card" href="consultoria_lideranca_operacional.pdf" target="_blank"
+               data-title="consultoria liderança operacional gestão equipes líderes"
+               data-category="analise">
+                <div class="pdf-icon">
+                    <svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="48" height="56" rx="6" fill="#1e2235"/>
+                        <rect x="6" y="4" width="36" height="48" rx="4" fill="#22263a" stroke="#2d3148" stroke-width="1"/>
+                        <circle cx="24" cy="22" r="6" stroke="#6366f1" stroke-width="1.5"/>
+                        <path d="M14 38c0-5.523 4.477-10 10-10s10 4.477 10 10" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round"/>
+                        <text x="8" y="14" font-family="monospace" font-size="7" fill="#6366f1" font-weight="bold">PDF</text>
+                        <rect x="28" y="3" width="16" height="9" rx="3" fill="#6366f1"/>
+                        <text x="30" y="10" font-family="monospace" font-size="6" fill="white" font-weight="bold">NEW</text>
+                    </svg>
+                </div>
+                <div class="pdf-body">
+                    <div class="pdf-title">Consultoria em Liderança Operacional</div>
+                    <div class="pdf-meta">
+                        <span class="pdf-date">📅 25/03/2026</span>
+                        <div class="tags">
+                            <span class="tag tag-new">✦ Novo</span>
+                            <span class="tag tag-analise">Consultoria</span>
+                        </div>
+                    </div>
+                    <div class="pdf-desc">Diagnóstico e orientações para desenvolvimento de liderança operacional em equipes de alta performance.</div>
+                </div>
+                <div class="pdf-action">Abrir →</div>
+            </a>
+
+            <a class="pdf-card" href="estetica_automotiva.html"
+               data-title="estética automotiva ranking vila andrade pinheiros são paulo oficinas"
+               data-category="ranking">
+                <div class="pdf-icon">
+                    <svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="48" height="56" rx="6" fill="#1e2235"/>
+                        <rect x="6" y="4" width="36" height="48" rx="4" fill="#22263a" stroke="#2d3148" stroke-width="1"/>
+                        <path d="M14 20h20M14 27h20M14 34h14" stroke="#e94560" stroke-width="1.5" stroke-linecap="round"/>
+                        <circle cx="32" cy="38" r="5" fill="rgba(233,69,96,0.15)" stroke="#e94560" stroke-width="1"/>
+                        <text x="29.5" y="41" font-family="monospace" font-size="7" fill="#e94560" font-weight="bold">★</text>
+                        <text x="8" y="14" font-family="monospace" font-size="7" fill="#e94560" font-weight="bold">PDF</text>
+                        <rect x="28" y="3" width="16" height="9" rx="3" fill="#e94560"/>
+                        <text x="30" y="10" font-family="monospace" font-size="6" fill="white" font-weight="bold">NEW</text>
+                    </svg>
+                </div>
+                <div class="pdf-body">
+                    <div class="pdf-title">Estética Automotiva — Vila Andrade & Pinheiros</div>
+                    <div class="pdf-meta">
+                        <span class="pdf-date">📅 25/03/2026</span>
+                        <div class="tags">
+                            <span class="tag tag-new">✦ Novo</span>
+                            <span class="tag tag-ranking">Ranking</span>
+                        </div>
+                    </div>
+                    <div class="pdf-desc">Levantamento e ranking das melhores oficinas de estética automotiva nas regiões de Vila Andrade e Pinheiros, São Paulo.</div>
+                </div>
+                <div class="pdf-action">Abrir →</div>
+            </a>
+
+            <a class="pdf-card" href="relatorio_prensagem_movel_2026_v3.pdf" target="_blank"
+               data-title="análise desempenho máquinas prensagem móveis v3 versão final 2026"
+               data-category="analise">
+                <div class="pdf-icon">
+                    <svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="48" height="56" rx="6" fill="#1e2235"/>
+                        <rect x="6" y="4" width="36" height="48" rx="4" fill="#22263a" stroke="#2d3148" stroke-width="1"/>
+                        <path d="M14 20h20M14 27h20M14 34h14" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round"/>
+                        <rect x="26" y="32" width="12" height="10" rx="2" fill="#6366f1" opacity="0.85"/>
+                        <path d="M29 37l2 2 3-3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <text x="8" y="14" font-family="monospace" font-size="7" fill="#6366f1" font-weight="bold">PDF</text>
+                        <rect x="30" y="3" width="14" height="9" rx="3" fill="#6366f1"/>
+                        <text x="32" y="10" font-family="monospace" font-size="6" fill="white" font-weight="bold">v3</text>
+                    </svg>
+                </div>
+                <div class="pdf-body">
+                    <div class="pdf-title">Análise de Desempenho — Máquinas de Prensagem Móveis</div>
+                    <div class="pdf-meta">
+                        <span class="pdf-date">📅 23/03/2026</span>
+                        <div class="pdf-info">
+                            <span class="info-chip">📑 21 págs.</span>
+                            <span class="info-chip">📦 48 KB</span>
+                        </div>
+                        <div class="tags">
+                            <span class="tag tag-new">✦ Novo</span>
+                            <span class="tag tag-analise">Análise</span>
+                        </div>
+                    </div>
+                    <div class="pdf-desc">Versão 3.0 — análise final com dados refinados, novas visualizações e conclusões expandidas. Versão mais completa disponível.</div>
+                </div>
+                <div class="pdf-action">Abrir →</div>
+            </a>
+
+            <a class="pdf-card" href="relatorio_gps_iphone.pdf" target="_blank"
+               data-title="relatório técnico problema gps iphone diagnóstico causas soluções ios"
+               data-category="tecnico">
+                <div class="pdf-icon">
+                    <svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="48" height="56" rx="6" fill="#1e2235"/>
+                        <rect x="6" y="4" width="36" height="48" rx="4" fill="#22263a" stroke="#2d3148" stroke-width="1"/>
+                        <circle cx="24" cy="30" r="8" stroke="#10b981" stroke-width="1.5" opacity="0.6"/>
+                        <circle cx="24" cy="30" r="3" fill="#10b981" opacity="0.9"/>
+                        <path d="M24 18v4M24 38v4M16 30h-4M36 30h-4" stroke="#10b981" stroke-width="1.5" stroke-linecap="round"/>
+                        <text x="8" y="14" font-family="monospace" font-size="7" fill="#10b981" font-weight="bold">PDF</text>
+                    </svg>
+                </div>
+                <div class="pdf-body">
+                    <div class="pdf-title">GPS iPhone — Diagnóstico Técnico Completo</div>
+                    <div class="pdf-meta">
+                        <span class="pdf-date">📅 23/03/2026</span>
+                        <div class="pdf-info">
+                            <span class="info-chip">📑 8 págs.</span>
+                            <span class="info-chip">📦 64 KB</span>
+                        </div>
+                        <div class="tags">
+                            <span class="tag tag-new">✦ Novo</span>
+                            <span class="tag tag-tecnico">Técnico</span>
+                        </div>
+                    </div>
+                    <div class="pdf-desc">Relatório completo sobre problema de GPS persistente no iPhone após troca de hardware. Causas, soluções passo a passo, bugs por versão iOS e próximos passos.</div>
+                </div>
+                <div class="pdf-action">Abrir →</div>
+            </a>
+
+        </div>
+    </div>
+
+    <!-- Esta semana -->
+    <div class="period-group" id="group-semana">
+        <div class="period-header">
+            <span class="period-label">Esta semana</span>
+            <span class="period-line"></span>
+            <span class="period-badge">19–20/03/2026</span>
+        </div>
+        <div class="pdf-grid">
+
+            <a class="pdf-card" href="relatorio_prensagem_movel_2026_v2.pdf" target="_blank"
+               data-title="análise desempenho máquinas prensagem móveis v2 referências internacionais similaridade"
+               data-category="analise">
+                <div class="pdf-icon">
+                    <svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="48" height="56" rx="6" fill="#1e2235"/>
+                        <rect x="6" y="4" width="36" height="48" rx="4" fill="#22263a" stroke="#2d3148" stroke-width="1"/>
+                        <path d="M14 20h20M14 27h20M14 34h14" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/>
+                        <rect x="26" y="32" width="12" height="10" rx="2" fill="#8b5cf6" opacity="0.7"/>
+                        <path d="M29 37l2 2 3-3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <text x="8" y="14" font-family="monospace" font-size="7" fill="#8b5cf6" font-weight="bold">PDF</text>
+                        <rect x="30" y="3" width="14" height="9" rx="3" fill="#8b5cf6" opacity="0.7"/>
+                        <text x="32" y="10" font-family="monospace" font-size="6" fill="white" font-weight="bold">v2</text>
+                    </svg>
+                </div>
+                <div class="pdf-body">
+                    <div class="pdf-title">Análise de Desempenho — Máquinas de Prensagem Móveis (v2)</div>
+                    <div class="pdf-meta">
+                        <span class="pdf-date">📅 20/03/2026</span>
+                        <div class="pdf-info">
+                            <span class="info-chip">📑 20 págs.</span>
+                            <span class="info-chip">📦 52 KB</span>
+                        </div>
+                        <div class="tags">
+                            <span class="tag tag-updated">Versão 2.0</span>
+                            <span class="tag tag-analise">Análise</span>
+                        </div>
+                    </div>
+                    <div class="pdf-desc">Inclui referências internacionais e análise de similaridade com outros setores industriais. Consulte a v3 para a versão mais atual.</div>
+                </div>
+                <div class="pdf-action">Abrir →</div>
+            </a>
+
+            <a class="pdf-card" href="opticas_caique.pdf" target="_blank"
+               data-title="ópticas ranking pinheiros vila andrade são paulo óticas"
+               data-category="ranking">
+                <div class="pdf-icon">
+                    <svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="48" height="56" rx="6" fill="#1e2235"/>
+                        <rect x="6" y="4" width="36" height="48" rx="4" fill="#22263a" stroke="#2d3148" stroke-width="1"/>
+                        <path d="M14 20h20M14 27h20M14 34h14" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+                        <circle cx="32" cy="38" r="5" fill="#f59e0b" opacity="0.15" stroke="#f59e0b" stroke-width="1"/>
+                        <text x="29.5" y="41" font-family="monospace" font-size="7" fill="#f59e0b" font-weight="bold">★</text>
+                        <text x="8" y="14" font-family="monospace" font-size="7" fill="#f59e0b" font-weight="bold">PDF</text>
+                    </svg>
+                </div>
+                <div class="pdf-body">
+                    <div class="pdf-title">Ópticas — Ranking Pinheiros / Vila Andrade</div>
+                    <div class="pdf-meta">
+                        <span class="pdf-date">📅 19/03/2026</span>
+                        <div class="pdf-info">
+                            <span class="info-chip">📑 3 págs.</span>
+                            <span class="info-chip">📦 8 KB</span>
+                        </div>
+                        <div class="tags">
+                            <span class="tag tag-ranking">Ranking</span>
+                        </div>
+                    </div>
+                    <div class="pdf-desc">Levantamento e ranking de óticas nas regiões de Pinheiros e Vila Andrade, São Paulo.</div>
+                </div>
+                <div class="pdf-action">Abrir →</div>
+            </a>
+
+            <a class="pdf-card" href="relatorio_prensagem_movel_2026.pdf" target="_blank"
+               data-title="análise desempenho máquinas prensagem móveis v1 original"
+               data-category="analise">
+                <div class="pdf-icon">
+                    <svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="48" height="56" rx="6" fill="#1e2235"/>
+                        <rect x="6" y="4" width="36" height="48" rx="4" fill="#22263a" stroke="#2d3148" stroke-width="1"/>
+                        <path d="M14 20h20M14 27h20M14 34h14" stroke="#64748b" stroke-width="1.5" stroke-linecap="round"/>
+                        <text x="8" y="14" font-family="monospace" font-size="7" fill="#64748b" font-weight="bold">PDF</text>
+                        <rect x="30" y="3" width="14" height="9" rx="3" fill="#475569" opacity="0.6"/>
+                        <text x="32" y="10" font-family="monospace" font-size="6" fill="#94a3b8" font-weight="bold">v1</text>
+                    </svg>
+                </div>
+                <div class="pdf-body">
+                    <div class="pdf-title">Análise de Desempenho — Máquinas de Prensagem Móveis (v1)</div>
+                    <div class="pdf-meta">
+                        <span class="pdf-date">📅 19/03/2026</span>
+                        <div class="pdf-info">
+                            <span class="info-chip">📑 14 págs.</span>
+                            <span class="info-chip">📦 32 KB</span>
+                        </div>
+                        <div class="tags">
+                            <span class="tag tag-old">Versão Original</span>
+                            <span class="tag tag-analise">Análise</span>
+                        </div>
+                    </div>
+                    <div class="pdf-desc">Relatório original de desempenho. Para a versão mais completa e atualizada, consulte a v3.</div>
+                </div>
+                <div class="pdf-action">Abrir →</div>
+            </a>
+
+        </div>
+    </div>
+
+    <div id="empty-state">
+        <div class="empty-icon">🔎</div>
+        <p>Nenhum documento encontrado para "<span id="search-term"></span>"</p>
+    </div>
+
+</main>
+
+<footer>
+    Relatórios & Análises • Caique • 2026
+</footer>
+
+<script>
+    const cards = document.querySelectorAll('.pdf-card');
+    const groups = document.querySelectorAll('.period-group');
+    const searchInput = document.getElementById('search');
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const emptyState = document.getElementById('empty-state');
+    const searchTermEl = document.getElementById('search-term');
+    const showingCount = document.getElementById('showing-count');
+
+    let currentFilter = 'all';
+    let currentSearch = '';
+
+    function applyFilters() {
+        let visible = 0;
+
+        groups.forEach(group => {
+            const groupCards = group.querySelectorAll('.pdf-card');
+            let groupVisible = 0;
+
+            groupCards.forEach(card => {
+                const title = card.dataset.title.toLowerCase();
+                const category = card.dataset.category;
+                const matchSearch = !currentSearch || title.includes(currentSearch.toLowerCase());
+                const matchFilter = currentFilter === 'all' || category === currentFilter;
+                const show = matchSearch && matchFilter;
+                card.style.display = show ? 'flex' : 'none';
+                if (show) { visible++; groupVisible++; }
+            });
+
+            group.style.display = groupVisible > 0 ? 'block' : 'none';
+        });
+
+        showingCount.textContent = visible;
+        emptyState.style.display = visible === 0 ? 'block' : 'none';
+        searchTermEl.textContent = currentSearch;
+    }
+
+    searchInput.addEventListener('input', e => {
+        currentSearch = e.target.value.trim();
+        applyFilters();
+    });
+
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentFilter = btn.dataset.filter;
+            applyFilters();
+        });
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatório de Estética Automotiva — Vila Andrade & Pinheiros</title>
+  <style>
+    /* ── RESET & BASE ── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --preto:    #0d0d0d;
+      --carvao:   #1a1a2e;
+      --azul:     #16213e;
+      --accent:   #e94560;
+      --ouro:     #f5a623;
+      --prata:    #c0c0c0;
+      --bronze:   #cd7f32;
+      --branco:   #ffffff;
+      --cinza-claro: #f4f4f8;
+      --cinza-mid:   #8892a4;
+      --texto:    #2d2d3a;
+    }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap');
+
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      color: var(--texto);
+      background: var(--branco);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    /* ── UTILITÁRIOS ── */
+    .page-break { page-break-after: always; break-after: page; }
+
+    /* ── CAPA ── */
+    .cover {
+      background: linear-gradient(145deg, var(--carvao) 0%, var(--azul) 60%, #0f3460 100%);
+      color: var(--branco);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 60px 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -120px; right: -120px;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(233,69,96,0.25) 0%, transparent 70%);
+    }
+    .cover::after {
+      content: '';
+      position: absolute;
+      bottom: -100px; left: -100px;
+      width: 400px; height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(245,166,35,0.2) 0%, transparent 70%);
+    }
+    .cover-badge {
+      display: inline-block;
+      background: rgba(233,69,96,0.2);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 6px 20px;
+      border-radius: 30px;
+      margin-bottom: 28px;
+    }
+    .cover-icon {
+      font-size: 72px;
+      margin-bottom: 20px;
+      filter: drop-shadow(0 0 20px rgba(233,69,96,0.6));
+    }
+    .cover h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 46px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.4);
+    }
+    .cover h1 span { color: var(--accent); }
+    .cover .subtitle {
+      font-size: 17px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 40px;
+      letter-spacing: 1px;
+    }
+    .cover-divider {
+      width: 80px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--ouro));
+      margin: 0 auto 40px;
+      border-radius: 2px;
+    }
+    .cover-meta {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .cover-meta-item {
+      text-align: center;
+    }
+    .cover-meta-item .label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .cover-meta-item .value {
+      font-size: 15px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.9);
+    }
+    .cover-footer {
+      position: absolute;
+      bottom: 30px;
+      left: 0; right: 0;
+      text-align: center;
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 1px;
+    }
+
+    /* ── CONTEÚDO INTERNO ── */
+    .content {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 60px 40px;
+    }
+
+    /* ── SEÇÕES ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+      margin-top: 8px;
+    }
+    .section-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), #c62a47);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--carvao);
+    }
+    .section-title span {
+      display: block;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--cinza-mid);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    /* ── CARD DE ESTABELECIMENTO ── */
+    .estab-card {
+      background: var(--branco);
+      border: 1px solid #e8e8f0;
+      border-radius: 20px;
+      margin-bottom: 40px;
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
+    .estab-header {
+      background: linear-gradient(135deg, var(--carvao) 0%, var(--azul) 100%);
+      color: var(--branco);
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .rank-badge {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 900;
+      flex-shrink: 0;
+      border: 3px solid rgba(255,255,255,0.3);
+    }
+    .rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); color: #000; }
+    .rank-2 { background: linear-gradient(135deg, #C0C0C0, #A0A0A0); color: #000; }
+    .rank-3 { background: linear-gradient(135deg, #CD7F32, #A0522D); color: #fff; }
+    .rank-4 { background: linear-gradient(135deg, #4a5568, #2d3748); color: #fff; }
+    .rank-5 { background: linear-gradient(135deg, #4a5568, #2d3748); color: #fff; }
+    .rank-6 { background: linear-gradient(135deg, #4a5568, #2d3748); color: #fff; }
+
+    .estab-name-wrap h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .estab-name-wrap .tag-list {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.85);
+    }
+    .tag-premium { background: rgba(245,166,35,0.3); color: #f5d070; }
+    .tag-custo   { background: rgba(72,199,142,0.3); color: #6fcf97; }
+    .tag-new     { background: rgba(233,69,96,0.3);  color: #f47b8a; }
+
+    .estab-body {
+      padding: 28px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .info-block {
+      background: var(--cinza-claro);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .info-block .ib-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--cinza-mid);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .info-block .ib-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--texto);
+      line-height: 1.5;
+    }
+    .info-block .ib-value strong {
+      color: var(--carvao);
+    }
+
+    .stars {
+      color: var(--ouro);
+      font-size: 16px;
+      letter-spacing: 1px;
+    }
+    .stars-count {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--texto);
+      margin-left: 6px;
+    }
+
+    /* Serviços */
+    .services-section { margin-bottom: 24px; }
+    .services-section h4 {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--cinza-mid);
+      margin-bottom: 12px;
+    }
+    .services-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .service-chip {
+      background: #eef0f8;
+      color: var(--azul);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid #d8daf0;
+    }
+    .service-chip.highlight {
+      background: linear-gradient(135deg, rgba(233,69,96,0.1), rgba(233,69,96,0.05));
+      border-color: rgba(233,69,96,0.3);
+      color: var(--accent);
+    }
+
+    /* Preços */
+    .preco-section { margin-bottom: 24px; }
+    .preco-section h4 {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--cinza-mid);
+      margin-bottom: 12px;
+    }
+    .preco-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .preco-table th {
+      background: var(--carvao);
+      color: var(--branco);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 10px 14px;
+      text-align: left;
+    }
+    .preco-table th:first-child { border-radius: 10px 0 0 0; }
+    .preco-table th:last-child  { border-radius: 0 10px 0 0; text-align: right; }
+    .preco-table td {
+      padding: 10px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid #eee;
+    }
+    .preco-table td:last-child { text-align: right; font-weight: 600; color: var(--accent); }
+    .preco-table tr:last-child td { border-bottom: none; }
+    .preco-table tr:nth-child(even) td { background: #fafafa; }
+
+    /* Destaque / Por que recomendar */
+    .porque-box {
+      background: linear-gradient(135deg, rgba(233,69,96,0.06), rgba(245,166,35,0.04));
+      border: 1px solid rgba(233,69,96,0.2);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+    .porque-box h4 {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .porque-box ul {
+      list-style: none;
+      padding: 0;
+    }
+    .porque-box ul li {
+      padding: 4px 0;
+      font-size: 13px;
+      color: var(--texto);
+    }
+    .porque-box ul li::before {
+      content: '✓ ';
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* Contato */
+    .contato-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .contato-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--cinza-claro);
+      border: 1px solid #e0e0ea;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--texto);
+      text-decoration: none;
+    }
+    .contato-chip:hover { border-color: var(--accent); color: var(--accent); }
+    .contato-chip.wpp { background: #e8f8f0; border-color: #48c78e; color: #27ae60; }
+    .contato-chip.site { background: #e8f0ff; border-color: #6c8ee8; color: #3d5fe0; }
+    .contato-chip.insta { background: #fff0f5; border-color: #e94560; color: var(--accent); }
+
+    /* ── RANKING RESUMO ── */
+    .ranking-table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+    .ranking-table thead tr {
+      background: linear-gradient(135deg, var(--carvao), var(--azul));
+      color: var(--branco);
+    }
+    .ranking-table th {
+      padding: 14px 18px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      text-align: left;
+    }
+    .ranking-table td {
+      padding: 14px 18px;
+      font-size: 13px;
+      border-bottom: 1px solid #eee;
+      vertical-align: middle;
+    }
+    .ranking-table tr:last-child td { border-bottom: none; }
+    .ranking-table tr:nth-child(even) td { background: #fafafa; }
+
+    .pos-medal {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .pos-1 { background: linear-gradient(135deg,#FFD700,#FFA500); color:#000; }
+    .pos-2 { background: linear-gradient(135deg,#C0C0C0,#888); color:#000; }
+    .pos-3 { background: linear-gradient(135deg,#CD7F32,#8B4513); color:#fff; }
+    .pos-4, .pos-5, .pos-6 { background: #e8e8f0; color: var(--azul); }
+
+    .score-bar-wrap { display: flex; align-items: center; gap: 10px; }
+    .score-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--ouro));
+    }
+    .score-num { font-weight: 700; font-size: 13px; color: var(--carvao); }
+
+    /* ── METODOLOGIA ── */
+    .meto-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .meto-card {
+      background: var(--cinza-claro);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+    }
+    .meto-icon { font-size: 28px; margin-bottom: 10px; }
+    .meto-card h4 { font-size: 13px; font-weight: 700; color: var(--carvao); margin-bottom: 6px; }
+    .meto-card p  { font-size: 12px; color: var(--cinza-mid); line-height: 1.5; }
+
+    /* ── CRITÉRIOS ── */
+    .criterio-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      border-radius: 12px;
+      background: var(--cinza-claro);
+      margin-bottom: 12px;
+    }
+    .criterio-icon { font-size: 24px; flex-shrink: 0; }
+    .criterio-info { flex: 1; }
+    .criterio-info strong { display: block; font-size: 14px; font-weight: 700; color: var(--carvao); }
+    .criterio-info span { font-size: 12px; color: var(--cinza-mid); }
+    .criterio-peso {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--accent);
+      min-width: 40px;
+      text-align: right;
+    }
+
+    /* ── CONCLUSÃO ── */
+    .conclusao-box {
+      background: linear-gradient(135deg, var(--carvao), var(--azul));
+      color: var(--branco);
+      border-radius: 20px;
+      padding: 36px;
+      margin-top: 16px;
+    }
+    .conclusao-box h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--ouro);
+    }
+    .conclusao-box p {
+      font-size: 14px;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 12px;
+    }
+    .conclusao-box .tip {
+      background: rgba(255,255,255,0.08);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin-top: 16px;
+      font-size: 13px;
+      font-style: italic;
+      color: rgba(255,255,255,0.75);
+    }
+
+    /* ── DISCLAIMER ── */
+    .disclaimer {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 32px;
+      font-size: 12px;
+      color: #7a6000;
+      line-height: 1.6;
+    }
+    .disclaimer strong { color: #5a4500; }
+
+    /* ── RODAPÉ ── */
+    .rodape {
+      text-align: center;
+      padding: 40px 20px 20px;
+      font-size: 11px;
+      color: var(--cinza-mid);
+      border-top: 1px solid #e8e8f0;
+      margin-top: 60px;
+    }
+    .rodape strong { color: var(--carvao); }
+
+    /* ── PRINT ── */
+    @media print {
+      .cover { min-height: 100vh; }
+      .estab-card { break-inside: avoid; page-break-inside: avoid; }
+      .ranking-table { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="index.html" style="position:fixed;top:16px;left:16px;z-index:9999;display:inline-flex;align-items:center;gap:6px;background:rgba(13,13,13,0.75);backdrop-filter:blur(8px);color:#fff;font-family:'Inter',sans-serif;font-size:12px;font-weight:500;padding:7px 14px;border-radius:20px;text-decoration:none;border:1px solid rgba(255,255,255,0.15);transition:background 0.2s;" onmouseover="this.style.background='rgba(233,69,96,0.85)'" onmouseout="this.style.background='rgba(13,13,13,0.75)'">← Relatórios</a>
+
+<!-- ══════════════════════════════════════════════════
+     CAPA
+══════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-badge">Relatório Profissional · Março 2026</div>
+  <div class="cover-icon">🚗</div>
+  <h1>Estética <span>Automotiva</span><br>em São Paulo</h1>
+  <p class="subtitle">Análise comparativa · Vila Andrade, Pinheiros & região</p>
+  <div class="cover-divider"></div>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <span class="label">Estabelecimentos</span>
+      <span class="value">6 analisados</span>
+    </div>
+    <div class="cover-meta-item">
+      <span class="label">Fontes pesquisadas</span>
+      <span class="value">Web, Google Maps, sites oficiais</span>
+    </div>
+    <div class="cover-meta-item">
+      <span class="label">Data da pesquisa</span>
+      <span class="value">Março / 2026</span>
+    </div>
+    <div class="cover-meta-item">
+      <span class="label">Região de foco</span>
+      <span class="value">Zona Sul / Zona Oeste de SP</span>
+    </div>
+  </div>
+  <div class="cover-footer">Documento de uso pessoal — Preços e avaliações sujeitos a alteração</div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ══════════════════════════════════════════════════
+     SUMÁRIO / INTRODUÇÃO
+══════════════════════════════════════════════════ -->
+<div class="content">
+
+  <div class="section-header">
+    <div class="section-icon">📋</div>
+    <div class="section-title">
+      <span>Seção 01</span>
+      Introdução
+    </div>
+  </div>
+
+  <p style="margin-bottom:16px;">
+    Este relatório apresenta uma análise comparativa dos principais estabelecimentos de estética automotiva situados na região de <strong>Vila Andrade, Pinheiros e bairros adjacentes</strong> (Zona Sul e Zona Oeste de São Paulo). O objetivo é oferecer uma visão clara e estruturada para auxiliar na escolha do local mais adequado conforme necessidade, orçamento e nível de serviço desejado.
+  </p>
+  <p style="margin-bottom:16px;">
+    Foram pesquisados sites oficiais, perfis em redes sociais, plataformas de avaliação (Google Maps, Foursquare) e diretórios empresariais. Os preços apresentados refletem as faixas médias praticadas no mercado paulistano em 2025–2026 e devem ser confirmados diretamente com cada estabelecimento, pois variam conforme o porte e estado de conservação do veículo.
+  </p>
+  <p>
+    O ranking final é justificado por cinco critérios objetivos: localização & acesso, portfólio de serviços, qualidade percebida (avaliações), custo-benefício e experiência de atendimento.
+  </p>
+
+  <!-- ── METODOLOGIA ── -->
+  <div class="section-header" style="margin-top:48px;">
+    <div class="section-icon">🔍</div>
+    <div class="section-title">
+      <span>Seção 02</span>
+      Metodologia
+    </div>
+  </div>
+
+  <div class="meto-grid">
+    <div class="meto-card">
+      <div class="meto-icon">🌐</div>
+      <h4>Pesquisa Web</h4>
+      <p>Busca em buscadores, sites oficiais, páginas de serviços e blogs especializados do setor.</p>
+    </div>
+    <div class="meto-card">
+      <div class="meto-icon">⭐</div>
+      <h4>Avaliações</h4>
+      <p>Coleta de notas e comentários no Google Maps, Foursquare e diretórios de avaliação.</p>
+    </div>
+    <div class="meto-card">
+      <div class="meto-icon">📱</div>
+      <h4>Redes Sociais</h4>
+      <p>Verificação de perfis no Instagram e Facebook para qualidade de portfólio e presença digital.</p>
+    </div>
+    <div class="meto-card">
+      <div class="meto-icon">💰</div>
+      <h4>Preços de Mercado</h4>
+      <p>Referência cruzada com tabelas de preços do setor (Box Detail, Sabino Detail, Jumpcar).</p>
+    </div>
+    <div class="meto-card">
+      <div class="meto-icon">📍</div>
+      <h4>Localização</h4>
+      <p>Verificação de endereços, bairros e proximidade com Vila Andrade / Pinheiros.</p>
+    </div>
+    <div class="meto-card">
+      <div class="meto-icon">📊</div>
+      <h4>Score Comparativo</h4>
+      <p>Pontuação de 0–10 em cinco critérios ponderados para compor o ranking final.</p>
+    </div>
+  </div>
+
+  <!-- ── CRITÉRIOS DE AVALIAÇÃO ── -->
+  <div class="section-header" style="margin-top:48px;">
+    <div class="section-icon">⚖️</div>
+    <div class="section-title">
+      <span>Seção 03</span>
+      Critérios de Avaliação
+    </div>
+  </div>
+
+  <div class="criterio-row">
+    <div class="criterio-icon">📍</div>
+    <div class="criterio-info">
+      <strong>Localização & Acessibilidade</strong>
+      <span>Proximidade com Vila Andrade / Pinheiros, facilidade de acesso, estacionamento</span>
+    </div>
+    <div class="criterio-peso">20%</div>
+  </div>
+  <div class="criterio-row">
+    <div class="criterio-icon">🛠️</div>
+    <div class="criterio-info">
+      <strong>Portfólio de Serviços</strong>
+      <span>Amplitude e especialização: higienização, polimento, PPF, vitrificação, coating, etc.</span>
+    </div>
+    <div class="criterio-peso">25%</div>
+  </div>
+  <div class="criterio-row">
+    <div class="criterio-icon">⭐</div>
+    <div class="criterio-info">
+      <strong>Qualidade Percebida</strong>
+      <span>Nota no Google Maps, volume de avaliações, comentários recentes, reputação</span>
+    </div>
+    <div class="criterio-peso">25%</div>
+  </div>
+  <div class="criterio-row">
+    <div class="criterio-icon">💰</div>
+    <div class="criterio-info">
+      <strong>Custo-Benefício</strong>
+      <span>Relação entre preço praticado e qualidade entregue; transparência nos valores</span>
+    </div>
+    <div class="criterio-peso">20%</div>
+  </div>
+  <div class="criterio-row">
+    <div class="criterio-icon">🤝</div>
+    <div class="criterio-info">
+      <strong>Atendimento & Confiança</strong>
+      <span>Canais de contato, facilidade de agendamento, garantias oferecidas, profissionalismo</span>
+    </div>
+    <div class="criterio-peso">10%</div>
+  </div>
+
+</div><!-- /content -->
+
+<div class="page-break"></div>
+
+<!-- ══════════════════════════════════════════════════
+     ESTABELECIMENTOS
+══════════════════════════════════════════════════ -->
+<div class="content">
+
+  <div class="section-header">
+    <div class="section-icon">🏆</div>
+    <div class="section-title">
+      <span>Seção 04</span>
+      Análise dos Estabelecimentos
+    </div>
+  </div>
+
+  <!-- ── #1 BOX299 ── -->
+  <div class="estab-card">
+    <div class="estab-header">
+      <div class="rank-badge rank-1">1</div>
+      <div class="estab-name-wrap">
+        <h2>Box299 — Lavagem e Estética Automotiva</h2>
+        <div class="tag-list">
+          <span class="tag tag-premium">Premium</span>
+          <span class="tag">Mais Próximo</span>
+          <span class="tag">+9.000 serviços</span>
+        </div>
+      </div>
+    </div>
+    <div class="estab-body">
+
+      <div class="info-grid">
+        <div class="info-block">
+          <div class="ib-label">📍 Endereço</div>
+          <div class="ib-value">
+            <strong>Rua Francisco Pessoa, 153</strong><br>
+            Vila Andrade — SP, CEP 05727-230
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">⭐ Avaliação</div>
+          <div class="ib-value">
+            <span class="stars">★★★★★</span>
+            <span class="stars-count">4,8 / 5,0 · Google Maps</span><br>
+            <small>+4 anos de atuação · +9.000 serviços realizados</small>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">🕐 Horário</div>
+          <div class="ib-value">
+            Seg–Sex: 8h às 18h<br>
+            Sáb: 8h às 14h
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">💰 Faixa de Preço</div>
+          <div class="ib-value">
+            Médio–Alto<br>
+            <strong>Serviços premium com qualidade comprovada</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="services-section">
+        <h4>🛠️ Serviços Oferecidos</h4>
+        <div class="services-grid">
+          <span class="service-chip highlight">PPF Automotivo</span>
+          <span class="service-chip highlight">Vitrificação</span>
+          <span class="service-chip highlight">Coating Cerâmico</span>
+          <span class="service-chip">Polimento Técnico</span>
+          <span class="service-chip">Higienização Interna</span>
+          <span class="service-chip">Lavagem Detalhada</span>
+          <span class="service-chip">Descontaminação de Pintura</span>
+          <span class="service-chip">Lavagem de Motor</span>
+          <span class="service-chip">Oxi-Sanitização</span>
+          <span class="service-chip">Remoção de Chuva Ácida</span>
+          <span class="service-chip">Películas (Solar / Antivandalismo)</span>
+          <span class="service-chip">Enceramento</span>
+        </div>
+      </div>
+
+      <div class="preco-section">
+        <h4>💳 Referência de Preços</h4>
+        <table class="preco-table">
+          <thead>
+            <tr>
+              <th>Serviço</th>
+              <th style="text-align:right">Faixa estimada</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Lavagem técnica completa</td><td>R$ 100 – 200</td></tr>
+            <tr><td>Higienização interna completa</td><td>R$ 280 – 450</td></tr>
+            <tr><td>Polimento técnico (médio porte)</td><td>R$ 300 – 700</td></tr>
+            <tr><td>Vitrificação de pintura</td><td>R$ 900 – 2.500</td></tr>
+            <tr><td>Coating cerâmico</td><td>R$ 1.500 – 4.000</td></tr>
+            <tr><td>PPF parcial (capô + para-choques)</td><td>R$ 2.500 – 5.000</td></tr>
+            <tr><td>PPF full body</td><td>R$ 8.000 – 18.000</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:11px;color:#888;margin-top:8px;">* Orçamento personalizado necessário. Preços variam por porte e modelo do veículo.</p>
+      </div>
+
+      <div class="porque-box">
+        <h4>⭐ Por que é o #1 recomendado</h4>
+        <ul>
+          <li>Localizado diretamente em Vila Andrade — máxima conveniência</li>
+          <li>Mais de 4 anos de história e 9.000 serviços realizados com feedbacks positivos</li>
+          <li>Portfólio completo cobrindo desde lavagem simples até PPF full body</li>
+          <li>Especialização em proteção de pintura (PPF, Coating, Vitrificação)</li>
+          <li>Forte presença digital: site profissional, Instagram ativo, Facebook verificado</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#8892a4;margin-bottom:10px;">📞 Contato</h4>
+        <div class="contato-row">
+          <a class="contato-chip site" href="https://www.esteticabox299.com.br/" target="_blank">🌐 esteticabox299.com.br</a>
+          <a class="contato-chip insta" href="https://www.facebook.com/box299lavagem/" target="_blank">📘 Facebook: box299lavagem</a>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /box299 -->
+
+  <!-- ── #2 BOX DETAIL ── -->
+  <div class="estab-card">
+    <div class="estab-header">
+      <div class="rank-badge rank-2">2</div>
+      <div class="estab-name-wrap">
+        <h2>Box Detail — Estética Automotiva Pompeia</h2>
+        <div class="tag-list">
+          <span class="tag tag-premium">4,9 ⭐ Google</span>
+          <span class="tag">Carros de Luxo</span>
+          <span class="tag">Referência SP</span>
+        </div>
+      </div>
+    </div>
+    <div class="estab-body">
+
+      <div class="info-grid">
+        <div class="info-block">
+          <div class="ib-label">📍 Endereço</div>
+          <div class="ib-value">
+            <strong>Av. Pompéia, 1792</strong><br>
+            Pompeia — SP, CEP 05022-001
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">⭐ Avaliação</div>
+          <div class="ib-value">
+            <span class="stars">★★★★★</span>
+            <span class="stars-count">4,9 / 5,0 · Google Maps</span><br>
+            <small>Uma das maiores notas do segmento em SP</small>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">🕐 Horário</div>
+          <div class="ib-value">
+            Seg–Sex: 9h às 17h<br>
+            Sáb: 8h30 às 16h
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">💰 Faixa de Preço</div>
+          <div class="ib-value">
+            Médio–Alto<br>
+            <strong>Premium com avaliação gratuita</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="services-section">
+        <h4>🛠️ Serviços Oferecidos</h4>
+        <div class="services-grid">
+          <span class="service-chip highlight">PPF Automotivo</span>
+          <span class="service-chip highlight">Vitrificação de Pintura</span>
+          <span class="service-chip highlight">Coating Cerâmico</span>
+          <span class="service-chip">Polimento Técnico</span>
+          <span class="service-chip">Película Solar</span>
+          <span class="service-chip">Antivandalismo</span>
+          <span class="service-chip">Lavagem Técnica</span>
+          <span class="service-chip">Enceramento</span>
+          <span class="service-chip">Higienização Interna</span>
+          <span class="service-chip">Carros de Luxo / Esportivos</span>
+          <span class="service-chip">Jet Skis e Motos</span>
+        </div>
+      </div>
+
+      <div class="preco-section">
+        <h4>💳 Referência de Preços</h4>
+        <table class="preco-table">
+          <thead>
+            <tr>
+              <th>Serviço</th>
+              <th style="text-align:right">Faixa estimada</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Polimento (carro médio)</td><td>R$ 200 – 600</td></tr>
+            <tr><td>Higienização completa</td><td>R$ 280 – 450</td></tr>
+            <tr><td>Vitrificação de pintura</td><td>R$ 900 – 2.800</td></tr>
+            <tr><td>Coating cerâmico</td><td>R$ 1.500 – 4.500</td></tr>
+            <tr><td>PPF parcial</td><td>R$ 2.800 – 6.000</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="porque-box">
+        <h4>⭐ Por que é o #2 recomendado</h4>
+        <ul>
+          <li>Nota 4,9 no Google — uma das mais altas avaliações do setor em SP</li>
+          <li>Especializado em veículos de luxo, esportivos e importados</li>
+          <li>Equipe altamente capacitada com produtos de alta qualidade</li>
+          <li>Oferece avaliação gratuita do veículo antes de qualquer serviço</li>
+          <li>Localizado na Pompeia, fácil acesso pela Av. Pompéia (próximo a Pinheiros)</li>
+          <li>Atende também motos e jet skis</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#8892a4;margin-bottom:10px;">📞 Contato</h4>
+        <div class="contato-row">
+          <a class="contato-chip wpp" href="https://wa.me/5511999211984" target="_blank">📲 (11) 99921-1984</a>
+          <a class="contato-chip site" href="https://boxdetail.com.br/" target="_blank">🌐 boxdetail.com.br</a>
+          <a class="contato-chip insta" href="https://www.facebook.com/boxdetailsp/" target="_blank">📘 Facebook: boxdetailsp</a>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /box detail -->
+
+  <!-- ── #3 DAMY AUTOCENTER ── -->
+  <div class="estab-card">
+    <div class="estab-header">
+      <div class="rank-badge rank-3">3</div>
+      <div class="estab-name-wrap">
+        <h2>Damy Autocenter — Estética & Funilaria</h2>
+        <div class="tag-list">
+          <span class="tag tag-premium">320 Avaliações</span>
+          <span class="tag">Garantia 3 Anos</span>
+          <span class="tag">Importados</span>
+        </div>
+      </div>
+    </div>
+    <div class="estab-body">
+
+      <div class="info-grid">
+        <div class="info-block">
+          <div class="ib-label">📍 Endereço</div>
+          <div class="ib-value">
+            <strong>Zona Sul de São Paulo</strong><br>
+            Atende toda a cidade (Alto de Pinheiros, Morumbi, etc.)
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">⭐ Avaliação</div>
+          <div class="ib-value">
+            <span class="stars">★★★★½</span>
+            <span class="stars-count">4,6 / 5,0</span><br>
+            <small>320 avaliações · AvaliaçõesBrasil.com</small>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">🛡️ Garantia</div>
+          <div class="ib-value">
+            <strong>3 anos</strong> em todos os serviços<br>
+            Diferencial exclusivo no mercado
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">💰 Faixa de Preço</div>
+          <div class="ib-value">
+            Médio — acabamento premium<br>
+            <strong>com valores justos</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="services-section">
+        <h4>🛠️ Serviços Oferecidos</h4>
+        <div class="services-grid">
+          <span class="service-chip highlight">Vitrificação de Pintura e Couro</span>
+          <span class="service-chip highlight">PPF (Película Protetora)</span>
+          <span class="service-chip">Higienização Interna</span>
+          <span class="service-chip">Polimento Técnico</span>
+          <span class="service-chip">Proteção de Plásticos e Borrachas</span>
+          <span class="service-chip">Cristalização de Vidros</span>
+          <span class="service-chip">Funilaria Completa</span>
+          <span class="service-chip">Funilaria Express</span>
+          <span class="service-chip">Pintura Profissional</span>
+          <span class="service-chip">Martelinho de Ouro</span>
+          <span class="service-chip">Veículos Importados e de Luxo</span>
+        </div>
+      </div>
+
+      <div class="preco-section">
+        <h4>💳 Referência de Preços</h4>
+        <table class="preco-table">
+          <thead>
+            <tr>
+              <th>Serviço</th>
+              <th style="text-align:right">Faixa estimada</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Higienização interna</td><td>R$ 250 – 420</td></tr>
+            <tr><td>Polimento técnico</td><td>R$ 280 – 650</td></tr>
+            <tr><td>Vitrificação de pintura</td><td>R$ 800 – 2.400</td></tr>
+            <tr><td>Vitrificação de couro</td><td>R$ 400 – 900</td></tr>
+            <tr><td>Martelinho de ouro (por amasso)</td><td>R$ 150 – 500</td></tr>
+            <tr><td>Funilaria express</td><td>Orçamento personalizado</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="porque-box">
+        <h4>⭐ Por que é o #3 recomendado</h4>
+        <ul>
+          <li>Única opção com <strong>garantia de 3 anos</strong> em todos os serviços</li>
+          <li>Excelente para quem precisa combinar estética com funilaria/pintura</li>
+          <li>320 avaliações positivas — base sólida de clientes satisfeitos</li>
+          <li>Especializado em importados e veículos de alto padrão</li>
+          <li>Acabamento premium com valores justos (melhor custo-benefício nesse nível)</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#8892a4;margin-bottom:10px;">📞 Contato</h4>
+        <div class="contato-row">
+          <a class="contato-chip site" href="https://www.damyautocenter.com.br/esteticaautomotiva" target="_blank">🌐 damyautocenter.com.br</a>
+          <a class="contato-chip site" href="https://lp.damyautocenter.com.br/" target="_blank">🔗 Landing Page / Orçamento</a>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /damy -->
+
+  <!-- ── #4 360 ESTÉTICA ── -->
+  <div class="estab-card">
+    <div class="estab-header">
+      <div class="rank-badge rank-4">4</div>
+      <div class="estab-name-wrap">
+        <h2>360 Estética Automotiva</h2>
+        <div class="tag-list">
+          <span class="tag">Funilaria + Estética</span>
+          <span class="tag">Lapa / Perdizes</span>
+        </div>
+      </div>
+    </div>
+    <div class="estab-body">
+
+      <div class="info-grid">
+        <div class="info-block">
+          <div class="ib-label">📍 Endereço</div>
+          <div class="ib-value">
+            <strong>Lapa / Vila Romana</strong><br>
+            Próximo a Perdizes, Pompéia e Pinheiros
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">⭐ Avaliação</div>
+          <div class="ib-value">
+            <span class="stars">★★★★</span>
+            <span class="stars-count">Boa reputação local</span><br>
+            <small>Estrutura completa — oficina + estética</small>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">🔧 Destaque</div>
+          <div class="ib-value">
+            Estrutura completa: funilaria,<br>
+            pintura e oficina mecânica
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">💰 Faixa de Preço</div>
+          <div class="ib-value">
+            Médio<br>
+            <strong>Promoções frequentes</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="services-section">
+        <h4>🛠️ Serviços Oferecidos</h4>
+        <div class="services-grid">
+          <span class="service-chip highlight">Funilaria Completa</span>
+          <span class="service-chip highlight">Pintura Profissional</span>
+          <span class="service-chip">Estética Automotiva</span>
+          <span class="service-chip">Polimento</span>
+          <span class="service-chip">Higienização</span>
+          <span class="service-chip">Oficina Mecânica</span>
+          <span class="service-chip">Vitrificação</span>
+        </div>
+      </div>
+
+      <div class="porque-box">
+        <h4>⭐ Por que está no ranking</h4>
+        <ul>
+          <li>Solução "tudo em um": estética, funilaria, pintura e mecânica no mesmo lugar</li>
+          <li>Localização estratégica entre Lapa, Perdizes, Pompéia e Pinheiros</li>
+          <li>Promoções frequentes divulgadas no site</li>
+          <li>Boa opção para quem precisa de funilaria junto com estética</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#8892a4;margin-bottom:10px;">📞 Contato</h4>
+        <div class="contato-row">
+          <a class="contato-chip site" href="http://www.360esteticaautomotiva.com/" target="_blank">🌐 360esteticaautomotiva.com</a>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /360 -->
+
+  <!-- ── #5 MAIS VAPOR ── -->
+  <div class="estab-card">
+    <div class="estab-header">
+      <div class="rank-badge rank-5">5</div>
+      <div class="estab-name-wrap">
+        <h2>Mais Vapor Estética Automotiva</h2>
+        <div class="tag-list">
+          <span class="tag tag-custo">Custo-Benefício</span>
+          <span class="tag">Econômico</span>
+          <span class="tag">Atende Vila Andrade</span>
+        </div>
+      </div>
+    </div>
+    <div class="estab-body">
+
+      <div class="info-grid">
+        <div class="info-block">
+          <div class="ib-label">📍 Localização</div>
+          <div class="ib-value">
+            Campo Limpo / Tabão da Serra<br>
+            <strong>Atende: Vila Andrade, Vila Sônia,<br>Portal do Morumbi, Butantã</strong>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">📞 Contato</div>
+          <div class="ib-value">
+            <strong>(11) 94717-4575</strong><br>
+            WhatsApp disponível
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">⭐ Perfil</div>
+          <div class="ib-value">
+            Opção econômica para<br>
+            <strong>lavagem e higienização rotineira</strong>
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">💰 Faixa de Preço</div>
+          <div class="ib-value">
+            <strong>Econômico</strong><br>
+            Melhor custo-benefício para serviços básicos
+          </div>
+        </div>
+      </div>
+
+      <div class="services-section">
+        <h4>🛠️ Serviços Oferecidos</h4>
+        <div class="services-grid">
+          <span class="service-chip">Lavagem a Vapor</span>
+          <span class="service-chip">Higienização Automotiva</span>
+          <span class="service-chip">Polimento</span>
+          <span class="service-chip">Cristalização de Pintura</span>
+          <span class="service-chip">Espelhamento</span>
+          <span class="service-chip">Higienização de Ar Condicionado</span>
+          <span class="service-chip">Limpeza de Estofados</span>
+          <span class="service-chip">Lavagem de Motor</span>
+        </div>
+      </div>
+
+      <div class="porque-box">
+        <h4>⭐ Por que está no ranking</h4>
+        <ul>
+          <li>Opção mais acessível financeiramente da lista</li>
+          <li>Atende diretamente a Vila Andrade e bairros adjacentes</li>
+          <li>Especializado em lavagem a vapor — método mais cuidadoso com a pintura</li>
+          <li>Ideal para manutenção rotineira e higienização frequente</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#8892a4;margin-bottom:10px;">📞 Contato</h4>
+        <div class="contato-row">
+          <a class="contato-chip wpp" href="https://wa.me/5511947174575" target="_blank">📲 (11) 94717-4575</a>
+          <a class="contato-chip site" href="https://www.maisvapor.com.br" target="_blank">🌐 maisvapor.com.br</a>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /mais vapor -->
+
+  <!-- ── #6 PANO NA LATA ── -->
+  <div class="estab-card">
+    <div class="estab-header">
+      <div class="rank-badge rank-6">6</div>
+      <div class="estab-name-wrap">
+        <h2>Pano na Lata — Polimento & Vitrificação</h2>
+        <div class="tag-list">
+          <span class="tag tag-custo">Preços Competitivos</span>
+          <span class="tag">Vila Andrade</span>
+        </div>
+      </div>
+    </div>
+    <div class="estab-body">
+
+      <div class="info-grid">
+        <div class="info-block">
+          <div class="ib-label">📍 Localização</div>
+          <div class="ib-value">
+            <strong>Vila Andrade (atende região)</strong><br>
+            São Paulo — SP
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">📞 Contato</div>
+          <div class="ib-value">
+            <strong>(11) 96525-9570</strong><br>
+            WhatsApp disponível
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">⭐ Perfil</div>
+          <div class="ib-value">
+            Foco em polimento, vitrificação<br>
+            e limpeza técnica
+          </div>
+        </div>
+        <div class="info-block">
+          <div class="ib-label">💰 Faixa de Preço</div>
+          <div class="ib-value">
+            <strong>Competitivo</strong><br>
+            Condições de pagamento facilitadas
+          </div>
+        </div>
+      </div>
+
+      <div class="services-section">
+        <h4>🛠️ Serviços Oferecidos</h4>
+        <div class="services-grid">
+          <span class="service-chip">Vitrificação Automotiva</span>
+          <span class="service-chip">Polimento</span>
+          <span class="service-chip">Espelhamento</span>
+          <span class="service-chip">Cristalização</span>
+          <span class="service-chip">Higienização Interna</span>
+          <span class="service-chip">Limpeza de Bancos e Estofados</span>
+          <span class="service-chip">Recuperação de Para-choques</span>
+          <span class="service-chip">Polimento de Faróis</span>
+          <span class="service-chip">Lavagem Ecológica</span>
+        </div>
+      </div>
+
+      <div class="porque-box">
+        <h4>⭐ Por que está no ranking</h4>
+        <ul>
+          <li>Atende diretamente Vila Andrade com preços competitivos</li>
+          <li>Facilidade de pagamento — diferencial para o público local</li>
+          <li>Polimento de faróis incluso (serviço que muitos ignoram)</li>
+          <li>Lavagem ecológica — consumo consciente de água</li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#8892a4;margin-bottom:10px;">📞 Contato</h4>
+        <div class="contato-row">
+          <a class="contato-chip wpp" href="https://wa.me/5511965259570" target="_blank">📲 (11) 96525-9570</a>
+          <a class="contato-chip site" href="https://panonalata.com.br/" target="_blank">🌐 panonalata.com.br</a>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /pano na lata -->
+
+</div><!-- /content -->
+
+<div class="page-break"></div>
+
+<!-- ══════════════════════════════════════════════════
+     RANKING RESUMO
+══════════════════════════════════════════════════ -->
+<div class="content">
+
+  <div class="section-header">
+    <div class="section-icon">📊</div>
+    <div class="section-title">
+      <span>Seção 05</span>
+      Ranking Comparativo Final
+    </div>
+  </div>
+
+  <table class="ranking-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Estabelecimento</th>
+        <th>Localização</th>
+        <th>Score</th>
+        <th>Perfil</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="pos-medal pos-1">1</span></td>
+        <td><strong>Box299</strong></td>
+        <td>Vila Andrade</td>
+        <td>
+          <div class="score-bar-wrap">
+            <div class="score-bar" style="width:92px"></div>
+            <span class="score-num">9,2</span>
+          </div>
+        </td>
+        <td>Premium · Mais próximo</td>
+      </tr>
+      <tr>
+        <td><span class="pos-medal pos-2">2</span></td>
+        <td><strong>Box Detail</strong></td>
+        <td>Pompeia</td>
+        <td>
+          <div class="score-bar-wrap">
+            <div class="score-bar" style="width:90px"></div>
+            <span class="score-num">9,0</span>
+          </div>
+        </td>
+        <td>Premium · 4,9 ⭐ Google</td>
+      </tr>
+      <tr>
+        <td><span class="pos-medal pos-3">3</span></td>
+        <td><strong>Damy Autocenter</strong></td>
+        <td>Zona Sul</td>
+        <td>
+          <div class="score-bar-wrap">
+            <div class="score-bar" style="width:84px"></div>
+            <span class="score-num">8,4</span>
+          </div>
+        </td>
+        <td>Premium · Garantia 3 anos</td>
+      </tr>
+      <tr>
+        <td><span class="pos-medal pos-4">4</span></td>
+        <td><strong>360 Estética</strong></td>
+        <td>Lapa / Vila Romana</td>
+        <td>
+          <div class="score-bar-wrap">
+            <div class="score-bar" style="width:72px"></div>
+            <span class="score-num">7,2</span>
+          </div>
+        </td>
+        <td>Médio · + Funilaria</td>
+      </tr>
+      <tr>
+        <td><span class="pos-medal pos-5">5</span></td>
+        <td><strong>Mais Vapor</strong></td>
+        <td>Campo Limpo / Tabão</td>
+        <td>
+          <div class="score-bar-wrap">
+            <div class="score-bar" style="width:66px"></div>
+            <span class="score-num">6,6</span>
+          </div>
+        </td>
+        <td>Econômico · Rotina</td>
+      </tr>
+      <tr>
+        <td><span class="pos-medal pos-6">6</span></td>
+        <td><strong>Pano na Lata</strong></td>
+        <td>Vila Andrade</td>
+        <td>
+          <div class="score-bar-wrap">
+            <div class="score-bar" style="width:60px"></div>
+            <span class="score-num">6,0</span>
+          </div>
+        </td>
+        <td>Econômico · Vitrificação</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="font-size:11px;color:#999;margin-top:12px;">* Scores baseados em média ponderada dos 5 critérios descritos na Seção 03. Sujeitos a atualização conforme novas avaliações disponíveis.</p>
+
+  <!-- ── POR NECESSIDADE ── -->
+  <div class="section-header" style="margin-top:48px;">
+    <div class="section-icon">🎯</div>
+    <div class="section-title">
+      <span>Seção 06</span>
+      Recomendação por Tipo de Necessidade
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+    <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:14px;padding:20px;">
+      <div style="font-size:20px;margin-bottom:8px;">🛡️</div>
+      <strong style="font-size:14px;color:#5a4500;">Proteção total (PPF / Coating)</strong>
+      <p style="font-size:12px;color:#7a6000;margin-top:6px;line-height:1.5;">
+        <strong>1º Box299</strong> — na porta de casa em Vila Andrade<br>
+        <strong>2º Box Detail</strong> — melhor nota Google do segmento
+      </p>
+    </div>
+
+    <div style="background:#e8f8f0;border:1px solid #48c78e;border-radius:14px;padding:20px;">
+      <div style="font-size:20px;margin-bottom:8px;">✨</div>
+      <strong style="font-size:14px;color:#1a5c3a;">Polimento e Vitrificação</strong>
+      <p style="font-size:12px;color:#2d7a52;margin-top:6px;line-height:1.5;">
+        <strong>1º Box Detail</strong> — qualidade premium comprovada<br>
+        <strong>2º Damy Autocenter</strong> — garantia de 3 anos inclusa
+      </p>
+    </div>
+
+    <div style="background:#e8f0ff;border:1px solid #6c8ee8;border-radius:14px;padding:20px;">
+      <div style="font-size:20px;margin-bottom:8px;">🔨</div>
+      <strong style="font-size:14px;color:#1a3a9c;">Funilaria + Estética</strong>
+      <p style="font-size:12px;color:#2d52c0;margin-top:6px;line-height:1.5;">
+        <strong>1º Damy Autocenter</strong> — solução completa com garantia<br>
+        <strong>2º 360 Estética</strong> — estrutura própria de funilaria/pintura
+      </p>
+    </div>
+
+    <div style="background:#fff0f5;border:1px solid #e94560;border-radius:14px;padding:20px;">
+      <div style="font-size:20px;margin-bottom:8px;">💧</div>
+      <strong style="font-size:14px;color:#7a0020;">Manutenção Econômica / Rotina</strong>
+      <p style="font-size:12px;color:#a0002e;margin-top:6px;line-height:1.5;">
+        <strong>1º Mais Vapor</strong> — lavagem a vapor, mais barato<br>
+        <strong>2º Pano na Lata</strong> — Vila Andrade, pagamento facilitado
+      </p>
+    </div>
+
+  </div>
+
+  <!-- ── CONCLUSÃO ── -->
+  <div class="section-header" style="margin-top:48px;">
+    <div class="section-icon">💡</div>
+    <div class="section-title">
+      <span>Seção 07</span>
+      Conclusão
+    </div>
+  </div>
+
+  <div class="conclusao-box">
+    <h3>Recomendação Final</h3>
+    <p>
+      Para quem busca <strong>o melhor serviço premium com máxima conveniência</strong>, a <strong>Box299</strong> é a escolha óbvia: está em Vila Andrade, tem portfólio completo e acumula anos de experiência com avaliações consistentemente positivas.
+    </p>
+    <p>
+      Quem prioriza <strong>a nota mais alta do mercado e atendimento de altíssimo padrão</strong>, a <strong>Box Detail</strong> (Pompeia, 4,9⭐) é a referência absoluta em São Paulo — vale o deslocamento.
+    </p>
+    <p>
+      Para quem precisa combinar estética com funilaria/pintura e valoriza <strong>garantia de 3 anos</strong>, a <strong>Damy Autocenter</strong> é o diferencial mais difícil de ignorar.
+    </p>
+    <div class="tip">
+      💡 Dica: Sempre solicite orçamento em pelo menos 2 estabelecimentos antes de fechar. A maioria oferece avaliação gratuita do veículo. Informe marca, modelo, ano e o que precisa para receber um valor mais preciso.
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>⚠️ Aviso:</strong> Os preços apresentados são estimativas de mercado baseadas em pesquisa realizada em março/2026 e podem não refletir os valores exatos de cada estabelecimento. Avaliações do Google Maps podem ter mudado desde a data da pesquisa. Recomendamos verificar todas as informações diretamente com os estabelecimentos antes de contratar qualquer serviço. Este relatório não possui vínculo comercial com nenhum dos estabelecimentos listados.
+  </div>
+
+</div><!-- /content -->
+
+<div class="rodape">
+  <strong>Relatório de Estética Automotiva — Vila Andrade & Pinheiros, São Paulo</strong><br>
+  Pesquisa realizada em Março de 2026 · Documento de uso pessoal<br>
+  Fontes: esteticabox299.com.br · boxdetail.com.br · damyautocenter.com.br · maisvapor.com.br · panonalata.com.br · 360esteticaautomotiva.com
+</div>
+
+</body>
+</html>
