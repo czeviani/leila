@@ -1,0 +1,1981 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestão de Prensagem Móvel 2026 — Consultoria de Métricas e Análise Operacional</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy:      #0d2240;
+    --navy-mid:  #1a3a6b;
+    --blue:      #1e60c8;
+    --blue-lt:   #4a90e2;
+    --orange:    #e8650a;
+    --orange-lt: #f5901e;
+    --green:     #17a26a;
+    --yellow:    #d4a020;
+    --red:       #c0392b;
+    --gray-dk:   #2d3340;
+    --gray:      #5a6070;
+    --gray-lt:   #e8eaf0;
+    --white:     #ffffff;
+    --bg:        #f4f6fb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--gray-dk);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── COVER ── */
+  .cover {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, #1a4e9e 100%);
+    color: var(--white);
+    padding: 64px 80px 56px;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+  }
+  .cover::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .cover-badge {
+    display: inline-block;
+    background: var(--orange);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 2px;
+    margin-bottom: 28px;
+  }
+  .cover h1 {
+    font-size: 38px;
+    font-weight: 800;
+    line-height: 1.2;
+    max-width: 680px;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+  .cover h1 span { color: var(--orange-lt); }
+  .cover-sub {
+    font-size: 17px;
+    opacity: 0.85;
+    max-width: 560px;
+    margin-bottom: 48px;
+    line-height: 1.7;
+  }
+  .cover-meta {
+    display: flex;
+    gap: 48px;
+    font-size: 12px;
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .cover-meta strong { display: block; font-size: 14px; opacity: 1; text-transform: none; letter-spacing: 0; }
+  .cover-accent {
+    position: absolute;
+    right: 60px; bottom: 40px;
+    width: 320px; height: 320px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cover-accent::after {
+    content: '';
+    width: 220px; height: 220px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 50%;
+  }
+  .cover-icon {
+    position: absolute;
+    font-size: 120px;
+    opacity: 0.05;
+    right: 140px; bottom: 60px;
+  }
+
+  /* ── LAYOUT ── */
+  .page { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+  .section { padding: 56px 0 16px; }
+  .section + .section { border-top: 1px solid var(--gray-lt); }
+
+  /* ── SECTION HEADER ── */
+  .sec-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  .sec-num {
+    background: var(--navy);
+    color: var(--white);
+    font-size: 22px;
+    font-weight: 800;
+    min-width: 52px; height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+  .sec-title { flex: 1; }
+  .sec-title h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .sec-title p {
+    color: var(--gray);
+    font-size: 13.5px;
+  }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .kpi-card {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 20px 20px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border-top: 3px solid var(--blue);
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-card.orange { border-top-color: var(--orange); }
+  .kpi-card.green  { border-top-color: var(--green); }
+  .kpi-card.yellow { border-top-color: var(--yellow); }
+  .kpi-card.red    { border-top-color: var(--red); }
+  .kpi-card.navy   { border-top-color: var(--navy); }
+  .kpi-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--gray);
+    margin-bottom: 8px;
+  }
+  .kpi-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--navy);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .kpi-unit {
+    font-size: 13px;
+    color: var(--gray);
+    font-weight: 400;
+  }
+  .kpi-note {
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--gray-lt);
+  }
+  .kpi-trend {
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  .kpi-trend.up   { color: var(--green); }
+  .kpi-trend.down { color: var(--red); }
+  .kpi-trend.warn { color: var(--yellow); }
+
+  /* ── CHARTS ── */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 24px;
+    margin: 24px 0;
+  }
+  .chart-card {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .chart-card.wide {
+    grid-column: 1 / -1;
+  }
+  .chart-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .chart-sub {
+    font-size: 12px;
+    color: var(--gray);
+    margin-bottom: 16px;
+  }
+  .chart-example {
+    font-size: 10px;
+    background: #fff8e6;
+    color: #7a5c00;
+    border: 1px solid #f0d070;
+    border-radius: 4px;
+    padding: 3px 8px;
+    display: inline-block;
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+  canvas { max-width: 100%; }
+
+  /* ── TABLES ── */
+  .tbl-wrap { overflow-x: auto; margin: 16px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background: var(--white);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  thead th {
+    background: var(--navy);
+    color: var(--white);
+    padding: 12px 14px;
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 600;
+  }
+  tbody tr:nth-child(even) { background: #f7f9fc; }
+  tbody td {
+    padding: 11px 14px;
+    border-bottom: 1px solid #eef0f6;
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #eef3fb; }
+  td.num { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  td.green { color: var(--green); font-weight: 700; }
+  td.red   { color: var(--red);   font-weight: 700; }
+  td.warn  { color: var(--yellow); font-weight: 700; }
+
+  /* ── FORMULA BOXES ── */
+  .formula-block {
+    background: #f0f4ff;
+    border-left: 4px solid var(--blue);
+    border-radius: 0 8px 8px 0;
+    padding: 18px 22px;
+    margin: 16px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: var(--navy);
+    line-height: 2;
+  }
+  .formula-block .f-label {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--blue);
+    margin-bottom: 8px;
+  }
+  .formula-highlight {
+    background: var(--navy);
+    color: var(--orange-lt);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+
+  /* ── CALLOUT / INFO BOXES ── */
+  .callout {
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 16px 0;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .callout.info    { background: #e8f0fe; border-left: 4px solid var(--blue); }
+  .callout.success { background: #e6f7ef; border-left: 4px solid var(--green); }
+  .callout.warn    { background: #fff8e1; border-left: 4px solid var(--yellow); }
+  .callout.danger  { background: #fdecea; border-left: 4px solid var(--red); }
+  .callout.orange  { background: #fff3e8; border-left: 4px solid var(--orange); }
+  .callout-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+  .callout-body h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--navy); }
+  .callout-body p, .callout-body ul { font-size: 13px; color: var(--gray-dk); line-height: 1.7; }
+  .callout-body ul { padding-left: 18px; margin-top: 4px; }
+
+  /* ── SEMAPHORE / DECISION ── */
+  .semaphore-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .sema-card {
+    border-radius: 10px;
+    padding: 22px;
+    color: var(--white);
+  }
+  .sema-card.green  { background: var(--green); }
+  .sema-card.yellow { background: var(--yellow); }
+  .sema-card.red    { background: var(--red); }
+  .sema-card .sema-dot {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 50%;
+    margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .sema-card h3 { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+  .sema-card .sema-criteria { font-size: 12px; line-height: 1.8; opacity: 0.92; }
+  .sema-card .sema-action {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.25);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* ── SLIDES GUIDE ── */
+  .slides-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin: 20px 0;
+  }
+  .slide-card {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border-top: 3px solid var(--navy);
+    position: relative;
+  }
+  .slide-card.orange { border-top-color: var(--orange); }
+  .slide-card.green  { border-top-color: var(--green); }
+  .slide-card.blue   { border-top-color: var(--blue); }
+  .slide-num {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--gray);
+    margin-bottom: 6px;
+  }
+  .slide-card h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 10px;
+  }
+  .slide-card ul {
+    list-style: none;
+    font-size: 12.5px;
+    color: var(--gray-dk);
+    line-height: 1.9;
+  }
+  .slide-card ul li::before { content: '→ '; color: var(--blue); font-weight: 700; }
+  .slide-time {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: var(--gray-lt);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray);
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  /* ── MATRIX ── */
+  .matrix-wrap {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin: 20px 0;
+  }
+  .matrix-wrap h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 16px;
+  }
+  .matrix-2x2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    gap: 12px;
+    max-width: 600px;
+  }
+  .m-cell {
+    border-radius: 8px;
+    padding: 16px;
+    min-height: 120px;
+  }
+  .m-cell h4 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .m-cell p  { font-size: 12px; line-height: 1.6; }
+  .m-cell.q1 { background: #e6f7ef; color: #0d5c35; border: 1px solid #b3e8cf; }
+  .m-cell.q2 { background: #fff8e1; color: #5c4500; border: 1px solid #ffe082; }
+  .m-cell.q3 { background: #fff3e8; color: #7a3500; border: 1px solid #ffcc99; }
+  .m-cell.q4 { background: #fdecea; color: #5c1a1a; border: 1px solid #f5b4b0; }
+  .matrix-labels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-width: 600px;
+    margin-top: 4px;
+  }
+  .m-axis-x { text-align: center; font-size: 11px; font-weight: 700; color: var(--gray); }
+
+  /* ── TAGS ── */
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin: 2px;
+  }
+  .tag.blue   { background: #dbeafe; color: #1e40af; }
+  .tag.green  { background: #d1fae5; color: #065f46; }
+  .tag.orange { background: #fef3c7; color: #92400e; }
+  .tag.red    { background: #fee2e2; color: #991b1b; }
+  .tag.gray   { background: var(--gray-lt); color: var(--gray); }
+
+  /* ── STEPS ── */
+  .steps { margin: 16px 0; }
+  .step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    align-items: flex-start;
+  }
+  .step-num {
+    background: var(--orange);
+    color: var(--white);
+    font-size: 13px;
+    font-weight: 800;
+    min-width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-body h4 { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+  .step-body p  { font-size: 13px; color: var(--gray-dk); line-height: 1.6; }
+
+  /* ── BENCHMARK TABLE ── */
+  .bench-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .bench-card {
+    background: var(--white);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+  .bench-card .b-metric { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray); margin-bottom: 8px; }
+  .bench-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--gray-lt); font-size: 12px; }
+  .bench-row:last-child { border-bottom: none; }
+  .bench-row .b-label { color: var(--gray); }
+  .bench-row .b-val   { font-weight: 700; }
+  .bench-row .b-val.g { color: var(--green); }
+  .bench-row .b-val.y { color: var(--yellow); }
+  .bench-row .b-val.r { color: var(--red); }
+
+  /* ── FOOTER ── */
+  .report-footer {
+    background: var(--navy);
+    color: rgba(255,255,255,0.6);
+    font-size: 11px;
+    padding: 24px 40px;
+    margin-top: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 28px 32px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin: 32px 0 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 32px;
+  }
+  .toc-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px dashed #dde1ec;
+    font-size: 13px;
+    color: var(--gray-dk);
+    text-decoration: none;
+  }
+  .toc-item:hover { color: var(--blue); }
+  .toc-item .toc-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gray);
+    min-width: 22px;
+  }
+  .toc-dots { flex: 1; border-bottom: 1px dotted #ccc; }
+  .toc-pg { font-size: 11px; color: var(--gray); }
+
+  /* ── PRINT ── */
+  @media print {
+    .cover { -webkit-print-color-adjust: exact; }
+    .section { page-break-inside: avoid; }
+    .chart-card { page-break-inside: avoid; }
+  }
+
+  /* ── DIVIDERS ── */
+  hr.divider {
+    border: none;
+    border-top: 2px solid var(--gray-lt);
+    margin: 32px 0;
+  }
+
+  /* ── LIST STYLES ── */
+  .ul-styled {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0;
+  }
+  .ul-styled li {
+    padding: 5px 0 5px 20px;
+    position: relative;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .ul-styled li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--orange);
+    font-weight: 700;
+  }
+
+  /* ── TWO-COL ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin: 16px 0;
+  }
+  @media (max-width: 700px) {
+    .two-col, .semaphore-grid, .slides-grid, .chart-grid { grid-template-columns: 1fr; }
+    .cover { padding: 40px 24px; }
+    .cover h1 { font-size: 26px; }
+    .page { padding: 0 16px; }
+  }
+
+  /* ── HIGHLIGHT BOXES ── */
+  .highlight-box {
+    background: var(--navy);
+    color: var(--white);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 20px 0;
+  }
+  .highlight-box h3 { font-size: 16px; margin-bottom: 12px; color: var(--orange-lt); }
+  .highlight-box p, .highlight-box ul { font-size: 13.5px; line-height: 1.8; opacity: 0.92; }
+  .highlight-box ul { padding-left: 20px; }
+
+  /* ── SECTION BADGE ── */
+  .section-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--orange);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 3px 12px;
+    border-radius: 2px;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ████████  CAPA  ████████ -->
+<div class="cover">
+  <div class="cover-badge">Confidencial · Uso Gerencial Interno</div>
+  <h1>Gestão de<br><span>Prensagem Móvel</span><br>— Consultoria Estratégica</h1>
+  <p class="cover-sub">
+    Framework completo de métricas, metodologia de CTS e Saving na Cadeia,
+    guia de apresentação executiva e toolkit para coordenadores regionais.
+    Versão 4.0 — Abril 2026
+  </p>
+  <div class="cover-meta">
+    <div><span>Documento</span><strong>Análise Operacional v4.0</strong></div>
+    <div><span>Abrangência</span><strong>4 Regionais · Brasil</strong></div>
+    <div><span>Data</span><strong>Abril 2026</strong></div>
+    <div><span>Classificação</span><strong>Restrito</strong></div>
+  </div>
+</div>
+
+<!-- ████████  CONTEÚDO  ████████ -->
+<div class="page">
+
+  <!-- SUMÁRIO -->
+  <div class="section">
+    <div class="sec-header">
+      <div class="sec-num">☰</div>
+      <div class="sec-title">
+        <h2>Sumário</h2>
+        <p>Navegação pelo documento — 9 seções + guias práticos</p>
+      </div>
+    </div>
+    <div class="toc">
+      <a class="toc-item" href="#s1"><span class="toc-num">01</span><span>Diagnóstico da Operação</span><span class="toc-dots"></span></a>
+      <a class="toc-item" href="#s6"><span class="toc-num">06</span><span>Análise por Tipo de Máquina</span><span class="toc-dots"></span></a>
+      <a class="toc-item" href="#s2"><span class="toc-num">02</span><span>Framework Completo de Métricas</span><span class="toc-dots"></span></a>
+      <a class="toc-item" href="#s7"><span class="toc-num">07</span><span>Semáforo de Decisão</span><span class="toc-dots"></span></a>
+      <a class="toc-item" href="#s3"><span class="toc-num">03</span><span>Metodologia CTS e Saving</span><span class="toc-dots"></span></a>
+      <a class="toc-item" href="#s8"><span class="toc-num">08</span><span>Guia de Apresentação Executiva</span><span class="toc-dots"></span></a>
+      <a class="toc-item" href="#s4"><span class="toc-num">04</span><span>ROI da Prensagem</span><span class="toc-dots"></span></a>
+      <a class="toc-item" href="#s9"><span class="toc-num">09</span><span>Toolkit para Coordenadores</span><span class="toc-dots"></span></a>
+      <a class="toc-item" href="#s5"><span class="toc-num">05</span><span>Análise por Regional</span><span class="toc-dots"></span></a>
+      <a class="toc-item" href="#s10"><span class="toc-num">10</span><span>Benchmarks e Metas Propostas</span><span class="toc-dots"></span></a>
+    </div>
+  </div>
+
+  <!-- ─── 1. DIAGNÓSTICO ─── -->
+  <div id="s1" class="section">
+    <div class="sec-header">
+      <div class="sec-num">01</div>
+      <div class="sec-title">
+        <h2>Diagnóstico da Operação</h2>
+        <p>Entendendo o modelo de negócio e o papel estratégico das máquinas de prensagem</p>
+      </div>
+    </div>
+
+    <div class="highlight-box">
+      <h3>A Lógica Econômica da Prensagem</h3>
+      <p>
+        As máquinas de prensagem móvel existem para <strong>transformar custo de frete em competitividade de cadeia</strong>.
+        Ao prensar o material antes do transporte, um único caminhão carrega <strong>2,2× mais toneladas</strong>
+        (10 t sem prensar → 22 t prensado), reduzindo drasticamente o número de viagens
+        e o custo operacional da unidade receptora.
+      </p>
+      <ul style="margin-top:10px">
+        <li>Menos caminhões por tonelada = frete unitário menor</li>
+        <li>Menos descargas na unidade = menos equipamento, menos mão de obra, mais throughput</li>
+        <li>Volume prensado que chega via outras fontes não conta no seu benefício — foco no volume que VOCÊ prensa</li>
+      </ul>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Fator de Compressão Teórico</div>
+        <div class="kpi-value">2,2<span class="kpi-unit">×</span></div>
+        <div class="kpi-note">10 t/caminhão → 22 t/caminhão</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">Redução de Viagens</div>
+        <div class="kpi-value">55<span class="kpi-unit">%</span></div>
+        <div class="kpi-note">Se FC = 2,2x: 100 viagens → 45 viagens</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Alavanca Principal</div>
+        <div class="kpi-value">Frete</div>
+        <div class="kpi-note">+ economia de descarga na unidade</div>
+      </div>
+      <div class="kpi-card navy">
+        <div class="kpi-label">Regionais Cobertas</div>
+        <div class="kpi-value">4</div>
+        <div class="kpi-note">Norte, Sul, Leste, Oeste (exemplo)</div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <h4>Implicação estratégica do diagnóstico</h4>
+        <p>A prensagem é um <strong>centro de custo que gera saving</strong>. Por isso, analisar apenas o R$/t de prensagem
+        sem considerar o saving de frete e descarga gerado é uma visão incompleta — e pode levar a decisões de parada
+        que na verdade são prejudiciais ao resultado total da cadeia.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 2. FRAMEWORK DE MÉTRICAS ─── -->
+  <div id="s2" class="section">
+    <div class="sec-header">
+      <div class="sec-num">02</div>
+      <div class="sec-title">
+        <h2>Framework Completo de Métricas</h2>
+        <p>Métricas existentes com análise crítica + 5 novas métricas propostas</p>
+      </div>
+    </div>
+
+    <h3 style="color:var(--navy); margin-bottom:16px; font-size:16px">2.1 — Métricas Existentes: Como Usar Melhor</h3>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Métrica Atual</th>
+            <th>Como Está Sendo Usada</th>
+            <th>Melhoria Recomendada</th>
+            <th>Nível</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Produção (t)</strong></td>
+            <td>Volume total produzido pela máquina</td>
+            <td>Adicionar meta mensal e comparar vs. capacidade nominal. Usar para calcular cobertura da demanda regional.</td>
+            <td><span class="tag blue">Executivo</span> <span class="tag green">Operacional</span></td>
+          </tr>
+          <tr>
+            <td><strong>Desembolso Total (R$)</strong></td>
+            <td>Custo absoluto da máquina</td>
+            <td>Útil para orçamento, mas sempre contextualizar com produção. Decompor fixo vs. variável em tendência histórica.</td>
+            <td><span class="tag blue">Executivo</span></td>
+          </tr>
+          <tr>
+            <td><strong>Custo Fixo / Variável</strong></td>
+            <td>Top 5 itens de custo variável</td>
+            <td>Calcular <strong>custo fixo/t</strong> (dilui com volume) e <strong>custo variável/t</strong> separados. Isso revela alavancas de otimização distintas.</td>
+            <td><span class="tag green">Operacional</span></td>
+          </tr>
+          <tr>
+            <td><strong>Utilização (%)</strong></td>
+            <td>Horas reais / horas planejadas</td>
+            <td>Separar: utilização técnica (excluindo manutenção) vs. utilização bruta. Adicionar <em>horas disponíveis não utilizadas</em> para entender perda de oportunidade.</td>
+            <td><span class="tag green">Operacional</span></td>
+          </tr>
+          <tr>
+            <td><strong>t/h (tonelada-hora)</strong></td>
+            <td>Produtividade da máquina</td>
+            <td>Usar <strong>por classe de máquina</strong> (alta/baixa capacidade). Comparar vs. t/h nominal de fábrica para calcular eficiência real.</td>
+            <td><span class="tag green">Operacional</span></td>
+          </tr>
+          <tr>
+            <td><strong>km rodados</strong></td>
+            <td>Deslocamento total</td>
+            <td>Cruzar com <em>nº de pontos atendidos</em> e <em>frequência</em>. Identificar rotas ineficientes ou sobreposição entre máquinas.</td>
+            <td><span class="tag gray">Logístico</span></td>
+          </tr>
+          <tr>
+            <td><strong>km/t</strong></td>
+            <td>Eficiência logística</td>
+            <td>Ótimo indicador de <em>território × demanda</em>. Máquinas com km/t alto podem estar mal posicionadas. Combinar com mapa geográfico.</td>
+            <td><span class="tag gray">Logístico</span></td>
+          </tr>
+          <tr>
+            <td><strong>Indisponibilidade (%)</strong></td>
+            <td>% do tempo que a máquina ficou parada</td>
+            <td>Separar por <em>causa</em>: manutenção corretiva (falha), preventiva (planejada) e aguardando peça. Cada tipo tem ação diferente.</td>
+            <td><span class="tag green">Operacional</span></td>
+          </tr>
+          <tr>
+            <td><strong>R$/t (métrica primária)</strong></td>
+            <td>Custo total / produção total</td>
+            <td>
+              <strong style="color:var(--red)">Atenção:</strong> R$/t sozinho é incompleto. Uma máquina com R$/t alto em região sem alternativa de coleta ainda gera saving líquido positivo.
+              Use como <em>filtro inicial</em>, nunca como única métrica de decisão.
+            </td>
+            <td><span class="tag blue">Executivo</span> <span class="tag orange">Decisão</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr class="divider">
+    <h3 style="color:var(--navy); margin-bottom:16px; font-size:16px">2.2 — Novas Métricas Propostas</h3>
+
+    <div class="kpi-grid">
+      <div class="kpi-card orange">
+        <div class="kpi-label">Nova Métrica A</div>
+        <div class="kpi-value" style="font-size:20px">CPA</div>
+        <div class="kpi-unit">Custo Para Atender</div>
+        <div class="kpi-note">Custo total para servir 1 tonelada, incluindo frete pós-prensagem. A métrica de custo mais completa.</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Nova Métrica B</div>
+        <div class="kpi-value" style="font-size:20px">SBP</div>
+        <div class="kpi-unit">Saving Bruto por Tonelada</div>
+        <div class="kpi-note">Economia total gerada na cadeia por tonelada prensada (frete + descarga). O "resultado" da operação.</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Nova Métrica C</div>
+        <div class="kpi-value" style="font-size:20px">ROI</div>
+        <div class="kpi-unit">Retorno sobre Prensagem</div>
+        <div class="kpi-note">Saving / Custo prensagem. Se &gt;1,0x a operação se paga. Meta: &gt;1,5x.</div>
+      </div>
+      <div class="kpi-card yellow">
+        <div class="kpi-label">Nova Métrica D</div>
+        <div class="kpi-value" style="font-size:20px">FC</div>
+        <div class="kpi-unit">Fator de Compressão Real</div>
+        <div class="kpi-note">t/caminhão prensado ÷ t/caminhão sem prensar. Target: ≥ 2,0x. Mede qualidade da prensagem.</div>
+      </div>
+      <div class="kpi-card navy">
+        <div class="kpi-label">Nova Métrica E</div>
+        <div class="kpi-value" style="font-size:20px">ICP</div>
+        <div class="kpi-unit">Índice de Cobertura</div>
+        <div class="kpi-note">t prensadas ÷ t total destinadas (%). Quanto da demanda foi atendida com prensagem.</div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card wide">
+        <div class="chart-example">Exemplo Ilustrativo — insira seus dados reais</div>
+        <div class="chart-title">Decomposição do Custo Unitário por Máquina (R$/t)</div>
+        <div class="chart-sub">Visualização do custo fixo e variável por máquina — identifica onde a alavanca é volume vs. eficiência</div>
+        <canvas id="chartCusto" height="90"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-example">Exemplo Ilustrativo</div>
+        <div class="chart-title">Utilização vs. t/h por Máquina</div>
+        <div class="chart-sub">Quadrante: identifica máquinas sub-utilizadas vs. ineficientes</div>
+        <canvas id="chartScatter" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-example">Exemplo Ilustrativo</div>
+        <div class="chart-title">km/t por Máquina</div>
+        <div class="chart-sub">Eficiência logística — alto km/t pode indicar reposicionamento necessário</div>
+        <canvas id="chartKmt" height="200"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 3. METODOLOGIA CTS/SAVING ─── -->
+  <div id="s3" class="section">
+    <div class="sec-header">
+      <div class="sec-num">03</div>
+      <div class="sec-title">
+        <h2>Metodologia: CTS e Saving na Cadeia</h2>
+        <p>Como calcular o Custo Para Atender e o Saving Bruto gerado pela prensagem — passo a passo</p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <h4>Por que precisamos do CTS e não apenas do R$/t?</h4>
+        <p>
+          O R$/t atual mede apenas <strong>o custo de prensar</strong>. Mas a prensagem existe para gerar saving no frete.
+          Uma máquina pode ter R$/t alto e ainda assim ser <strong>fortemente positiva</strong> para o resultado da cadeia
+          — se o frete da região for caro e o volume prensado for relevante. O CTS captura isso.
+        </p>
+      </div>
+    </div>
+
+    <h3 style="color:var(--navy); margin:20px 0 12px; font-size:16px">3.1 — Custo Para Atender (CPA/CTS)</h3>
+
+    <div class="formula-block">
+      <div class="f-label">Fórmula Principal</div>
+      <span class="formula-highlight">CPA (R$/t)</span>  =  Custo_Prensagem (R$/t)  +  Frete_Pós_Prensagem (R$/t)
+    </div>
+
+    <div class="two-col">
+      <div>
+        <p style="font-size:13.5px; color:var(--gray-dk); line-height:1.8">
+          O <strong>Custo de Prensagem (R$/t)</strong> já existe na sua planilha atual (desembolso total / produção).
+          <br><br>
+          O <strong>Frete Pós-Prensagem (R$/t)</strong> é o custo real de transporte do material prensado dividido
+          pelas toneladas transportadas. Este dado precisa ser capturado do seu sistema de frete.
+          <br><br>
+          O CPA é a métrica que um gestor regional deve minimizar — é o custo completo de "colocar 1 tonelada
+          prensada na unidade receptora".
+        </p>
+      </div>
+      <div>
+        <div class="formula-block" style="font-size:12px">
+          <div class="f-label">Exemplo numérico</div>
+          Custo prensagem:      R$ 18/t<br>
+          Frete pós-prensagem:  R$ 24/t<br>
+          ─────────────────────────────<br>
+          <strong>CPA Total:            R$ 42/t</strong><br><br>
+          Frete sem prensar:    R$ 52/t<br>
+          (10t/caminhão vs. 22t/caminhão)<br>
+          ─────────────────────────────<br>
+          <strong>Saving Líquido:       R$ 10/t ✓</strong>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="color:var(--navy); margin:28px 0 12px; font-size:16px">3.2 — Saving Bruto na Cadeia</h3>
+
+    <div class="formula-block">
+      <div class="f-label">Componentes do Saving</div>
+      Saving_Total  =  Saving_Frete  +  Saving_Descarga<br><br>
+
+      <span class="formula-highlight">Saving_Frete (R$/t)</span>  =  Frete_sem_prensar (R$/t)  -  Frete_prensado (R$/t)<br><br>
+
+      Frete_sem_prensar (R$/t)  =  Custo_por_viagem  ×  (1 / Cap_sem_prensar_t)<br>
+      Frete_prensado (R$/t)     =  Custo_por_viagem  ×  (1 / Cap_prensada_t)<br><br>
+
+      <span class="formula-highlight">Saving_Descarga (R$/t)</span>  =  Custo_descarga_por_caminhão  ×  Caminhões_evitados  /  t_total
+    </div>
+
+    <div class="formula-block" style="border-left-color: var(--green)">
+      <div class="f-label" style="color:var(--green)">Simplificação Prática (quando só se tem o frete total)</div>
+      Saving_Frete  =  t_prensadas  ×  Frete_referência/t  ×  (1 - 10/22)<br>
+                    =  t_prensadas  ×  Frete_referência/t  ×  0,545<br><br>
+      <span style="font-size:11px; opacity:0.7">* Este é o saving mínimo estimado. O saving real pode ser maior dependendo do custo de descarga.</span>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-icon">✅</div>
+      <div class="callout-body">
+        <h4>Como obter o "Frete Referência/t"</h4>
+        <p>
+          Use o custo histórico de frete de material <strong>não prensado</strong> para a mesma origem-destino.
+          Se não tiver dados históricos, cotações de mercado para aquela lane (origem → unidade receptora) servem como referência.
+          Uma alternativa simples: use o custo de frete atual por km × km médio da rota, calibrado para caminhões de 10 t.
+        </p>
+      </div>
+    </div>
+
+    <h3 style="color:var(--navy); margin:28px 0 12px; font-size:16px">3.3 — Fator de Compressão Real (FC)</h3>
+
+    <div class="formula-block">
+      <div class="f-label">Fórmula</div>
+      <span class="formula-highlight">FC Real</span>  =  t_médias_por_caminhão_prensado  ÷  t_médias_por_caminhão_sem_prensar<br><br>
+      Benchmark:  FC Real ≥ 2,0  (boa prensagem)<br>
+      FC &lt; 1,8  =  qualidade da prensagem comprometida → investigar setup, material ou manutenção
+    </div>
+
+    <div class="callout orange">
+      <div class="callout-icon">📌</div>
+      <div class="callout-body">
+        <h4>Dado que você precisa começar a capturar</h4>
+        <p>
+          Para calcular o FC Real, você precisa registrar o <strong>peso por viagem</strong> (NF do transportador)
+          dos caminhões que saem com material prensado vs. não prensado. Isso pode ser obtido cruzando
+          NF de saída × tipo de material (prensado/não prensado). Uma vez com esse dado, o FC vira um
+          KPI poderoso de controle de qualidade operacional.
+        </p>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-example">Exemplo Ilustrativo</div>
+        <div class="chart-title">Saving vs. Custo de Prensagem por Regional</div>
+        <div class="chart-sub">Objetivo: saving sempre acima do custo</div>
+        <canvas id="chartSaving" height="220"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-example">Exemplo Ilustrativo</div>
+        <div class="chart-title">Evolução do CPA ao longo dos meses</div>
+        <div class="chart-sub">Tendência do custo total para atender</div>
+        <canvas id="chartCPA" height="220"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 4. ROI ─── -->
+  <div id="s4" class="section">
+    <div class="sec-header">
+      <div class="sec-num">04</div>
+      <div class="sec-title">
+        <h2>ROI da Prensagem</h2>
+        <p>Como medir se cada real investido em prensagem retorna mais de um real em saving de cadeia</p>
+      </div>
+    </div>
+
+    <div class="formula-block">
+      <div class="f-label">ROI da Prensagem</div>
+      <span class="formula-highlight">ROI</span>  =  Saving_Total (R$)  ÷  Custo_Total_Prensagem (R$)<br><br>
+      ROI &gt; 1,0  → operação se justifica economicamente<br>
+      ROI &gt; 1,5  → operação eficiente (meta recomendada)<br>
+      ROI &lt; 1,0  → custo de prensar supera o benefício → revisão necessária
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Regional / Máquina</th>
+            <th class="num">Custo Prensagem (R$)</th>
+            <th class="num">Saving Estimado (R$)</th>
+            <th class="num">ROI</th>
+            <th>Status</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Regional Norte</strong></td>
+            <td class="num">100.000</td>
+            <td class="num">180.000</td>
+            <td class="num green">1,8×</td>
+            <td><span class="tag green">Eficiente</span></td>
+            <td>Manter / expandir</td>
+          </tr>
+          <tr>
+            <td><strong>Regional Leste</strong></td>
+            <td class="num">120.000</td>
+            <td class="num">150.000</td>
+            <td class="num warn">1,25×</td>
+            <td><span class="tag orange">Atenção</span></td>
+            <td>Reduzir custo fixo ou aumentar produção</td>
+          </tr>
+          <tr>
+            <td><strong>Regional Sul</strong></td>
+            <td class="num">90.000</td>
+            <td class="num">160.000</td>
+            <td class="num green">1,78×</td>
+            <td><span class="tag green">Eficiente</span></td>
+            <td>Manter</td>
+          </tr>
+          <tr>
+            <td><strong>Regional Oeste</strong></td>
+            <td class="num">80.000</td>
+            <td class="num">72.000</td>
+            <td class="num red">0,9×</td>
+            <td><span class="tag red">Crítico</span></td>
+            <td>Avaliar parada ou reposicionamento</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout warn" style="margin-top:16px">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <h4>O ROI deve ser calculado no nível da máquina, não só da regional</h4>
+        <p>Uma regional pode ter ROI positivo no agregado, mas conter máquinas específicas com ROI &lt; 1,0.
+        Desça o nível de análise para cada equipamento antes de tomar decisões de parada.</p>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card wide">
+        <div class="chart-example">Exemplo Ilustrativo</div>
+        <div class="chart-title">ROI por Máquina — Ranking</div>
+        <div class="chart-sub">Linha de corte em 1,0× (break-even) e meta em 1,5×</div>
+        <canvas id="chartROI" height="80"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 5. POR REGIONAL ─── -->
+  <div id="s5" class="section">
+    <div class="sec-header">
+      <div class="sec-num">05</div>
+      <div class="sec-title">
+        <h2>Análise por Regional</h2>
+        <p>Como estruturar a visão das 4 regionais — agregação, comparação e benchmarking interno</p>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-icon">🗺️</div>
+      <div class="callout-body">
+        <h4>Por que analisar por regional antes de por máquina?</h4>
+        <p>
+          Cada regional tem características distintas de <em>custo de frete de referência, densidade de
+          pontos de coleta, distância média e sazonalidade</em>. Uma máquina "cara" no Nordeste pode
+          ser mais econômica do que uma "barata" no Sul quando o contexto logístico é diferente.
+          A análise regional primeiro garante benchmarks justos.
+        </p>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Regional</th>
+            <th class="num">Produção (t)</th>
+            <th class="num">R$/t Prensagem</th>
+            <th class="num">Utilização (%)</th>
+            <th class="num">km/t</th>
+            <th class="num">Indisp. (%)</th>
+            <th class="num">ROI</th>
+            <th>Ranking</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Norte</strong></td>
+            <td class="num">4.200</td>
+            <td class="num warn">R$ 23,8</td>
+            <td class="num green">82%</td>
+            <td class="num green">8,2</td>
+            <td class="num green">11%</td>
+            <td class="num green">1,8×</td>
+            <td><span class="tag green">1º</span></td>
+          </tr>
+          <tr>
+            <td><strong>Sul</strong></td>
+            <td class="num">3.800</td>
+            <td class="num green">R$ 19,4</td>
+            <td class="num warn">71%</td>
+            <td class="num warn">12,1</td>
+            <td class="num green">9%</td>
+            <td class="num green">1,78×</td>
+            <td><span class="tag green">2º</span></td>
+          </tr>
+          <tr>
+            <td><strong>Leste</strong></td>
+            <td class="num">2.900</td>
+            <td class="num warn">R$ 27,2</td>
+            <td class="num warn">68%</td>
+            <td class="num warn">14,4</td>
+            <td class="num warn">18%</td>
+            <td class="num warn">1,25×</td>
+            <td><span class="tag orange">3º</span></td>
+          </tr>
+          <tr>
+            <td><strong>Oeste</strong></td>
+            <td class="num">2.100</td>
+            <td class="num red">R$ 34,5</td>
+            <td class="num red">54%</td>
+            <td class="num red">19,8</td>
+            <td class="num red">26%</td>
+            <td class="num red">0,9×</td>
+            <td><span class="tag red">4º</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-example">Exemplo Ilustrativo</div>
+        <div class="chart-title">Produção e CPA por Regional</div>
+        <div class="chart-sub">Barras = produção (t) | Linha = CPA (R$/t)</div>
+        <canvas id="chartRegional" height="220"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-example">Exemplo Ilustrativo</div>
+        <div class="chart-title">Radar de Performance por Regional</div>
+        <div class="chart-sub">5 dimensões: produção, custo, utilização, km/t, disponibilidade</div>
+        <canvas id="chartRadar" height="220"></canvas>
+      </div>
+    </div>
+
+    <div class="callout info" style="margin-top:8px">
+      <div class="callout-icon">📊</div>
+      <div class="callout-body">
+        <h4>Como montar o índice regional composto</h4>
+        <p>
+          Pondere as métricas por importância: <strong>ROI (30%) + Utilização (20%) + R$/t (20%) + Indisponibilidade (15%) + km/t (15%)</strong>.
+          Normalize cada métrica em escala 0-100 antes de ponderar. O resultado é um Score Regional único
+          que permite ranking direto entre regionais com contextos diferentes.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 6. POR TIPO DE MÁQUINA ─── -->
+  <div id="s6" class="section">
+    <div class="sec-header">
+      <div class="sec-num">06</div>
+      <div class="sec-title">
+        <h2>Análise por Tipo de Máquina</h2>
+        <p>Como tratar os dois tipos (alta e baixa capacidade) de forma justa nas análises</p>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <h3 style="color:var(--navy); font-size:15px; margin-bottom:14px">Deve abrir por tipo?</h3>
+        <p style="font-size:13.5px; line-height:1.8; color:var(--gray-dk)">
+          <strong>Sim, sempre nas análises operacionais.</strong> Uma máquina de alta capacidade
+          naturalmente terá t/h maior, R$/t menor e utilização diferente de uma de baixa capacidade.
+          Misturá-las num único ranking distorce as decisões.
+        </p>
+        <br>
+        <p style="font-size:13.5px; line-height:1.8; color:var(--gray-dk)">
+          <strong>Nas análises estratégicas (CPA, ROI, Saving)</strong> você pode agregar, mas
+          sempre identificando qual classe cada máquina pertence.
+        </p>
+      </div>
+      <div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Métrica</th>
+                <th>Tipo A (Alta Cap.)</th>
+                <th>Tipo B (Baixa Cap.)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>t/h nominal</td>
+                <td class="num">25–35 t/h</td>
+                <td class="num">10–18 t/h</td>
+              </tr>
+              <tr>
+                <td>Benchmark R$/t</td>
+                <td class="num green">R$ 15–22</td>
+                <td class="num warn">R$ 22–35</td>
+              </tr>
+              <tr>
+                <td>Benchmark utilização</td>
+                <td class="num">≥ 75%</td>
+                <td class="num">≥ 70%</td>
+              </tr>
+              <tr>
+                <td>Custo fixo típico</td>
+                <td class="num warn">Maior</td>
+                <td class="num green">Menor</td>
+              </tr>
+              <tr>
+                <td>Melhor uso</td>
+                <td>Rotas com alto volume</td>
+                <td>Rotas com volume médio / acesso difícil</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout orange">
+      <div class="callout-icon">⚙️</div>
+      <div class="callout-body">
+        <h4>Regra de alocação estratégica por tipo</h4>
+        <p>
+          Máquinas Tipo A devem estar em rotas de <strong>alto volume contínuo</strong> para diluir o custo fixo.
+          Máquinas Tipo B são mais versáteis e indicadas para rotas sazonais, de acesso limitado ou em regiões
+          ainda não consolidadas. Avalie realocar máquinas Tipo A que estejam em rotas de baixo volume —
+          pode ser mais econômico do que buscar eficiência nelas naquela posição.
+        </p>
+      </div>
+    </div>
+
+    <div class="formula-block" style="border-left-color:var(--orange)">
+      <div class="f-label" style="color:var(--orange)">Critério de Alocação por Volume</div>
+      Volume_mínimo_para_Tipo_A  =  Custo_Fixo_Tipo_A  ÷  Margem_R$/t_Tipo_A<br>
+      Volume_mínimo_para_Tipo_B  =  Custo_Fixo_Tipo_B  ÷  Margem_R$/t_Tipo_B<br><br>
+      Se volume_rota &lt; Volume_mínimo_Tipo_A → allocate Tipo B ou avaliar viabilidade
+    </div>
+  </div>
+
+  <!-- ─── 7. SEMÁFORO ─── -->
+  <div id="s7" class="section">
+    <div class="sec-header">
+      <div class="sec-num">07</div>
+      <div class="sec-title">
+        <h2>Semáforo de Decisão por Máquina</h2>
+        <p>Critérios objetivos para classificar cada equipamento e definir ações — manter, monitorar ou parar</p>
+      </div>
+    </div>
+
+    <div class="semaphore-grid">
+      <div class="sema-card green">
+        <div class="sema-dot">●</div>
+        <h3>VERDE — Manter</h3>
+        <div class="sema-criteria">
+          ✔ ROI ≥ 1,5×<br>
+          ✔ Utilização ≥ 75%<br>
+          ✔ R$/t dentro do benchmark do tipo<br>
+          ✔ Indisponibilidade ≤ 15%<br>
+          ✔ km/t dentro do benchmark regional
+        </div>
+        <div class="sema-action">Ação: monitorar mensalmente</div>
+      </div>
+      <div class="sema-card yellow">
+        <div class="sema-dot">●</div>
+        <h3>AMARELO — Atenção</h3>
+        <div class="sema-criteria">
+          ⚡ ROI entre 1,0× e 1,5×<br>
+          ⚡ Utilização 60–75%<br>
+          ⚡ R$/t 10–20% acima do benchmark<br>
+          ⚡ Indisponibilidade 15–25%<br>
+          ⚡ 1 ou 2 critérios vermelhos isolados
+        </div>
+        <div class="sema-action">Ação: plano de ação em 30 dias</div>
+      </div>
+      <div class="sema-card red">
+        <div class="sema-dot">●</div>
+        <h3>VERMELHO — Decisão</h3>
+        <div class="sema-criteria">
+          ✗ ROI &lt; 1,0× por 2 meses consecutivos<br>
+          ✗ Utilização &lt; 50% por 2 meses<br>
+          ✗ R$/t &gt; 30% acima do benchmark<br>
+          ✗ Indisponibilidade &gt; 30%<br>
+          ✗ 3 ou mais critérios amarelos simultâneos
+        </div>
+        <div class="sema-action">Ação: avaliar parada / reposicionamento</div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <h4>Antes de parar uma máquina vermelho: 3 perguntas obrigatórias</h4>
+        <ul>
+          <li>Existe alternativa de coleta para o volume atendido por ela? (volume que deixa de ser prensado impacta o frete total)</li>
+          <li>O vermelho é temporário (sazonalidade, obra, contrato) ou estrutural?</li>
+          <li>Reposicionar a máquina para outra rota mudaria o semáforo para amarelo ou verde?</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="matrix-wrap">
+      <h3>Matriz Custo × Resultado para Priorização de Ações</h3>
+      <div class="matrix-2x2">
+        <div class="m-cell q1">
+          <h4>★ Proteger</h4>
+          <p>Alto ROI + Baixo Custo<br>Investir em aumento de produção. Replicar o modelo.</p>
+        </div>
+        <div class="m-cell q2">
+          <h4>⚡ Otimizar</h4>
+          <p>Alto ROI + Alto Custo<br>Vale o investimento. Foco em reduzir custo variável.</p>
+        </div>
+        <div class="m-cell q3">
+          <h4>🔄 Reposicionar</h4>
+          <p>Baixo ROI + Baixo Custo<br>Mover para rota com maior volume ou frete maior.</p>
+        </div>
+        <div class="m-cell q4">
+          <h4>⛔ Revisar</h4>
+          <p>Baixo ROI + Alto Custo<br>Parar ou renegociar contrato. Alta prioridade.</p>
+        </div>
+      </div>
+      <div class="matrix-labels">
+        <div class="m-axis-x">↑ Baixo Custo</div>
+        <div class="m-axis-x">↑ Alto Custo</div>
+      </div>
+      <div style="font-size:11px; color:var(--gray); margin-top:8px">Eixo Y: ROI (baixo/alto) · Eixo X: Custo R$/t (baixo/alto)</div>
+    </div>
+  </div>
+
+  <!-- ─── 8. GUIA DE APRESENTAÇÃO ─── -->
+  <div id="s8" class="section">
+    <div class="sec-header">
+      <div class="sec-num">08</div>
+      <div class="sec-title">
+        <h2>Guia de Apresentação Executiva</h2>
+        <p>Estrutura recomendada para a reunião — 4 camadas, 12 slides, ~18 minutos</p>
+      </div>
+    </div>
+
+    <div class="callout orange" style="margin-bottom:24px">
+      <div class="callout-icon">🎯</div>
+      <div class="callout-body">
+        <h4>Princípio da apresentação executiva de alta performance</h4>
+        <p>
+          Comece pelo <strong>resultado financeiro</strong> (saving, ROI), não pela operação.
+          CEOs querem ver o impacto no P&L antes de entender como funciona a máquina.
+          Use a sequência: <em>Resultado → Contexto → Análise → Decisão.</em>
+        </p>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:8px">
+      <div>
+        <div class="section-badge">Camada 1</div>
+        <h3 style="color:var(--navy); font-size:15px; margin:4px 0 16px">Por que existimos? (2 min)</h3>
+        <div class="slides-grid" style="grid-template-columns:1fr">
+          <div class="slide-card">
+            <div class="slide-num">Slide 1</div>
+            <h3>O Economics da Prensagem</h3>
+            <div class="slide-time">45s</div>
+            <ul>
+              <li>10 t/caminhão → 22 t/caminhão</li>
+              <li>Redução de 55% no nº de viagens</li>
+              <li>Impacto no frete + descarga na unidade</li>
+              <li>Visual: ícone de caminhão com seta</li>
+            </ul>
+          </div>
+          <div class="slide-card orange">
+            <div class="slide-num">Slide 2</div>
+            <h3>Nossa Presença — Mapa do Brasil</h3>
+            <div class="slide-time">45s</div>
+            <ul>
+              <li>Mapa com 4 regionais destacadas</li>
+              <li>Localização das máquinas (bolinhas)</li>
+              <li>Nº de máquinas por regional</li>
+              <li>Volume total prensado no período</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-badge">Camada 2</div>
+        <h3 style="color:var(--navy); font-size:15px; margin:4px 0 16px">Como estamos? (5 min)</h3>
+        <div class="slides-grid" style="grid-template-columns:1fr">
+          <div class="slide-card blue">
+            <div class="slide-num">Slide 3</div>
+            <h3>KPIs Executivos — Visão Geral</h3>
+            <div class="slide-time">1min</div>
+            <ul>
+              <li>4 cards: Produção total, CPA médio, Saving gerado, ROI médio</li>
+              <li>Variação vs. mês anterior (↑↓)</li>
+              <li>Semáforo geral da frota</li>
+            </ul>
+          </div>
+          <div class="slide-card blue">
+            <div class="slide-num">Slide 4</div>
+            <h3>Performance por Regional</h3>
+            <div class="slide-time">2min</div>
+            <ul>
+              <li>Tabela: 4 regionais × 5 métricas</li>
+              <li>Semáforo por célula (vermelho/amarelo/verde)</li>
+              <li>Destaque para melhor e pior regional</li>
+            </ul>
+          </div>
+          <div class="slide-card blue">
+            <div class="slide-num">Slide 5</div>
+            <h3>Evolução Histórica (últimos 6 meses)</h3>
+            <div class="slide-time">1min</div>
+            <ul>
+              <li>Gráfico de linha: produção × CPA × ROI</li>
+              <li>Identificar tendências e pontos de inflexão</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:24px">
+      <div>
+        <div class="section-badge">Camada 3</div>
+        <h3 style="color:var(--navy); font-size:15px; margin:4px 0 16px">Custo e Valor (5 min)</h3>
+        <div class="slides-grid" style="grid-template-columns:1fr">
+          <div class="slide-card green">
+            <div class="slide-num">Slide 6</div>
+            <h3>Decomposição do Custo</h3>
+            <div class="slide-time">1min</div>
+            <ul>
+              <li>Gráfico de pizza: fixo vs. variável</li>
+              <li>Top 5 itens de custo variável</li>
+              <li>Benchmarking por tipo de máquina</li>
+            </ul>
+          </div>
+          <div class="slide-card green">
+            <div class="slide-num">Slide 7</div>
+            <h3>O Business Case — CPA vs. Saving</h3>
+            <div class="slide-time">2min</div>
+            <ul>
+              <li>Barras agrupadas: custo prensagem × frete prensado × frete sem prensar</li>
+              <li>Área de saving destacada</li>
+              <li>ROI total da frota em destaque</li>
+            </ul>
+          </div>
+          <div class="slide-card green">
+            <div class="slide-num">Slide 8</div>
+            <h3>ROI por Máquina — Ranking</h3>
+            <div class="slide-time">1.5min</div>
+            <ul>
+              <li>Gráfico de barras horizontais ordenado</li>
+              <li>Linha de corte em 1,0× e meta em 1,5×</li>
+              <li>Coloração por semáforo</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-badge">Camada 4</div>
+        <h3 style="color:var(--navy); font-size:15px; margin:4px 0 16px">Decisão e Próximos Passos (4 min)</h3>
+        <div class="slides-grid" style="grid-template-columns:1fr">
+          <div class="slide-card">
+            <div class="slide-num">Slide 9</div>
+            <h3>Matriz de Decisão por Máquina</h3>
+            <div class="slide-time">1.5min</div>
+            <ul>
+              <li>Matriz 2×2: ROI × Custo</li>
+              <li>Cada máquina como um ponto</li>
+              <li>Quadrante de cada uma com ação recomendada</li>
+            </ul>
+          </div>
+          <div class="slide-card">
+            <div class="slide-num">Slide 10</div>
+            <h3>Máquinas em Alerta Vermelho</h3>
+            <div class="slide-time">1min</div>
+            <ul>
+              <li>Lista das máquinas críticas</li>
+              <li>Causa raiz de cada uma</li>
+              <li>Recomendação: parar / reposicionar / negociar</li>
+            </ul>
+          </div>
+          <div class="slide-card">
+            <div class="slide-num">Slide 11</div>
+            <h3>Plano de Ação — Próximos 30 dias</h3>
+            <div class="slide-time">1.5min</div>
+            <ul>
+              <li>Tabela: ação · responsável · prazo · impacto esperado</li>
+              <li>Foco em 3-5 ações de maior retorno</li>
+            </ul>
+          </div>
+          <div class="slide-card orange">
+            <div class="slide-num">Slide 12</div>
+            <h3>Próximas Evoluções do Modelo</h3>
+            <div class="slide-time">30s</div>
+            <ul>
+              <li>Captura de Fator de Compressão Real</li>
+              <li>Integração do custo de descarga na unidade</li>
+              <li>Mapa de calor de rotas por ROI</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout success" style="margin-top:24px">
+      <div class="callout-icon">💼</div>
+      <div class="callout-body">
+        <h4>Dicas de apresentação para CEOs</h4>
+        <ul>
+          <li><strong>Nunca abra a apresentação com operação</strong> — abra com R$ gerado (saving, ROI).</li>
+          <li>Tenha sempre <strong>2 números de prontidão</strong>: "geramos R$ X de saving e nosso ROI é Y×".</li>
+          <li>Use <strong>linguagem de cadeia</strong>, não de máquina: "esse custo nos custou X de frete a mais" é mais poderoso que "a máquina teve utilização de 60%".</li>
+          <li>Slide de decisão claro: "precisamos decidir sobre X máquinas — custo de continuar é R$ Y, custo de parar é R$ Z (perda de saving)".</li>
+          <li>Prepare o <strong>modo de detalhamento</strong>: se pedirem detalhe, tenha os slides de análise por máquina prontos como backup.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 9. TOOLKIT COORDENADORES ─── -->
+  <div id="s9" class="section">
+    <div class="sec-header">
+      <div class="sec-num">09</div>
+      <div class="sec-title">
+        <h2>Toolkit para Coordenadores Regionais</h2>
+        <p>Como os coordenadores devem usar os dados para tomar decisões de campo — visão micro</p>
+      </div>
+    </div>
+
+    <div class="highlight-box" style="margin-bottom:24px">
+      <h3>O que o coordenador precisa saber vs. o que o gestor precisa saber</h3>
+      <p>
+        O gestor nacional precisa do <strong>ROI e saving total</strong> — impacto no resultado da cadeia.
+        O coordenador regional precisa de <strong>utilização, t/h, indisponibilidade e km/t</strong> — alavancas que ele controla diariamente.
+        Não adianta dar ao coordenador apenas o R$/t e esperar ação: ele precisa saber <em>o que mover</em> para chegar lá.
+      </p>
+    </div>
+
+    <h3 style="color:var(--navy); font-size:15px; margin-bottom:16px">Painel Semanal do Coordenador — O que monitorar</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Métrica</th>
+            <th>Frequência</th>
+            <th>Alerta se...</th>
+            <th>Ação do Coordenador</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Utilização (%)</strong></td>
+            <td>Semanal</td>
+            <td class="warn">&lt; 65% na semana</td>
+            <td>Investigar causa: falta de material, logística de deslocamento, manutenção pendente</td>
+          </tr>
+          <tr>
+            <td><strong>t/h realizada vs. nominal</strong></td>
+            <td>Semanal</td>
+            <td class="warn">&lt; 75% do nominal</td>
+            <td>Checar material (umidade, granulometria), setup da máquina, operador</td>
+          </tr>
+          <tr>
+            <td><strong>Indisponibilidade (%)</strong></td>
+            <td>Diária</td>
+            <td class="red">&gt; 20% na semana</td>
+            <td>Acionar manutenção preventiva, checar peças críticas em estoque, escalonar para gestor</td>
+          </tr>
+          <tr>
+            <td><strong>km/t acumulado</strong></td>
+            <td>Mensal</td>
+            <td class="warn">&gt; 20% acima da meta regional</td>
+            <td>Revisar roteirização, identificar pontos com baixo volume que não justificam visita separada</td>
+          </tr>
+          <tr>
+            <td><strong>Custo variável/t</strong></td>
+            <td>Mensal</td>
+            <td class="warn">&gt; 15% vs. mês anterior</td>
+            <td>Analisar top 5 itens, identificar qual item disparou: óleo, combustível, mão de obra extra, etc.</td>
+          </tr>
+          <tr>
+            <td><strong>Produção vs. meta</strong></td>
+            <td>Semanal</td>
+            <td class="red">&lt; 80% da meta acumulada</td>
+            <td>Verificar disponibilidade de material nos pontos, antecipação de rotas, horas extras</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="color:var(--navy); font-size:15px; margin:24px 0 16px">Passo a passo: Como decidir sobre uma máquina específica</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Verifique o semáforo atual</h4>
+          <p>Classifique a máquina nos critérios da seção 7 (verde/amarelo/vermelho). Se verde, mantenha o monitoramento normal.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Para amarelo ou vermelho: identifique o diagnóstico</h4>
+          <p>Qual métrica está fora? Utilização baixa (problema de abastecimento ou logística), t/h baixo (problema de máquina ou material), indisponibilidade alta (manutenção) ou custo alto (variáveis fora de controle).</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Estime o ROI sem as ineficiências</h4>
+          <p>Se o problema for temporário (manutenção em curso, sazonalidade de material), estime o ROI com performance normalizada. Se ainda for &lt; 1,0×, o problema é estrutural.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>Avalie a alternativa</h4>
+          <p>Quanto do volume que essa máquina prensa chegaria sem prensar se ela parar? Qual o custo de frete adicional gerado? Compare com o custo de mantê-la.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h4>Recomendação para o gestor nacional</h4>
+          <p>Apresente: diagnóstico, ROI atual, ROI potencial, impacto de parar, recomendação (manter/reposicionar/parar) com justificativa financeira.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-icon">🛠️</div>
+      <div class="callout-body">
+        <h4>Material mínimo que o coordenador precisa ter disponível</h4>
+        <ul>
+          <li>Dashboard semanal por máquina com semáforo automático (planilha ou BI)</li>
+          <li>Meta mensal de produção e utilização por máquina</li>
+          <li>Referência de frete sem prensagem por rota (para calcular saving)</li>
+          <li>Histórico dos últimos 3 meses para identificar tendências</li>
+          <li>Critérios de semáforo documentados (seção 7 deste relatório)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 10. BENCHMARKS ─── -->
+  <div id="s10" class="section">
+    <div class="sec-header">
+      <div class="sec-num">10</div>
+      <div class="sec-title">
+        <h2>Benchmarks e Metas Propostas</h2>
+        <p>Referências para calibrar o desempenho — ajuste com seus dados históricos após 3 meses de série</p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-icon">📐</div>
+      <div class="callout-body">
+        <h4>Como usar estes benchmarks</h4>
+        <p>
+          Os valores abaixo são pontos de partida baseados em boas práticas operacionais de equipamentos
+          de prensagem móvel. Após 3 meses de dados históricos com o novo framework, recalcule usando
+          <strong>média + 1 desvio padrão</strong> da sua própria frota como meta operacional —
+          isso cria benchmarks contextualizados para a sua realidade.
+        </p>
+      </div>
+    </div>
+
+    <div class="bench-grid">
+      <div class="bench-card">
+        <div class="b-metric">Utilização</div>
+        <div class="bench-row"><span class="b-label">Meta</span><span class="b-val g">≥ 75%</span></div>
+        <div class="bench-row"><span class="b-label">Alerta</span><span class="b-val y">60–74%</span></div>
+        <div class="bench-row"><span class="b-label">Crítico</span><span class="b-val r">&lt; 60%</span></div>
+      </div>
+      <div class="bench-card">
+        <div class="b-metric">Indisponibilidade</div>
+        <div class="bench-row"><span class="b-label">Meta</span><span class="b-val g">≤ 12%</span></div>
+        <div class="bench-row"><span class="b-label">Alerta</span><span class="b-val y">13–20%</span></div>
+        <div class="bench-row"><span class="b-label">Crítico</span><span class="b-val r">&gt; 20%</span></div>
+      </div>
+      <div class="bench-card">
+        <div class="b-metric">ROI da Prensagem</div>
+        <div class="bench-row"><span class="b-label">Meta</span><span class="b-val g">≥ 1,5×</span></div>
+        <div class="bench-row"><span class="b-label">Alerta</span><span class="b-val y">1,0–1,5×</span></div>
+        <div class="bench-row"><span class="b-label">Crítico</span><span class="b-val r">&lt; 1,0×</span></div>
+      </div>
+      <div class="bench-card">
+        <div class="b-metric">Fator de Compressão</div>
+        <div class="bench-row"><span class="b-label">Excelente</span><span class="b-val g">≥ 2,0×</span></div>
+        <div class="bench-row"><span class="b-label">Adequado</span><span class="b-val y">1,8–2,0×</span></div>
+        <div class="bench-row"><span class="b-label">Problema</span><span class="b-val r">&lt; 1,8×</span></div>
+      </div>
+      <div class="bench-card">
+        <div class="b-metric">km/t (logístico)</div>
+        <div class="bench-row"><span class="b-label">Eficiente</span><span class="b-val g">≤ 10</span></div>
+        <div class="bench-row"><span class="b-label">Razoável</span><span class="b-val y">10–18</span></div>
+        <div class="bench-row"><span class="b-label">Ineficiente</span><span class="b-val r">&gt; 18</span></div>
+      </div>
+      <div class="bench-card">
+        <div class="b-metric">Índice de Cobertura (ICP)</div>
+        <div class="bench-row"><span class="b-label">Meta</span><span class="b-val g">≥ 70%</span></div>
+        <div class="bench-row"><span class="b-label">Alerta</span><span class="b-val y">50–70%</span></div>
+        <div class="bench-row"><span class="b-label">Crítico</span><span class="b-val r">&lt; 50%</span></div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card wide">
+        <div class="chart-example">Exemplo Ilustrativo</div>
+        <div class="chart-title">Scorecard de Performance — Todas as Métricas</div>
+        <div class="chart-sub">Visão consolidada: cada barra mostra o valor atual vs. meta (linha tracejada)</div>
+        <canvas id="chartScore" height="80"></canvas>
+      </div>
+    </div>
+
+    <h3 style="color:var(--navy); font-size:16px; margin:28px 0 16px">Plano de Implementação — Próximos 90 dias</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">30d</div>
+        <div class="step-body">
+          <h4>Implementar CPA e Saving estimado na planilha existente</h4>
+          <p>Adicionar as colunas: frete pós-prensagem, saving estimado (fórmula simplificada da seção 3.2), ROI por máquina.
+          Usar frete de referência histórico ou cotação de mercado como proxy inicial.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">30d</div>
+        <div class="step-body">
+          <h4>Criar semáforo automático na planilha</h4>
+          <p>Usar formatação condicional (verde/amarelo/vermelho) nos critérios da seção 7.
+          Distribuir template para coordenadores regionais com treinamento de leitura.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">60d</div>
+        <div class="step-body">
+          <h4>Iniciar captura do Fator de Compressão Real</h4>
+          <p>Cruzar NF de saída (peso por viagem) × tipo de material (prensado/bruto).
+          Com 2 meses de dados, o FC Real vira um KPI de controle de qualidade muito poderoso.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">90d</div>
+        <div class="step-body">
+          <h4>Construir benchmarks internos calibrados</h4>
+          <p>Com 3 meses de série histórica no novo framework, recalcular as metas usando média ± 1σ da própria frota.
+          Separar benchmarks por classe de máquina (Tipo A e Tipo B).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- FOOTER -->
+<div class="report-footer">
+  <span>Gestão de Prensagem Móvel — Consultoria de Métricas v4.0 · Abril 2026</span>
+  <span>Uso Restrito e Confidencial · Distribuição Interna</span>
+</div>
+
+<script>
+// ── Paleta ──
+const NAVY   = '#0d2240';
+const BLUE   = '#1e60c8';
+const ORANGE = '#e8650a';
+const GREEN  = '#17a26a';
+const YELLOW = '#d4a020';
+const RED    = '#c0392b';
+const GRAY   = '#c8ccd8';
+
+const maquinas = ['Maq-01','Maq-02','Maq-03','Maq-04','Maq-05','Maq-06','Maq-07','Maq-08'];
+
+// 1. Custo por máquina
+new Chart(document.getElementById('chartCusto'), {
+  type: 'bar',
+  data: {
+    labels: maquinas,
+    datasets: [
+      { label: 'Custo Fixo (R$/t)', data:[12,11,14,10,16,13,9,18], backgroundColor: NAVY+'cc' },
+      { label: 'Custo Variável (R$/t)', data:[8,10,9,14,12,11,15,16], backgroundColor: ORANGE+'cc' }
+    ]
+  },
+  options:{
+    responsive:true, plugins:{legend:{position:'top'}},
+    scales:{x:{stacked:true},y:{stacked:true, title:{display:true,text:'R$/t'}}}
+  }
+});
+
+// 2. Scatter utilização × t/h
+new Chart(document.getElementById('chartScatter'), {
+  type: 'scatter',
+  data: {
+    datasets:[{
+      label:'Máquinas',
+      data:[
+        {x:82,y:28},{x:71,y:24},{x:68,y:19},{x:54,y:14},
+        {x:79,y:32},{x:61,y:21},{x:85,y:30},{x:48,y:16}
+      ],
+      backgroundColor:[GREEN,GREEN,YELLOW,RED,GREEN,YELLOW,GREEN,RED],
+      pointRadius:8
+    }]
+  },
+  options:{
+    responsive:true,
+    scales:{
+      x:{title:{display:true,text:'Utilização (%)'},min:40,max:100},
+      y:{title:{display:true,text:'t/h realizada'}}
+    },
+    plugins:{legend:{display:false}}
+  }
+});
+
+// 3. km/t
+new Chart(document.getElementById('chartKmt'), {
+  type:'bar',
+  data:{
+    labels:maquinas,
+    datasets:[{
+      label:'km/t',
+      data:[8.2,9.1,12.4,19.8,7.8,13.1,10.2,22.3],
+      backgroundColor:[GREEN,GREEN,YELLOW,RED,GREEN,YELLOW,GREEN,RED]
+    }]
+  },
+  options:{
+    indexAxis:'y', responsive:true,
+    plugins:{legend:{display:false}},
+    scales:{x:{title:{display:true,text:'km/t'}}}
+  }
+});
+
+// 4. Saving vs. Custo
+const regionais = ['Norte','Sul','Leste','Oeste'];
+new Chart(document.getElementById('chartSaving'), {
+  type:'bar',
+  data:{
+    labels:regionais,
+    datasets:[
+      {label:'Custo Prensagem (R$/t)',data:[18,16,22,28],backgroundColor:NAVY+'cc'},
+      {label:'Saving na Cadeia (R$/t)',data:[32,28,27,24],backgroundColor:GREEN+'cc'}
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{position:'top'}},
+    scales:{y:{title:{display:true,text:'R$/t'}}}
+  }
+});
+
+// 5. CPA ao longo do tempo
+new Chart(document.getElementById('chartCPA'), {
+  type:'line',
+  data:{
+    labels:['Out','Nov','Dez','Jan','Fev','Mar'],
+    datasets:[
+      {label:'CPA (R$/t)',data:[48,45,43,46,44,42],borderColor:BLUE,backgroundColor:BLUE+'20',fill:true,tension:0.3},
+      {label:'Meta (R$/t)',data:[45,45,45,45,45,45],borderColor:ORANGE,borderDash:[6,4],pointRadius:0}
+    ]
+  },
+  options:{responsive:true,plugins:{legend:{position:'top'}}}
+});
+
+// 6. ROI por máquina
+new Chart(document.getElementById('chartROI'), {
+  type:'bar',
+  data:{
+    labels:maquinas,
+    datasets:[{
+      label:'ROI',
+      data:[1.9,1.75,1.6,1.4,1.25,1.1,0.95,0.82],
+      backgroundColor:[GREEN,GREEN,GREEN,YELLOW,YELLOW,YELLOW,RED,RED]
+    }]
+  },
+  options:{
+    indexAxis:'y', responsive:true,
+    plugins:{
+      legend:{display:false},
+      annotation:{annotations:{
+        meta:{type:'line',xMin:1,xMax:1,borderColor:RED,borderWidth:2},
+        meta2:{type:'line',xMin:1.5,xMax:1.5,borderColor:GREEN,borderWidth:2,borderDash:[6,4]}
+      }}
+    },
+    scales:{x:{min:0,max:2.5,title:{display:true,text:'ROI (×)'}}}
+  }
+});
+
+// 7. Regional — produção + CPA
+new Chart(document.getElementById('chartRegional'), {
+  type:'bar',
+  data:{
+    labels:regionais,
+    datasets:[
+      {type:'bar',label:'Produção (t)',data:[4200,3800,2900,2100],backgroundColor:NAVY+'99',yAxisID:'y'},
+      {type:'line',label:'CPA (R$/t)',data:[42,37,49,63],borderColor:ORANGE,yAxisID:'y1',tension:0.3,pointRadius:5}
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{position:'top'}},
+    scales:{
+      y:{title:{display:true,text:'Produção (t)'}},
+      y1:{position:'right',title:{display:true,text:'CPA (R$/t)'},grid:{drawOnChartArea:false}}
+    }
+  }
+});
+
+// 8. Radar
+new Chart(document.getElementById('chartRadar'), {
+  type:'radar',
+  data:{
+    labels:['Produção','Utilização','R$/t (inv)','Disponib.','km/t (inv)'],
+    datasets:[
+      {label:'Norte', data:[85,82,78,89,82], borderColor:GREEN, backgroundColor:GREEN+'30'},
+      {label:'Sul',   data:[78,71,85,91,74], borderColor:BLUE,  backgroundColor:BLUE+'30'},
+      {label:'Leste', data:[65,68,65,82,68], borderColor:YELLOW,backgroundColor:YELLOW+'30'},
+      {label:'Oeste', data:[48,54,50,74,55], borderColor:RED,   backgroundColor:RED+'30'}
+    ]
+  },
+  options:{
+    responsive:true,
+    scales:{r:{min:0,max:100,ticks:{stepSize:20}}},
+    plugins:{legend:{position:'right'}}
+  }
+});
+
+// 9. Scorecard geral
+new Chart(document.getElementById('chartScore'), {
+  type:'bar',
+  data:{
+    labels:['Utilização (%)','t/h / nominal (%)','Disponib. (%)','ROI (×·50)','km/t (inv %)','ICP (%)'],
+    datasets:[
+      {label:'Atual',data:[71,78,83,80,72,65],backgroundColor:BLUE+'bb'},
+      {label:'Meta', data:[75,80,88,75,80,70],backgroundColor:ORANGE+'44',borderColor:ORANGE,borderWidth:2}
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{position:'top'}},
+    scales:{y:{min:0,max:100,title:{display:true,text:'Score normalizado (0-100)'}}}
+  }
+});
+</script>
+
+</body>
+</html>
