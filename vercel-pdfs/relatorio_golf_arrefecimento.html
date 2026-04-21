@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagnóstico — VW Golf 1.4 TSI 2014 · Vazamento de Arrefecimento</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 15px; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #f4f6f9;
+      color: #1a1a2e;
+      line-height: 1.65;
+    }
+
+    /* ── Page wrapper ── */
+    .page {
+      max-width: 900px;
+      margin: 2.5rem auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.10);
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      color: #fff;
+      padding: 2.8rem 3rem 2.2rem;
+      position: relative;
+    }
+    .header-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.72rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      color: #a8d8f0;
+    }
+    .header h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      line-height: 1.25;
+      margin-bottom: 0.5rem;
+    }
+    .header .subtitle {
+      font-size: 0.95rem;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 1.5rem;
+    }
+    .header-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.6);
+      border-top: 1px solid rgba(255,255,255,0.12);
+      padding-top: 1.2rem;
+    }
+    .header-meta span strong { color: rgba(255,255,255,0.9); }
+
+    /* ── Alert banner ── */
+    .alert-banner {
+      background: #fff3cd;
+      border-left: 5px solid #e6a817;
+      padding: 1rem 1.5rem;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.8rem;
+    }
+    .alert-banner.danger {
+      background: #fff0f0;
+      border-color: #d63031;
+    }
+    .alert-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    .alert-banner p { margin: 0; }
+    .alert-banner strong { display: block; margin-bottom: 2px; }
+
+    /* ── Content area ── */
+    .content { padding: 2.5rem 3rem; }
+
+    /* ── Sections ── */
+    .section { margin-bottom: 2.8rem; }
+    .section-title {
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: #0f3460;
+      border-bottom: 2.5px solid #0f3460;
+      padding-bottom: 0.4rem;
+      margin-bottom: 1.2rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .section p { margin-bottom: 0.75rem; font-size: 0.93rem; }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* ── Symptom timeline ── */
+    .timeline { list-style: none; padding: 0; position: relative; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 14px;
+      top: 6px;
+      bottom: 6px;
+      width: 2px;
+      background: linear-gradient(to bottom, #0f3460, #a8d8f0);
+    }
+    .timeline li {
+      display: flex;
+      gap: 1.1rem;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+      position: relative;
+      padding-left: 0.5rem;
+    }
+    .tl-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #0f3460;
+      border: 3px solid #fff;
+      box-shadow: 0 0 0 2px #0f3460;
+      flex-shrink: 0;
+      margin-top: 3px;
+      z-index: 1;
+    }
+    .tl-dot.warn { background: #e6a817; box-shadow: 0 0 0 2px #e6a817; }
+    .tl-dot.danger { background: #d63031; box-shadow: 0 0 0 2px #d63031; }
+    .tl-body { font-size: 0.9rem; }
+    .tl-body strong { display: block; margin-bottom: 2px; color: #1a1a2e; }
+    .tl-body span { color: #555; }
+
+    /* ── Diagnosis table ── */
+    .diag-table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+    .diag-table thead tr { background: #0f3460; color: #fff; }
+    .diag-table th {
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .diag-table td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #e8ecf1;
+      vertical-align: top;
+    }
+    .diag-table tbody tr:nth-child(even) { background: #f8fafc; }
+    .diag-table tbody tr:hover { background: #eef3fb; }
+
+    /* Probability badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-high { background: #d63031; color: #fff; }
+    .badge-med  { background: #e6a817; color: #fff; }
+    .badge-low  { background: #6c757d; color: #fff; }
+    .badge-primary { background: #0f3460; color: #fff; }
+
+    /* ── Highlight box ── */
+    .highlight-box {
+      background: linear-gradient(135deg, #eef3fb, #f0f7ff);
+      border: 1.5px solid #c2d9f7;
+      border-radius: 10px;
+      padding: 1.4rem 1.6rem;
+      margin: 1rem 0;
+    }
+    .highlight-box .hb-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #0f3460;
+      margin-bottom: 0.6rem;
+    }
+    .highlight-box ul { padding-left: 1.2rem; margin: 0; }
+    .highlight-box li { font-size: 0.9rem; margin-bottom: 0.3rem; }
+
+    /* ── Risk cards ── */
+    .risk-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+    .risk-card {
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      border-left: 4px solid;
+    }
+    .risk-card.critical { border-color: #d63031; background: #fff5f5; }
+    .risk-card.high     { border-color: #e6a817; background: #fffbf0; }
+    .risk-card.medium   { border-color: #0f3460; background: #f0f5ff; }
+    .risk-card .rc-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .risk-card.critical .rc-label { color: #d63031; }
+    .risk-card.high .rc-label     { color: #c47a00; }
+    .risk-card.medium .rc-label   { color: #0f3460; }
+    .risk-card .rc-title { font-size: 0.92rem; font-weight: 700; margin-bottom: 4px; }
+    .risk-card .rc-desc { font-size: 0.82rem; color: #555; line-height: 1.4; }
+
+    /* ── Checklist ── */
+    .checklist { list-style: none; padding: 0; }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 0.9rem;
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .check-box {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #0f3460;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── Two-column ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+
+    /* ── Footer ── */
+    .footer {
+      background: #f8fafc;
+      border-top: 1px solid #e8ecf1;
+      padding: 1.5rem 3rem;
+      font-size: 0.78rem;
+      color: #888;
+      line-height: 1.5;
+    }
+    .footer .disclaimer {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      border-radius: 6px;
+      padding: 0.8rem 1rem;
+      margin-bottom: 1rem;
+      color: #6d4c00;
+      font-size: 0.8rem;
+    }
+    .footer .sources { margin-top: 0.8rem; }
+    .footer .sources strong { color: #555; }
+    .footer .sources ul { padding-left: 1.2rem; margin: 4px 0; }
+    .footer .sources li { margin-bottom: 2px; }
+    .footer .sources a { color: #0f3460; text-decoration: none; }
+    .footer .sources a:hover { text-decoration: underline; }
+
+    /* ── Print styles ── */
+    @media print {
+      body { background: #fff; }
+      .page { box-shadow: none; border-radius: 0; margin: 0; max-width: 100%; }
+      .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .badge, .tl-dot, .diag-table thead tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .section { page-break-inside: avoid; }
+      .no-print { display: none; }
+    }
+
+    @media (max-width: 680px) {
+      .content { padding: 1.5rem 1.2rem; }
+      .header  { padding: 1.8rem 1.2rem 1.4rem; }
+      .two-col { grid-template-columns: 1fr; }
+      .footer  { padding: 1.2rem 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ── HEADER ── -->
+  <div class="header">
+    <div class="header-badge">Relatório Técnico Automotivo</div>
+    <h1>Diagnóstico Diferencial<br>Vazamento de Líquido de Arrefecimento</h1>
+    <p class="subtitle">VW Golf 1.4 TSI · Motor EA211 · Ano-modelo 2014</p>
+    <div class="header-meta">
+      <span><strong>Veículo:</strong> VW Golf 1.4 TSI 2014</span>
+      <span><strong>Motor:</strong> EA211 1.4 TSI (CMBA/CHPA)</span>
+      <span><strong>Geração:</strong> MK7 / Golf 7</span>
+      <span><strong>Data do relatório:</strong> 21 de abril de 2026</span>
+      <span><strong>Metodologia:</strong> Pesquisa multi-fonte + análise de padrões sintomáticos</span>
+    </div>
+  </div>
+
+  <!-- ── ALERT ── -->
+  <div class="alert-banner danger">
+    <span class="alert-icon">⚠️</span>
+    <p><strong>Atenção — Risco Real de Superaquecimento</strong>
+    O padrão de esvaziamento completo do reservatório representa risco imediato de dano ao motor. Verifique o nível de arrefecimento <em>antes de cada partida</em> até a resolução do problema.</p>
+  </div>
+
+  <!-- ── CONTENT ── -->
+  <div class="content">
+
+    <!-- 1. SINTOMAS RELATADOS -->
+    <div class="section">
+      <div class="section-title">1. Sintomas Relatados — Linha do Tempo</div>
+      <ul class="timeline">
+        <li>
+          <div class="tl-dot"></div>
+          <div class="tl-body">
+            <strong>Fase 1 — Perda gradual e silenciosa (meses)</strong>
+            <span>Nível de arrefecimento caindo lentamente ao longo de semanas/meses sem qualquer vestígio visível de vazamento no chão ou na tampa do motor.</span>
+          </div>
+        </li>
+        <li>
+          <div class="tl-dot warn"></div>
+          <div class="tl-body">
+            <strong>Fase 2 — Alerta no painel + reservatório quase vazio</strong>
+            <span>Episódio agudo: sensor de mínimo ativado, reservatório próximo ao seco. Nível completado manualmente pelo proprietário.</span>
+          </div>
+        </li>
+        <li>
+          <div class="tl-dot"></div>
+          <div class="tl-body">
+            <strong>Fase 3 — Período de relativa estabilidade</strong>
+            <span>Após completar o nível, o carro foi utilizado normalmente por algum período sem nova perda aparente. Comportamento intermitente característico.</span>
+          </div>
+        </li>
+        <li>
+          <div class="tl-dot danger"></div>
+          <div class="tl-body">
+            <strong>Fase 4 — Esvaziamento completo (~1 litro) após 1 hora parado</strong>
+            <span>Evento mais preocupante: cerca de 1 litro perdido com o carro parado por aproximadamente 1 hora. Nenhum poço visível no chão — vazamento evapora ou escoa para área não visível.</span>
+          </div>
+        </li>
+        <li>
+          <div class="tl-dot warn"></div>
+          <div class="tl-body">
+            <strong>Localização identificada</strong>
+            <span>Vazamento observado no <strong>lado esquerdo da parte superior do motor</strong> — localização que é determinante para o diagnóstico diferencial.</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 2. ANATOMIA DO SISTEMA -->
+    <div class="section">
+      <div class="section-title">2. Anatomia do Sistema de Arrefecimento — EA211 1.4 TSI</div>
+      <p>O motor EA211 (geração utilizada no Golf 7 brasileiro desde 2013) possui um sistema de arrefecimento integrado que difere significativamente de motores mais antigos:</p>
+      <div class="highlight-box">
+        <div class="hb-title">Componentes críticos — lado esquerdo/superior do motor (posição do motorista)</div>
+        <ul>
+          <li><strong>Conjunto bomba d'água + carcaça do termostato</strong> — peças integradas em carcaça de plástico termorrígido, montadas na lateral traseira-superior do bloco/cabeçote</li>
+          <li><strong>Flange/coletor de arrefecimento plástico</strong> — roteia o líquido entre cabeçote, aquecedor de habitáculo, sensores e mangueiras</li>
+          <li><strong>Trocador de calor do turbocompressor</strong> — o turbo do 1.4 TSI é refrigerado a água; o circuito de arrefecimento do turbo passa exatamente pelo lado superior-esquerdo</li>
+          <li><strong>Mangueiras de arrefecimento superior e do aquecedor</strong> — conectores de encaixe rápido conhecidos por desgastar as borrachas de vedação</li>
+          <li><strong>Tampa/tampa pressurizada do reservatório de expansão</strong> — regula a pressão do circuito (1,4–1,6 bar na maioria dos TSI)</li>
+        </ul>
+      </div>
+      <p>A localização descrita pelo proprietário — <em>lado esquerdo, parte superior do motor</em> — corresponde exatamente à área de maior concentração de pontos críticos de falha neste motor.</p>
+    </div>
+
+    <!-- 3. DIAGNÓSTICO DIFERENCIAL -->
+    <div class="section">
+      <div class="section-title">3. Diagnóstico Diferencial</div>
+      <p>Análise comparativa de todas as hipóteses compatíveis com os sintomas, ordenadas por probabilidade:</p>
+      <br/>
+      <table class="diag-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Hipótese</th>
+            <th>Prob.</th>
+            <th>Compatibilidade com sintomas</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><strong>Flange/carcaça do termostato plástica rachada</strong></td>
+            <td><span class="badge badge-high">Alta</span></td>
+            <td>Defeito crônico e documentado no EA211. Plástico racha por ciclagem térmica. Vaza mais ao esfriar (contração abre a fresta). Localização exata: lado esquerdo/superior. Explica intermitência.</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><strong>Bomba d'água com vedação desgastada</strong></td>
+            <td><span class="badge badge-high">Alta</span></td>
+            <td>Problema crônico reconhecido no 1.4 TSI; impulsores de plástico ressecam. Vedação pode falhar apenas sob determinada temperatura/pressão. Explica comportamento oscilatório.</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><strong>Tampa pressurizada do reservatório defeituosa</strong></td>
+            <td><span class="badge badge-med">Média</span></td>
+            <td>Tampa com mola fraca libera pressão antes do tempo. Quando o motor esfria, cria vácuo que deveria sugar líquido de volta; se a tampa falha, ar entra e líquido não retorna — ou é expelido. Peça barata e frequentemente esquecida.</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><strong>Trocador de calor do turbo com vazamento</strong></td>
+            <td><span class="badge badge-med">Média</span></td>
+            <td>Circuito de água do turbo passa pelo lado esquerdo/superior. Vazamento interno (líquido para óleo do turbo) ou externo. Explicaria perda sem poço visível (líquido evapora no turbo quente).</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><strong>Mangueira de arrefecimento / conector de encaixe rápido</strong></td>
+            <td><span class="badge badge-med">Média</span></td>
+            <td>Conectores de borracha endurecidos por calor. Vaza sob pressão quando quente e pode selar parcialmente ao esfriar. Compatível com intermitência e localização.</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td><strong>Válvula termostática emperrada ou com vedação danificada</strong></td>
+            <td><span class="badge badge-low">Baixa</span></td>
+            <td>Pode causar sobrepressão localizada e forçar vazamento por pontos fracos. Geralmente não é causa primária mas agravante.</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td><strong>Junta de cabeçote — vazamento para câmara de combustão</strong></td>
+            <td><span class="badge badge-low">Baixa</span></td>
+            <td>Sem relatos de fumaça branca, óleo emulsificado (cor de maionese) ou odor de queimado. Sintomas atuais não sugerem, mas deve ser investigado se os demais forem descartados.</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td><strong>Radiador com microfissura</strong></td>
+            <td><span class="badge badge-low">Baixa</span></td>
+            <td>Geralmente deixa poço visível no chão. Não explica o vazamento no lado esquerdo/superior sem sinal embaixo do carro.</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td><strong>Intercooler de água (charge cooler) com racha no núcleo</strong></td>
+            <td><span class="badge badge-low">Baixa</span></td>
+            <td>Alguns Golf 1.4 TSI (especialmente GTI e versões com intercooler a água no coletor de admissão) apresentaram este problema. Líquido vaza para o coletor. Verificar se aplicável à versão do veículo.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4. CAUSA MAIS PROVÁVEL -->
+    <div class="section">
+      <div class="section-title">4. Causa Mais Provável — Análise Fundamentada</div>
+
+      <div class="highlight-box">
+        <div class="hb-title">Diagnóstico Principal — Combinação: Flange Plástica + Bomba d'água (EA211)</div>
+        <ul>
+          <li>No EA211, a bomba d'água e a carcaça do termostato formam um módulo integrado em <strong>plástico termorrígido</strong></li>
+          <li>A VW confirmou em documentos legais o uso de "materiais termoplásticos inferiores" nesses componentes</li>
+          <li>O plástico se torna frágil com ciclagem térmica; trincas surgem especialmente nos pontos de fixação (diferença de expansão térmica entre plástico e metal)</li>
+          <li>Sob pressão e temperatura de operação (85–95°C), o plástico expande e pode <em>selar temporariamente</em> a fresta → durante a marcha, o motor não perde tanto</li>
+          <li>Ao esfriar (1–2h após desligamento), o plástico <strong>contrai e a fresta abre</strong> → libera o líquido que ainda está quente e sob pressão residual</li>
+          <li>Isso explica o evento específico: <em>1 litro perdido em 1 hora com o carro parado</em></li>
+        </ul>
+      </div>
+
+      <p><strong>Por que a perda é intermitente?</strong> A fresta plástica se comporta como uma válvula não intencional: em certas temperaturas sela melhor, em outras abre. Adicionalmente, se a tampa do reservatório estiver fraca, a pressão máxima do sistema é menor, o que reduz a força de escape em algumas situações e aumenta em outras.</p>
+
+      <p><strong>Confirmação com a hipótese do mecânico:</strong> A suspeita de <em>bomba d'água</em> é altamente compatível. No EA211, a bomba faz parte do mesmo conjunto da carcaça do termostato — trocar uma implica rever a outra. A vedação do eixo da bomba pode estar falhando progressivamente, com a intensidade do vazamento variando conforme a temperatura e rotação do motor.</p>
+
+      <p><strong>Sinal que confirma o conjunto certo:</strong> A localização reportada — <em>lado esquerdo, parte superior</em> — é geograficamente idêntica à posição do módulo bomba+termostato no EA211. Não há coincidência: é o ponto certo.</p>
+    </div>
+
+    <!-- 5. POR QUE ESVAZIA PARADO -->
+    <div class="section">
+      <div class="section-title">5. Explicação do Fenômeno: Esvaziamento com Carro Parado</div>
+      <p>Este é o comportamento mais diagnóstico do caso. Existem três mecanismos físicos que explicam a perda de ~1 litro em 1 hora com o motor desligado:</p>
+
+      <div class="two-col">
+        <div class="highlight-box">
+          <div class="hb-title">Mecanismo A — Contração Térmica da Peça Plástica</div>
+          <ul>
+            <li>Motor em operação: plástico dilatado → fresta parcialmente selada</li>
+            <li>Motor desligado: plástico contrai → fresta abre progressivamente</li>
+            <li>Sistema ainda quente por 1–2h → pressão residual empurra o líquido pela fresta aberta</li>
+            <li><strong>Resultado:</strong> Perde mais parado do que rodando</li>
+          </ul>
+        </div>
+        <div class="highlight-box">
+          <div class="hb-title">Mecanismo B — Pressão Residual + Tampa Defeituosa</div>
+          <ul>
+            <li>Ao desligar, o circuito ainda está sob pressão</li>
+            <li>Uma tampa com mola fraca libera pressão antes de 1,4 bar</li>
+            <li>O líquido é expelido pelo overflow antes de o sistema esfriar completamente</li>
+            <li><strong>Resultado:</strong> Reservatório esvazia pelas primeiras horas após parar</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <div class="hb-title">Mecanismo C — Circulação Termodinâmica por Convecção (Thermosiphon)</div>
+        <ul>
+          <li>Com o motor desligado mas ainda quente, o líquido pode circular por convecção natural (termodinâmica) entre o motor e o radiador</li>
+          <li>Essa circulação força líquido por pontos de fraqueza que não sangrariam com a bomba parada</li>
+          <li>Explica vazamentos que aparecem especificamente nas primeiras horas após o uso, não durante a operação normal</li>
+        </ul>
+      </div>
+
+      <p><em>Na prática, os três mecanismos podem atuar simultaneamente, o que amplifica a perda no período pós-desligamento.</em></p>
+    </div>
+
+    <!-- 6. PROBLEMAS CONHECIDOS E RECALLS -->
+    <div class="section">
+      <div class="section-title">6. Problemas Conhecidos — EA211 1.4 TSI e Histórico de Recalls</div>
+
+      <p><strong>Defeito crônico documentado:</strong> O conjunto bomba d'água/termostato plástico do EA211 (e do EA888 2.0T) é amplamente reconhecido como ponto de falha recorrente. Inúmeros relatos no Reclame Aqui Brasil, VW Vortex, VW Audi Forum UK e fóruns especializados descrevem o problema como sistêmico.</p>
+
+      <p><strong>Ação judicial nos EUA:</strong> Uma class action settlement obrigou a VW a oferecer garantia estendida de 10 anos/100.000 milhas para falhas de bomba d'água e carcaça do termostato (TSB VWP-22-06), com reembolso de até £800 por reparos anteriores. A VW reconheceu o uso de "materiais termoplásticos inferiores".</p>
+
+      <p><strong>Redesenho da peça:</strong> Após falhas em larga escala (especialmente no modelo ano 2015), a VW redesenhou o conjunto com plástico mais resistente. A versão revisada (OEM atualizado) é obrigatória em qualquer reparo correto.</p>
+
+      <p><strong>No Brasil:</strong> Múltiplas reclamações no Reclame Aqui documentam o problema em Golf, Jetta e Tiguan 1.4 TSI a partir de 2018. A Volkswagen Brasil não declarou campanha oficial de recall para este componente específico, diferentemente do mercado americano.</p>
+
+      <p><strong>Mecânicos especializados brasileiros</strong> (como o de São Paulo citado em fóruns) descrevem o problema como "defeito crônico do veículo — o impulsor plástico da bomba resseca com o tempo e causa o vazamento".</p>
+    </div>
+
+    <!-- 7. RISCOS DE CONTINUAR RODANDO -->
+    <div class="section">
+      <div class="section-title">7. Riscos de Continuar Rodando por Até 1 Mês</div>
+
+      <div class="alert-banner danger" style="margin-bottom: 1.2rem;">
+        <span class="alert-icon">🚨</span>
+        <p><strong>Avaliação de risco: ALTO</strong> — Continuar por 1 mês sem reparo representa risco real de dano severo ao motor. O comportamento atual (perda de 1L em 1h) é instável e pode evoluir rapidamente.</p>
+      </div>
+
+      <div class="risk-grid">
+        <div class="risk-card critical">
+          <div class="rc-label">Crítico</div>
+          <div class="rc-title">Superaquecimento repentino</div>
+          <div class="rc-desc">Se o reservatório esvaziar durante o uso, o motor pode superaquecer em minutos. O sensor pode não avisar a tempo caso o nível caia rapidamente.</div>
+        </div>
+        <div class="risk-card critical">
+          <div class="rc-label">Crítico</div>
+          <div class="rc-title">Dano ao cabeçote</div>
+          <div class="rc-desc">Superaquecimento deforma a tampa do cabeçote (alumínio). Reparo: R$ 3.000–8.000 apenas no cabeçote, fora mão de obra.</div>
+        </div>
+        <div class="risk-card high">
+          <div class="rc-label">Alto</div>
+          <div class="rc-title">Junta do cabeçote estourada</div>
+          <div class="rc-desc">Consequência direta do superaquecimento. Reparo: R$ 2.500–5.000 + tempo de oficina. Pode causar entrada de água no óleo.</div>
+        </div>
+        <div class="risk-card high">
+          <div class="rc-label">Alto</div>
+          <div class="rc-title">Falha do turbocompressor</div>
+          <div class="rc-desc">O turbo é refrigerado a água. Sem arrefecimento adequado após uso, os mancais do turbo podem fundir. Substituição: R$ 4.000–10.000.</div>
+        </div>
+        <div class="risk-card medium">
+          <div class="rc-label">Moderado</div>
+          <div class="rc-title">Dano ao termostato/bomba</div>
+          <div class="rc-desc">Opera em temperatura elevada sem líquido suficiente, acelerando o desgaste. Aumenta custo total do reparo.</div>
+        </div>
+        <div class="risk-card medium">
+          <div class="rc-label">Moderado</div>
+          <div class="rc-title">Risco de acidente</div>
+          <div class="rc-desc">Superaquecimento pode causar perda repentina de potência em rodovias ou situações de ultrapassagem, representando risco à segurança.</div>
+        </div>
+      </div>
+
+      <p style="margin-top: 1.2rem;"><strong>Conclusão sobre o prazo de 1 mês:</strong> Não é recomendável. A fresta existente na peça plástica pode progredir de forma não linear — um único ciclo térmico mais severo (subida com AC ligado, trânsito parado, viagem longa) pode abrir o vazamento de forma catastrófica. O custo do reparo atual (R$ 800–2.500) é uma fração do custo de um motor danificado (R$ 8.000–25.000).</p>
+    </div>
+
+    <!-- 8. CUIDADOS IMEDIATOS -->
+    <div class="section">
+      <div class="section-title">8. Cuidados Imediatos — Protocolo para o Proprietário</div>
+
+      <ul class="checklist">
+        <li>
+          <div class="check-box"></div>
+          <div><strong>Verificar o nível ANTES de cada partida.</strong> Nunca sair com o reservatório abaixo do mínimo. Mantenha uma garrafa de água destilada ou arrefecimento puro no porta-malas.</div>
+        </li>
+        <li>
+          <div class="check-box"></div>
+          <div><strong>Após cada parada longa (>30 min), verificar novamente o nível</strong> antes de religar. O esvaziamento pós-parada é o padrão mais perigoso neste caso.</div>
+        </li>
+        <li>
+          <div class="check-box"></div>
+          <div><strong>Monitorar o ponteiro de temperatura constantemente</strong> durante a condução. Qualquer subida acima da faixa normal (geralmente 90°C): estacionar imediatamente, desligar, aguardar 20 minutos antes de abrir o reservatório.</div>
+        </li>
+        <li>
+          <div class="check-box"></div>
+          <div><strong>Jamais abrir o reservatório com o motor quente.</strong> A pressão residual pode causar expulsão do líquido a mais de 90°C, provocando queimaduras graves.</div>
+        </li>
+        <li>
+          <div class="check-box"></div>
+          <div><strong>Trocar a tampa do reservatório de expansão</strong> como medida imediata e de baixo custo (R$ 30–80). Uma tampa defeituosa agrava qualquer outro problema de arrefecimento.</div>
+        </li>
+        <li>
+          <div class="check-box"></div>
+          <div><strong>Evitar condições de alta carga térmica</strong> enquanto não houver reparo: subidas longas com AC no máximo, trânsito parado por tempo prolongado, viagens intermunicipais sem verificar o nível antes.</div>
+        </li>
+        <li>
+          <div class="check-box"></div>
+          <div><strong>Solicitar teste de pressão do sistema</strong> na próxima visita ao mecânico. Um testador de pressão bombeado no bocal do reservatório revela qualquer fuga em segundos — sem necessidade de desmontagem.</div>
+        </li>
+        <li>
+          <div class="check-box"></div>
+          <div><strong>Pedir ao mecânico que substitua o conjunto bomba d'água + carcaça do termostato como unidade.</strong> Trocar apenas a bomba e deixar a carcaça plástica original é solução parcial — o plástico já degradado vai falhar novamente em 20.000–30.000 km.</div>
+        </li>
+        <li>
+          <div class="check-box"></div>
+          <div><strong>Exigir peça OEM VW ou Dayco/INA/Gates (fornecedores originais).</strong> Peças genéricas de baixa qualidade reproduzem o problema em poucos meses.</div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 9. RESUMO EXECUTIVO -->
+    <div class="section">
+      <div class="section-title">9. Resumo Executivo</div>
+      <table class="diag-table">
+        <thead>
+          <tr>
+            <th>Aspecto</th>
+            <th>Conclusão</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Causa mais provável</strong></td>
+            <td>Fratura/rachadura na carcaça plástica do conjunto bomba d'água + termostato (EA211) — defeito crônico e documentado na geração</td>
+          </tr>
+          <tr>
+            <td><strong>Causa secundária A</strong></td>
+            <td>Vedação do eixo da bomba d'água desgastada — hipótese do mecânico é válida e complementar à causa principal</td>
+          </tr>
+          <tr>
+            <td><strong>Causa secundária B</strong></td>
+            <td>Tampa pressurizada do reservatório com mola fraca — barata, deve ser substituída preventivamente</td>
+          </tr>
+          <tr>
+            <td><strong>Padrão de perda pós-parada</strong></td>
+            <td>Explicado pela contração térmica do plástico rachado + pressão residual no circuito + possível falha da tampa (mecanismos A+B+C)</td>
+          </tr>
+          <tr>
+            <td><strong>Localização do vazamento</strong></td>
+            <td>Lado esquerdo/superior do motor = localização exata do módulo bomba+termostato no EA211 ✓</td>
+          </tr>
+          <tr>
+            <td><strong>Risco de continuar 1 mês</strong></td>
+            <td><span class="badge badge-high">Alto</span> — Superaquecimento pode ocorrer de forma súbita; dano ao cabeçote e/ou turbo é consequência provável</td>
+          </tr>
+          <tr>
+            <td><strong>Reparo recomendado</strong></td>
+            <td>Substituição do conjunto bomba d'água + carcaça do termostato (peça integrada), mais troca preventiva da tampa do reservatório</td>
+          </tr>
+          <tr>
+            <td><strong>Custo estimado do reparo correto</strong></td>
+            <td>R$ 900–2.800 (peça OEM + mão de obra) — vs. R$ 8.000–25.000 se o motor for danificado</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- ── FOOTER ── -->
+  <div class="footer">
+    <div class="disclaimer">
+      <strong>Aviso importante:</strong> Este relatório é baseado em pesquisa técnica de múltiplas fontes e análise de padrões sintomáticos documentados. Não substitui diagnóstico presencial por mecânico qualificado. As causas e custos são estimativas baseadas em casos similares documentados. Sempre consulte um profissional antes de tomar decisões de reparo.
+    </div>
+    <div class="sources">
+      <strong>Fontes consultadas:</strong>
+      <ul>
+        <li><a href="https://euroxperformance.com/vw-golf-coolant-leak-from-the-rear-of-the-engine-the-common-culprit-explained/">EuroX Performance — VW Golf Coolant Leak: Common Culprit Explained</a></li>
+        <li><a href="https://www.autodoc.co.uk/info/vw-golf-7-water-pump-and-thermostat-housing-leaks">AutoDoc Blog — VW Golf 7: Water Pump and Thermostat Housing Leaks</a></li>
+        <li><a href="https://www.reclameaqui.com.br/volkswagen/bomba-dagua-do-golf-1-4-tsi-alemao-vazamento-do-liquido-de-arrefecimento_Y0hk9sLUugUeuB5z/">Reclame Aqui — Bomba d'água Golf 1.4 TSI Alemão: vazamento de arrefecimento</a></li>
+        <li><a href="https://www.reclameaqui.com.br/volkswagen/problema-cronico-bomba-dagua-vw-golf-tsi_ujq06M8QwAI_hAlt/">Reclame Aqui — Problema crônico bomba d'água VW Golf TSI</a></li>
+        <li><a href="https://www.volkswagenforum.co.uk/threads/coolant-leak-golf-mk-6-1-4-tsi.43194/">UK Volkswagen Forum — Coolant leak Golf Mk6 1.4 TSI</a></li>
+        <li><a href="https://www.volkswagenforum.co.uk/showthread.php?t=31710">UK Volkswagen Forum — Coolant leak turbo seals Golf Mk6 1.4 TSI</a></li>
+        <li><a href="https://www.vwvortex.com/threads/heads-up-failing-tsi-water-pumps.4832770/">VW Vortex — Heads Up: Failing TSI Water Pumps</a></li>
+        <li><a href="https://www.honestjohn.co.uk/askhj/answer/32252/vanishing-golf-tsi-coolant">Honest John — Vanishing Golf TSI Coolant</a></li>
+        <li><a href="https://www.blauparts.com/blog/vw-water-pump-replacement-information.html">BlauParts — VW Water Pump Leak Problems Explained</a></li>
+        <li><a href="https://www.shopdap.com/blog/post/vw-gti-water-pump.html">ShopDAP — VW GTI Water Pump: Symptoms and Replacement</a></li>
+        <li><a href="https://www.import-car.com/common-vw-oil-coolant-leak-solutions/">Import Car — Common VW Oil &amp; Coolant Leak Solutions</a></li>
+        <li><a href="https://golfmk7.com.br/index.php?%2Ftopic%2F757-problemas-com-o-l%C3%ADquido-de-arrefecimento=">Golf MK7 Brasil — Problemas com o líquido de arrefecimento</a></li>
+      </ul>
+    </div>
+    <p style="margin-top: 1rem; color: #aaa; font-size: 0.76rem; text-align: center;">
+      Gerado em 21 de abril de 2026 · Pesquisa técnica multi-fonte · VW Golf 1.4 TSI EA211 2014
+    </p>
+  </div>
+
+</div><!-- /page -->
+
+<!-- Print button (hidden in print) -->
+<div class="no-print" style="text-align:center; padding: 1.5rem; background: #f4f6f9;">
+  <button onclick="window.print()"
+    style="background:#0f3460; color:#fff; border:none; padding:10px 28px; border-radius:6px; font-size:0.95rem; cursor:pointer; font-family:inherit;">
+    Imprimir / Salvar como PDF
+  </button>
+</div>
+
+</body>
+</html>
