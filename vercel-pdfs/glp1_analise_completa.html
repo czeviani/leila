@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Análise Completa — Exames + Protocolo GLP-1</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg:        #080b14;
+      --surface:   #0f1320;
+      --surface2:  #161b2e;
+      --surface3:  #1d2338;
+      --border:    #232840;
+      --border2:   #2d3452;
+      --accent:    #7c6aff;
+      --accent2:   #a78bfa;
+      --green:     #10b981;
+      --green2:    #34d399;
+      --amber:     #f59e0b;
+      --amber2:    #fbbf24;
+      --red:       #ef4444;
+      --red2:      #f87171;
+      --blue:      #3b82f6;
+      --blue2:     #60a5fa;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --muted2:    #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── BACK NAV ── */
+    .back-btn {
+      position: fixed;
+      top: 16px; left: 16px;
+      z-index: 999;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(12,15,28,0.85);
+      backdrop-filter: blur(12px);
+      color: var(--muted2);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 7px 14px;
+      border-radius: 20px;
+      text-decoration: none;
+      border: 1px solid var(--border2);
+      transition: all 0.2s;
+    }
+    .back-btn:hover { color: var(--text); border-color: var(--accent); }
+
+    /* ── COVER ── */
+    .cover {
+      background: linear-gradient(145deg, #080b14 0%, #0d1128 40%, #0e1535 70%, #0a1240 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 100px 24px 60px;
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      top: -100px; left: 50%;
+      transform: translateX(-60%);
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(124,106,255,0.18) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .cover::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; right: -80px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .cover-inner { max-width: 720px; margin: 0 auto; position: relative; z-index: 1; }
+    .cover-badge {
+      display: inline-block;
+      background: rgba(124,106,255,0.12);
+      border: 1px solid rgba(124,106,255,0.35);
+      color: var(--accent2);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 5px 18px;
+      border-radius: 30px;
+      margin-bottom: 20px;
+    }
+    .cover h1 {
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+    .cover h1 span { color: var(--accent2); }
+    .cover-sub {
+      color: rgba(255,255,255,0.45);
+      font-size: 16px;
+      font-weight: 300;
+      margin-bottom: 36px;
+    }
+    .cover-divider {
+      width: 50px; height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+      border-radius: 2px;
+      margin: 0 auto 28px;
+    }
+    .cover-stats {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .cover-stat {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border2);
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 13px;
+      color: var(--muted2);
+    }
+    .cover-stat strong { color: var(--text); font-weight: 600; }
+    .disclaimer {
+      margin-top: 24px;
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(239,68,68,0.06);
+      border: 1px solid rgba(239,68,68,0.15);
+      border-radius: 8px;
+      padding: 8px 16px;
+      display: inline-block;
+    }
+
+    /* ── LAYOUT ── */
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+    }
+    .section { margin-bottom: 56px; }
+    .section-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 8px;
+    }
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .section-desc {
+      font-size: 13px;
+      color: var(--muted2);
+      margin-bottom: 24px;
+      max-width: 640px;
+    }
+
+    /* ── PERFIL GRID ── */
+    .perfil-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+    }
+    .perfil-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 16px;
+      text-align: center;
+    }
+    .perfil-icon { font-size: 24px; margin-bottom: 8px; }
+    .perfil-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .perfil-value.amber { color: var(--amber2); }
+    .perfil-value.accent { color: var(--accent2); }
+    .perfil-label { font-size: 11px; color: var(--muted); font-weight: 500; }
+
+    /* ── ALERT CARDS ── */
+    .alert-card {
+      border-radius: 14px;
+      padding: 22px 24px;
+      margin-bottom: 16px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .alert-card.red   { background: rgba(239,68,68,0.07);   border: 1px solid rgba(239,68,68,0.3); }
+    .alert-card.amber { background: rgba(245,158,11,0.07);  border: 1px solid rgba(245,158,11,0.3); }
+    .alert-card.green { background: rgba(16,185,129,0.07);  border: 1px solid rgba(16,185,129,0.3); }
+    .alert-card.blue  { background: rgba(59,130,246,0.07);  border: 1px solid rgba(59,130,246,0.3); }
+    .alert-icon { font-size: 26px; flex-shrink: 0; margin-top: 2px; }
+    .alert-body {}
+    .alert-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .alert-card.red   .alert-title { color: var(--red2); }
+    .alert-card.amber .alert-title { color: var(--amber2); }
+    .alert-card.green .alert-title { color: var(--green2); }
+    .alert-card.blue  .alert-title { color: var(--blue2); }
+    .alert-sub {
+      font-size: 13px;
+      color: var(--muted2);
+      line-height: 1.6;
+    }
+    .alert-sub strong { color: var(--text); }
+
+    /* ── EXAME TABLE ── */
+    .exame-table-wrap { overflow-x: auto; margin-top: 16px; }
+    .exame-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .exame-table th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .exame-table td {
+      padding: 11px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
+      color: var(--muted2);
+    }
+    .exame-table td:first-child { color: var(--text); font-weight: 500; }
+    .exame-table tr:last-child td { border-bottom: none; }
+    .val-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 2px 10px;
+      border-radius: 6px;
+    }
+    .val-red    { background: rgba(239,68,68,0.12);   color: var(--red2);   border: 1px solid rgba(239,68,68,0.25); }
+    .val-amber  { background: rgba(245,158,11,0.12);  color: var(--amber2); border: 1px solid rgba(245,158,11,0.25); }
+    .val-green  { background: rgba(16,185,129,0.12);  color: var(--green2); border: 1px solid rgba(16,185,129,0.25); }
+    .val-muted  { background: rgba(100,116,139,0.12); color: var(--muted2); border: 1px solid rgba(100,116,139,0.2); }
+
+    /* ── HOMA GAUGE ── */
+    .homa-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px;
+    }
+    .homa-number {
+      font-size: 72px;
+      font-weight: 900;
+      color: var(--amber2);
+      line-height: 1;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .homa-label { font-size: 13px; color: var(--muted); margin-top: 4px; margin-bottom: 24px; }
+    .homa-scale {
+      display: flex;
+      gap: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      height: 12px;
+      margin-bottom: 10px;
+    }
+    .homa-scale-seg { flex: 1; }
+    .homa-scale-marker {
+      display: flex;
+      font-size: 10px;
+      color: var(--muted);
+      gap: 0;
+    }
+    .homa-scale-marker span { flex: 1; font-family: 'JetBrains Mono', monospace; }
+    .homa-scale-marker span:last-child { text-align: right; }
+    .scale-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+    .scale-label {
+      font-size: 10px;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .you-marker {
+      display: inline-block;
+      background: rgba(245,158,11,0.15);
+      border: 1px solid rgba(245,158,11,0.4);
+      color: var(--amber2);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 12px;
+      border-radius: 20px;
+      margin-top: 10px;
+    }
+
+    /* ── STATS GRID ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap: 14px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .stat-card .label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .stat-card .value {
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-card .sub { font-size: 12px; color: var(--muted); }
+    .stat-card .ideal { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .stat-card.green  { border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.06); }
+    .stat-card.green  .value { color: var(--green2); }
+    .stat-card.amber  { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.06); }
+    .stat-card.amber  .value { color: var(--amber2); }
+    .stat-card.red    { border-color: rgba(239,68,68,0.3);  background: rgba(239,68,68,0.06); }
+    .stat-card.red    .value { color: var(--red2); }
+    .stat-card.blue   { border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.06); }
+    .stat-card.blue   .value { color: var(--blue2); }
+    .stat-card.purple { border-color: rgba(124,106,255,0.3);background: rgba(124,106,255,0.06); }
+    .stat-card.purple .value { color: var(--accent2); }
+
+    /* ── SUPL TABLE ── */
+    .supl-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+    }
+    .supl-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .supl-prio {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .supl-prio.p1 { background: rgba(239,68,68,0.15); color: var(--red2); border: 1px solid rgba(239,68,68,0.3); }
+    .supl-prio.p2 { background: rgba(245,158,11,0.15); color: var(--amber2); border: 1px solid rgba(245,158,11,0.3); }
+    .supl-prio.p3 { background: rgba(16,185,129,0.12); color: var(--green2); border: 1px solid rgba(16,185,129,0.25); }
+    .supl-body {}
+    .supl-name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .supl-dose { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent2); margin-bottom: 4px; }
+    .supl-why  { font-size: 12px; color: var(--muted2); }
+
+    /* ── PROTOCOL TABLE ── */
+    .proto-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .proto-table th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 10px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .proto-table td {
+      padding: 13px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: var(--muted2);
+      vertical-align: middle;
+    }
+    .proto-table td:first-child { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+    .proto-table tr:last-child td { border-bottom: none; }
+    .dose-pill {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 4px 14px;
+      border-radius: 20px;
+    }
+    .dose-25  { background: rgba(124,106,255,0.12); color: #a78bfa; border: 1px solid rgba(124,106,255,0.3); }
+    .dose-5   { background: rgba(59,130,246,0.12);  color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+
+    /* ── STRATEGY CARDS ── */
+    .strategy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .strategy-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .strategy-card.highlight { border-color: rgba(124,106,255,0.4); background: rgba(124,106,255,0.06); }
+    .strategy-tag {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 10px;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+    .tag-green  { background: rgba(16,185,129,0.12); color: var(--green2); border: 1px solid rgba(16,185,129,0.2); }
+    .tag-amber  { background: rgba(245,158,11,0.12); color: var(--amber2); border: 1px solid rgba(245,158,11,0.2); }
+    .tag-red    { background: rgba(239,68,68,0.12);  color: var(--red2);   border: 1px solid rgba(239,68,68,0.2); }
+    .tag-accent { background: rgba(124,106,255,0.12);color: var(--accent2);border: 1px solid rgba(124,106,255,0.2); }
+    .strategy-name { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .strategy-evidence { font-size: 12px; color: var(--muted2); margin-bottom: 12px; }
+    .strategy-pros-cons {}
+    .strategy-row {
+      display: flex;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted2);
+      margin-bottom: 4px;
+      align-items: flex-start;
+    }
+    .strategy-row .icon { flex-shrink: 0; }
+
+    /* ── META BOXES ── */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .meta-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .meta-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .meta-from { font-size: 18px; font-weight: 700; color: var(--red2); margin-bottom: 2px; }
+    .meta-arrow { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .meta-to   { font-size: 18px; font-weight: 700; color: var(--green2); }
+
+    /* ── CALLOUT BOX ── */
+    .callout {
+      background: rgba(124,106,255,0.07);
+      border: 1px solid rgba(124,106,255,0.25);
+      border-left: 3px solid var(--accent);
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-top: 20px;
+    }
+    .callout-title { font-size: 12px; font-weight: 700; color: var(--accent2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .callout p { font-size: 13px; color: var(--muted2); line-height: 1.7; }
+    .callout p strong { color: var(--text); }
+
+    /* ── PILLAR CARDS ── */
+    .pillars {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .pillar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .pillar-icon { font-size: 22px; margin-bottom: 8px; }
+    .pillar-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .pillar-body  { font-size: 12px; color: var(--muted2); line-height: 1.6; }
+
+    /* ── CONCERN TABLE ── */
+    .concern-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .concern-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .concern-num {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: rgba(245,158,11,0.12);
+      border: 1px solid rgba(245,158,11,0.3);
+      color: var(--amber2);
+      font-size: 11px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .concern-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+    .concern-desc  { font-size: 12px; color: var(--muted2); }
+
+    /* ── SOURCES ── */
+    .sources-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 8px;
+    }
+    .source-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 11px;
+      color: var(--muted2);
+    }
+    .source-item strong { color: var(--text); display: block; margin-bottom: 2px; font-size: 12px; }
+
+    /* ── DIVIDER ── */
+    .hdivider {
+      height: 1px;
+      background: var(--border);
+      margin: 48px 0;
+    }
+
+    @media (max-width: 600px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .meta-grid  { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ── DIET SECTION ── */
+    .meal-block { margin-bottom: 36px; }
+    .meal-type-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 14px; padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .meal-type-icon { font-size: 20px; }
+    .meal-type-name { font-size: 15px; font-weight: 700; color: var(--text); }
+    .meal-type-target { font-size: 12px; color: var(--muted2); margin-left: auto; font-family: 'JetBrains Mono', monospace; }
+    .meal-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+    .meal-opt {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 16px;
+    }
+    .meal-opt.zero-prep { border-color: rgba(16,185,129,0.3); }
+    .meal-opt-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .meal-opt-desc { font-size: 12px; color: var(--muted2); margin-bottom: 10px; line-height: 1.55; }
+    .meal-macros { display: flex; gap: 5px; flex-wrap: wrap; }
+    .mac { font-size: 11px; font-weight: 600; font-family: 'JetBrains Mono', monospace; padding: 2px 8px; border-radius: 5px; }
+    .mac-p { background: rgba(16,185,129,0.12); color: var(--green2); border: 1px solid rgba(16,185,129,0.2); }
+    .mac-k { background: rgba(59,130,246,0.12); color: var(--blue2); border: 1px solid rgba(59,130,246,0.2); }
+    .mac-t { background: rgba(100,116,139,0.1); color: var(--muted2); border: 1px solid rgba(100,116,139,0.2); }
+    .mac-z { background: rgba(16,185,129,0.07); color: var(--green); border: 1px solid rgba(16,185,129,0.15); font-size: 10px; }
+
+    /* ── WEEK TABLE ── */
+    .week-plan { overflow-x: auto; }
+    .week-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 620px; }
+    .week-table th {
+      background: var(--surface2); color: var(--muted);
+      font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+      padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border);
+    }
+    .week-table td {
+      padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.04);
+      color: var(--muted2); vertical-align: top;
+    }
+    .week-table td:first-child { color: var(--accent2); font-weight: 600; white-space: nowrap; }
+    .week-table tr:last-child td { border-bottom: none; }
+    .week-inj { display: inline-block; background: rgba(239,68,68,0.1); color: var(--red2); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(239,68,68,0.2); }
+
+    /* ── SUPPRESSION DAY ── */
+    .suppr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+    .suppr-step {
+      background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 12px; padding: 14px 16px; text-align: center;
+    }
+    .suppr-time { font-size: 11px; font-weight: 700; color: var(--red2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .suppr-food { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .suppr-macro { font-size: 11px; color: var(--muted2); font-family: 'JetBrains Mono', monospace; }
+
+    /* ── SHOPPING LIST ── */
+    .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(275px, 1fr)); gap: 14px; }
+    .shop-cat { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+    .shop-cat-head {
+      font-size: 13px; font-weight: 700; color: var(--text);
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+      padding-bottom: 10px; border-bottom: 1px solid var(--border);
+    }
+    .shop-item { margin-bottom: 11px; }
+    .shop-item:last-child { margin-bottom: 0; }
+    .shop-item-name { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+    .shop-brands { font-size: 11px; color: var(--muted); line-height: 1.55; }
+    .shop-brands em { color: var(--accent2); font-style: normal; }
+
+    @media (max-width: 600px) {
+      .meal-opts { grid-template-columns: 1fr; }
+      .suppr-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<a href="index.html" class="back-btn">← Relatórios</a>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-inner">
+    <div class="cover-badge">Análise Clínica Personalizada</div>
+    <h1>Exames + Protocolo <span>GLP-1</span></h1>
+    <p class="cover-sub">Tirzepatida — Estratégia baseada em evidências para o seu perfil</p>
+    <div class="cover-divider"></div>
+    <div class="cover-stats">
+      <div class="cover-stat">👤 <strong>31 anos · Masculino</strong></div>
+      <div class="cover-stat">⚖️ <strong>114 kg · IMC 35,2</strong></div>
+      <div class="cover-stat">📊 <strong>HOMA-IR 4,49</strong></div>
+      <div class="cover-stat">🧬 <strong>Hcy 49 µmol/L</strong></div>
+    </div>
+    <p class="disclaimer">⚠️ Documento informativo — não substitui consulta médica. Leve para seu especialista.</p>
+  </div>
+</div>
+
+<main>
+
+  <!-- ══ SEÇÃO 1: PERFIL ══ -->
+  <div class="section">
+    <div class="section-label">Seção 01</div>
+    <div class="section-title">Perfil do Paciente</div>
+    <div class="section-desc">Dados antropométricos e contexto clínico que orientam o protocolo.</div>
+
+    <div class="perfil-grid">
+      <div class="perfil-card">
+        <div class="perfil-icon">⚖️</div>
+        <div class="perfil-value amber">114 kg</div>
+        <div class="perfil-label">Peso atual</div>
+      </div>
+      <div class="perfil-card">
+        <div class="perfil-icon">📏</div>
+        <div class="perfil-value">1,80 m</div>
+        <div class="perfil-label">Altura</div>
+      </div>
+      <div class="perfil-card">
+        <div class="perfil-icon">📊</div>
+        <div class="perfil-value amber">35,2</div>
+        <div class="perfil-label">IMC — Obesidade Grau II</div>
+      </div>
+      <div class="perfil-card">
+        <div class="perfil-icon">🧑</div>
+        <div class="perfil-value">31</div>
+        <div class="perfil-label">Idade (anos)</div>
+      </div>
+      <div class="perfil-card">
+        <div class="perfil-icon">🍕</div>
+        <div class="perfil-value accent" style="font-size:18px">Hedônico</div>
+        <div class="perfil-label">Padrão alimentar</div>
+      </div>
+      <div class="perfil-card">
+        <div class="perfil-icon">🪑</div>
+        <div class="perfil-value accent" style="font-size:18px">Sedentário</div>
+        <div class="perfil-label">Nível de atividade</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hdivider"></div>
+
+  <!-- ══ SEÇÃO 2: ALERTAS CRÍTICOS ══ -->
+  <div class="section">
+    <div class="section-label">Seção 02</div>
+    <div class="section-title">Análise dos Exames — Achados Principais</div>
+    <div class="section-desc">Interpretação clínica dos resultados, ordenada por prioridade de ação.</div>
+
+    <!-- Homocisteína — CRÍTICO -->
+    <div class="alert-card red">
+      <div class="alert-icon">🔴</div>
+      <div class="alert-body">
+        <div class="alert-title">ALERTA CRÍTICO — Homocisteína: 49,06 µmol/L</div>
+        <div class="alert-sub">
+          O achado mais importante dos seus exames. <strong>Normal: &lt; 15 µmol/L</strong> — o seu está <strong>3× acima do limite</strong>.<br><br>
+          Homocisteína elevada é um marcador independente de risco cardiovascular, neurológico e vascular — mais preditivo que LDL em alguns estudos. Faixa 30–100 µmol/L é classificada como <strong>risco moderado-alto</strong>.<br><br>
+          <strong>Causa provável:</strong> Ácido Fólico 3,62 ng/mL (baixo, ideal &gt;5,4) + B12 253 pg/mL (baixo-normal, ideal &gt;400) + possível variante genética <strong>MTHFR</strong> que impede conversão de folato em forma ativa.<br><br>
+          <strong>Ação urgente:</strong> Formas metiladas — <em>5-MTHF 800–1000 mcg/dia + Metilcobalamina 1000–2000 mcg/dia + P5P 50 mg/dia.</em> Estudos mostram redução de ~30% em 6 meses.
+        </div>
+      </div>
+    </div>
+
+    <!-- HOMA-IR -->
+    <div class="alert-card amber">
+      <div class="alert-icon">🟡</div>
+      <div class="alert-body">
+        <div class="alert-title">Resistência à Insulina — HOMA-IR 4,49</div>
+        <div class="alert-sub">
+          Calculado: <strong>(Insulina 17,5 × Glicemia 104) / 405 = 4,49</strong><br>
+          Normal &lt;2,5 · Limítrofe 2,5–3,0 · <strong>Resistência insulínica &gt;3,0</strong><br><br>
+          Glicemia de jejum 104 mg/dL está na <strong>faixa pré-diabética limítrofe</strong> (100–125 mg/dL). HbA1c 5,2% ainda normal — o problema está emergindo agora.<br><br>
+          <strong>Implicação direta:</strong> Confirma e reforça a indicação de tirzepatida. O mecanismo duplo GIP/GLP-1 melhora a sensibilidade insulínica independente da perda de peso — SURMOUNT-1 mostra queda no HOMA-IR em todas as doses.
+        </div>
+      </div>
+    </div>
+
+    <!-- Testosterona -->
+    <div class="alert-card amber">
+      <div class="alert-icon">🟡</div>
+      <div class="alert-body">
+        <div class="alert-title">Testosterona Baixa — Hipogonadismo Funcional por Obesidade</div>
+        <div class="alert-sub">
+          Testosterona Total <strong>350 ng/dL</strong> (ideal para 31 anos: 500–900 ng/dL) · SHBG baixo (15,8 nmol/L — suprimido pela insulina) · Estradiol elevado (31 pg/mL — aromatase no tecido adiposo) · LH/FSH normais (7,04/3,18).<br><br>
+          <strong>Diagnóstico:</strong> Não há problema no eixo hipotálamo-hipófise-testículo. O excesso de gordura converte testosterona em estradiol via aromatase, e a hiperinsulinemia suprime o SHBG.<br><br>
+          <strong>Boa notícia:</strong> Estudo 2025 mostrou aumento robusto de testosterona total e biodisponível em apenas 2 meses de tirzepatida em homens com hipogonadismo metabólico — sem TRT.
+        </div>
+      </div>
+    </div>
+
+    <!-- Vitaminas -->
+    <div class="alert-card blue">
+      <div class="alert-icon">🔵</div>
+      <div class="alert-body">
+        <div class="alert-title">Vitaminas — Insuficiências que impactam o protocolo</div>
+        <div class="alert-sub">
+          <strong>Vitamina D 26,4 ng/mL</strong> → insuficiente (&lt;30). Piora resistência à insulina. PTH elevado (80 pg/mL) é secundário a essa deficiência. Suplementar <strong>5.000 UI/dia por 90 dias</strong>, depois reavaliar.<br><br>
+          <strong>Folato 3,62 ng/mL</strong> → baixo (ideal &gt;5,4). Causa da homocisteína elevada.<br>
+          <strong>B12 253 pg/mL</strong> → baixo-normal. Ideal &gt;400 para reduzir homocisteína. Ambos endereçados com o complexo B metilado.
+        </div>
+      </div>
+    </div>
+
+    <!-- O que está ótimo -->
+    <div class="alert-card green">
+      <div class="alert-icon">✅</div>
+      <div class="alert-body">
+        <div class="alert-title">O que está ótimo — Reserva Metabólica Excelente</div>
+        <div class="alert-sub">
+          <strong>Lipídios:</strong> Triglicerídeos 68 · LDL 98 · ApoB 80 — perfil cardiovascular lipídico excelente.<br>
+          <strong>Fígado:</strong> TGO 17 · TGP 29 — sem esteatose hepática evidente.<br>
+          <strong>Inflamação:</strong> PCR ultrassensível 0,12 — sem inflamação sistêmica, sinal muito positivo.<br>
+          <strong>Tireoide:</strong> TSH normal · anticorpos negativos.<br>
+          <strong>Rim, coagulograma, hemograma:</strong> todos normais.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SEÇÃO 3: PAINEL DE VALORES ══ -->
+  <div class="section">
+    <div class="section-label">Seção 03</div>
+    <div class="section-title">Painel de Resultados</div>
+    <div class="section-desc">Visão consolidada dos marcadores mais relevantes.</div>
+
+    <div class="stats-grid">
+      <div class="stat-card red">
+        <div class="label">Homocisteína</div>
+        <div class="value">49,06</div>
+        <div class="sub">µmol/L</div>
+        <div class="ideal">Ideal: &lt; 15 µmol/L</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="label">HOMA-IR</div>
+        <div class="value">4,49</div>
+        <div class="sub">Resistência insulínica</div>
+        <div class="ideal">Normal: &lt; 2,5</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="label">Testosterona Total</div>
+        <div class="value">350</div>
+        <div class="sub">ng/dL</div>
+        <div class="ideal">Ideal 31 anos: 500–900</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="label">Glicemia Jejum</div>
+        <div class="value">104</div>
+        <div class="sub">mg/dL — pré-limítrofe</div>
+        <div class="ideal">Normal: 70–99 mg/dL</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="label">Vitamina D</div>
+        <div class="value">26,4</div>
+        <div class="sub">ng/mL — insuficiente</div>
+        <div class="ideal">Ideal: 40–60 ng/mL</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="label">Ácido Fólico</div>
+        <div class="value">3,62</div>
+        <div class="sub">ng/mL — baixo</div>
+        <div class="ideal">Ideal: &gt; 5,4 ng/mL</div>
+      </div>
+      <div class="stat-card green">
+        <div class="label">Triglicerídeos</div>
+        <div class="value">68</div>
+        <div class="sub">mg/dL — ótimo</div>
+        <div class="ideal">Normal: &lt; 150 mg/dL</div>
+      </div>
+      <div class="stat-card green">
+        <div class="label">PCR-us</div>
+        <div class="value">0,12</div>
+        <div class="sub">mg/L — excelente</div>
+        <div class="ideal">Ideal: &lt; 1,0 mg/L</div>
+      </div>
+      <div class="stat-card green">
+        <div class="label">HbA1c</div>
+        <div class="value">5,2%</div>
+        <div class="sub">Normal — ainda ok</div>
+        <div class="ideal">Normal: &lt; 5,7%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hdivider"></div>
+
+  <!-- ══ SEÇÃO 4: PONTOS A INVESTIGAR ══ -->
+  <div class="section">
+    <div class="section-label">Seção 04</div>
+    <div class="section-title">Pontos para Discutir com o Médico</div>
+    <div class="section-desc">Achados que precisam de atenção ou reteste antes de iniciar o protocolo.</div>
+
+    <div class="concern-list">
+      <div class="concern-item">
+        <div class="concern-num">1</div>
+        <div>
+          <div class="concern-title">Bacteriúria elevada na urina — 11.697/µL</div>
+          <div class="concern-desc">Normal &lt;1.000/µL. Pode ser contaminação na coleta ou ITU subclínica. Solicitar repetição com coleta adequada antes de iniciar tirzepatida.</div>
+        </div>
+      </div>
+      <div class="concern-item">
+        <div class="concern-num">2</div>
+        <div>
+          <div class="concern-title">Eritrócitos urinários — 7,9/µL</div>
+          <div class="concern-desc">Levemente acima (normal &lt;5/µL). Possível microhematúria — correlacionar com bacteriúria. Se persistir em novo exame, investigar causa.</div>
+        </div>
+      </div>
+      <div class="concern-item">
+        <div class="concern-num">3</div>
+        <div>
+          <div class="concern-title">T4 livre — 0,66 ng/dL (limite inferior)</div>
+          <div class="concern-desc">Ligeiramente abaixo do limite inferior de muitos laboratórios (0,70). Não é diagnóstico de hipotireoidismo — TSH normal e anticorpos negativos. Monitorar com TSH seriado em 6 meses.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hdivider"></div>
+
+  <!-- ══ SEÇÃO 5: PRÉ-PROTOCOLO ══ -->
+  <div class="section">
+    <div class="section-label">Seção 05</div>
+    <div class="section-title">Pré-Protocolo — 4 a 8 semanas antes da tirzepatida</div>
+    <div class="section-desc">Preparação metabólica que aumenta a resposta ao medicamento e reduz riscos.</div>
+
+    <div class="pillars">
+      <div class="pillar">
+        <div class="pillar-icon">🧬</div>
+        <div class="pillar-title">Complexo B Metilado</div>
+        <div class="pillar-body">Metilfolato + Metilcobalamina + P5P para atacar homocisteína de 49 µmol/L imediatamente. Formas metiladas são essenciais — as comuns não funcionam se houver variante MTHFR.</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">☀️</div>
+        <div class="pillar-title">Vitamina D3 5.000 UI/dia</div>
+        <div class="pillar-body">Deficiência de Vitamina D piora resistência à insulina e pode reduzir resposta ao GLP-1. 5.000 UI por 90 dias, depois reduzir para manutenção.</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">🐟</div>
+        <div class="pillar-title">Ômega-3 2–4 g/dia</div>
+        <div class="pillar-body">Melhora sensibilidade insulínica e tem efeito anti-inflamatório sinérgico com tirzepatida. EPA+DHA — não ômega-3 de qualidade inferior.</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">🔬</div>
+        <div class="pillar-title">Esclarecer bacteriúria</div>
+        <div class="pillar-body">Repetir urina com coleta correta. Tratar ITU se confirmada antes de iniciar medicação, evitando confundir efeitos adversos.</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">🏋️</div>
+        <div class="pillar-title">Iniciar atividade física</div>
+        <div class="pillar-body">Mesmo que leve — caminhadas 30 min 3×/semana. O objetivo é criar o hábito antes que a saciedade aumentada pelo GLP-1 facilite naturalmente.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hdivider"></div>
+
+  <!-- ══ SEÇÃO 6: PROTOCOLO ══ -->
+  <div class="section">
+    <div class="section-label">Seção 06</div>
+    <div class="section-title">Protocolo Tirzepatida — Ciclo Inicial</div>
+    <div class="section-desc">Esquema conservador baseado no seu perfil: sem comorbidades, primeiro uso, padrão hedônico. Baseado em SURMOUNT-1.</div>
+
+    <div class="exame-table-wrap">
+      <table class="proto-table">
+        <thead>
+          <tr>
+            <th>Semanas</th>
+            <th>Dose</th>
+            <th>Justificativa</th>
+            <th>Expectativa</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Sem 1–4</td>
+            <td><span class="dose-pill dose-25">2,5 mg</span></td>
+            <td style="color:var(--muted2)">Adaptação GI, avaliar tolerância a náuseas</td>
+            <td style="color:var(--muted2)">−2 a −3 kg</td>
+          </tr>
+          <tr>
+            <td>Sem 5–14</td>
+            <td><span class="dose-pill dose-5">5,0 mg</span></td>
+            <td style="color:var(--muted2)">Dose eficaz confirmada pelo SURMOUNT-1</td>
+            <td style="color:var(--muted2)">−6 a −9 kg adicionais</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout" style="margin-top:20px">
+      <div class="callout-title">Expectativa baseada em SURMOUNT-1 (5 mg / 72 semanas)</div>
+      <p>Perda esperada em 14–16 semanas: <strong>−8 a −12 kg</strong> (peso final estimado ~102–106 kg).<br>
+      Impactos adicionais esperados: <strong>HOMA-IR cai para &lt;2,5 · Testosterona sobe para 450–550 ng/dL · Estradiol reduz · GGT normaliza.</strong></p>
+    </div>
+
+    <div class="pillars" style="margin-top:24px">
+      <div class="pillar">
+        <div class="pillar-icon">🥩</div>
+        <div class="pillar-title">Proteína ≥ 1,6 g/kg/dia</div>
+        <div class="pillar-body">180–200 g/dia distribuídas em 3+ refeições. Fundamental para preservar massa magra durante a perda de peso acelerada.</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">🏋️</div>
+        <div class="pillar-title">Treino de resistência 3×/semana</div>
+        <div class="pillar-body">Desde a semana 1. Sem treino: ~25% da perda vem de músculo. Com treino adequado: esse número cai para &lt;10%.</div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon">🍽️</div>
+        <div class="pillar-title">1.800–2.000 kcal/dia</div>
+        <div class="pillar-body">Não restringir além disso — risco de perda muscular acelerada. O GLP-1 já cria déficit de forma natural via saciedade.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hdivider"></div>
+
+  <!-- ══ SEÇÃO 7: SUPLEMENTAÇÃO ══ -->
+  <div class="section">
+    <div class="section-label">Seção 07</div>
+    <div class="section-title">Suplementação Prioritária</div>
+    <div class="section-desc">Ordenada por urgência. Levar para o médico ou nutricionista para validação das doses.</div>
+
+    <div class="supl-grid">
+      <div class="supl-card">
+        <div class="supl-prio p1">1</div>
+        <div class="supl-body">
+          <div class="supl-name">5-MTHF (Metilfolato)</div>
+          <div class="supl-dose">800–1000 mcg/dia</div>
+          <div class="supl-why">Homocisteína 49 µmol/L — urgente. Forma ativa, não folato comum.</div>
+        </div>
+      </div>
+      <div class="supl-card">
+        <div class="supl-prio p1">1</div>
+        <div class="supl-body">
+          <div class="supl-name">Metilcobalamina (B12 ativa)</div>
+          <div class="supl-dose">1000–2000 mcg/dia</div>
+          <div class="supl-why">Reduz homocisteína + B12 baixo-normal. Forma metilada, não cianocobalamina.</div>
+        </div>
+      </div>
+      <div class="supl-card">
+        <div class="supl-prio p1">1</div>
+        <div class="supl-body">
+          <div class="supl-name">P5P (Piridoxal-5-Fosfato, B6 ativa)</div>
+          <div class="supl-dose">50 mg/dia</div>
+          <div class="supl-why">Cofator essencial na remetilação da homocisteína.</div>
+        </div>
+      </div>
+      <div class="supl-card">
+        <div class="supl-prio p2">2</div>
+        <div class="supl-body">
+          <div class="supl-name">Vitamina D3 + K2</div>
+          <div class="supl-dose">5.000 UI/dia (D3) · 100 mcg (K2)</div>
+          <div class="supl-why">Insuficiência D (26,4 ng/mL) piora resistência insulínica. K2 direciona cálcio.</div>
+        </div>
+      </div>
+      <div class="supl-card">
+        <div class="supl-prio p2">2</div>
+        <div class="supl-body">
+          <div class="supl-name">Ômega-3 (EPA+DHA)</div>
+          <div class="supl-dose">2–4 g/dia</div>
+          <div class="supl-why">Melhora sensibilidade insulínica + anti-inflamatório. Sinérgico com tirzepatida.</div>
+        </div>
+      </div>
+      <div class="supl-card">
+        <div class="supl-prio p3">3</div>
+        <div class="supl-body">
+          <div class="supl-name">Magnésio Glicinato</div>
+          <div class="supl-dose">300–400 mg/noite</div>
+          <div class="supl-why">Magnésio limítrofe (2,0 mg/dL). Melhora glicemia, sono e sensibilidade insulínica.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hdivider"></div>
+
+  <!-- ══ SEÇÃO 8: PÓS-CICLO ══ -->
+  <div class="section">
+    <div class="section-label">Seção 08</div>
+    <div class="section-title">Estratégia Pós-Ciclo — Ano 1</div>
+    <div class="section-desc">Dados do SURMOUNT-4: 82,5% dos pacientes que pararam tirzepatida recuperaram &gt;25% do peso em 1 ano. A decisão pós-ciclo é a mais importante.</div>
+
+    <div class="strategy-grid">
+      <div class="strategy-card">
+        <div class="strategy-tag tag-accent">Recomendado para você</div>
+        <div class="strategy-name">Manutenção 5 mg a cada 2 semanas</div>
+        <div class="strategy-evidence">Scripps (2024): 87% mantiveram o peso</div>
+        <div class="strategy-row"><span class="icon">✅</span><span>Custo reduzido (metade das doses)</span></div>
+        <div class="strategy-row"><span class="icon">✅</span><span>Eficácia comprovada em manutenção</span></div>
+        <div class="strategy-row"><span class="icon">⚠️</span><span>Menos estudada em prazo muito longo</span></div>
+      </div>
+      <div class="strategy-card highlight">
+        <div class="strategy-tag tag-green">Melhor evidência</div>
+        <div class="strategy-name">Continuar 5 mg/semana</div>
+        <div class="strategy-evidence">SURMOUNT-4: máxima proteção contra reganho</div>
+        <div class="strategy-row"><span class="icon">✅</span><span>Evidência mais robusta disponível</span></div>
+        <div class="strategy-row"><span class="icon">✅</span><span>Manutenção de todos os benefícios metabólicos</span></div>
+        <div class="strategy-row"><span class="icon">⚠️</span><span>Custo de uso contínuo</span></div>
+      </div>
+      <div class="strategy-card">
+        <div class="strategy-tag tag-red">Alto risco</div>
+        <div class="strategy-name">Parar + lifestyle</div>
+        <div class="strategy-evidence">82,5% de reganho em 1 ano (SURMOUNT-4)</div>
+        <div class="strategy-row"><span class="icon">✅</span><span>Sem medicação contínua</span></div>
+        <div class="strategy-row"><span class="icon">❌</span><span>Alta taxa de reganho documentada</span></div>
+        <div class="strategy-row"><span class="icon">❌</span><span>Padrão hedônico aumenta risco ainda mais</span></div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">Recomendação para o seu perfil</div>
+      <p>Dado que você tem <strong>resistência à insulina, testosterona baixa e padrão hedônico</strong> (não de fome), o risco de reganho é real. Estratégia sugerida para discutir com o médico: <strong>atingir o peso alvo → tentar manutenção com dose reduzida ou espaçada → monitorar homocisteína, HOMA-IR e testosterona a cada 3 meses → re-ciclar se necessário.</strong></p>
+    </div>
+  </div>
+
+  <div class="hdivider"></div>
+
+  <!-- ══ SEÇÃO 9: METAS DE LONGO PRAZO ══ -->
+  <div class="section">
+    <div class="section-label">Seção 09</div>
+    <div class="section-title">Metas Realistas — Anos 2 a 3</div>
+    <div class="section-desc">Seu perfil (31 anos, sem comorbidades, boa reserva metabólica) é o melhor cenário possível para GLP-1.</div>
+
+    <div class="meta-grid">
+      <div class="meta-card">
+        <div class="meta-label">Peso</div>
+        <div class="meta-from">114 kg</div>
+        <div class="meta-arrow">↓ meta</div>
+        <div class="meta-to">90–95 kg</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Testosterona</div>
+        <div class="meta-from">350 ng/dL</div>
+        <div class="meta-arrow">↑ meta</div>
+        <div class="meta-to">500–700 ng/dL</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">HOMA-IR</div>
+        <div class="meta-from">4,49</div>
+        <div class="meta-arrow">↓ meta</div>
+        <div class="meta-to">&lt; 2,0</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Homocisteína</div>
+        <div class="meta-from">49 µmol/L</div>
+        <div class="meta-arrow">↓ meta</div>
+        <div class="meta-to">&lt; 15 µmol/L</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">IMC</div>
+        <div class="meta-from">35,2</div>
+        <div class="meta-arrow">↓ meta</div>
+        <div class="meta-to">27–29</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-label">Medicação</div>
+        <div class="meta-from">Semanal</div>
+        <div class="meta-arrow">→ objetivo</div>
+        <div class="meta-to">Descontinuar</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hdivider"></div>
+
+  <!-- ══ SEÇÃO 10: RESUMO EXECUTIVO ══ -->
+  <div class="section">
+    <div class="section-label">Seção 10</div>
+    <div class="section-title">Resumo Executivo para o Médico</div>
+    <div class="section-desc">Texto pronto para apresentar na consulta.</div>
+
+    <div class="callout">
+      <div class="callout-title">Levar para a consulta</div>
+      <p>
+        "Tenho <strong>31 anos, IMC 35,2, sem comorbidades diagnosticadas</strong>. Meus exames mostram <strong>HOMA-IR de 4,49</strong> (resistência insulínica significativa), <strong>testosterona baixa (350 ng/dL)</strong> por provável hipogonadismo funcional relacionado à obesidade, e <strong>homocisteína muito elevada (49 µmol/L)</strong> — esse último precisa ser tratado com urgência com complexo B metilado (metilfolato + metilcobalamina + P5P).<br><br>
+        Quero discutir um <strong>protocolo de tirzepatida 2,5 → 5 mg/semana por 14–16 semanas</strong>, com foco em preservação de massa magra (treino de resistência 3×/semana + 180 g proteína/dia). Para pós-ciclo, quero discutir estratégia de manutenção baseada nos dados do <strong>SURMOUNT-4 e do estudo Scripps</strong>."
+      </p>
+    </div>
+  </div>
+
+  <div class="hdivider"></div>
+
+  <!-- ══ FONTES ══ -->
+  <div class="section">
+    <div class="section-label">Referências</div>
+    <div class="section-title">Fontes Científicas</div>
+    <div class="section-desc">Estudos utilizados na construção desta análise.</div>
+
+    <div class="sources-grid">
+      <div class="source-item">
+        <strong>SURMOUNT-1 — NEJM 2022</strong>
+        Tirzepatida vs. placebo — perda de peso primária, HOMA-IR, composição corporal.
+      </div>
+      <div class="source-item">
+        <strong>SURMOUNT-4 — ACC/JACC 2025</strong>
+        Descontinuação de tirzepatida após fase inicial — taxas de reganho e reversão metabólica.
+      </div>
+      <div class="source-item">
+        <strong>Tirzepatida e testosterona — PMC 2025</strong>
+        Aumento de testosterona total e biodisponível em homens com hipogonadismo metabólico.
+      </div>
+      <div class="source-item">
+        <strong>Scripps (2024) — Manutenção com dose reduzida</strong>
+        Estratégia de manutenção quinzenal — 87% de manutenção do peso perdido.
+      </div>
+      <div class="source-item">
+        <strong>Tirzepatida e massa muscular — Cureus</strong>
+        Revisão sistemática: efeitos sobre massa muscular esquelética, papel do treino.
+      </div>
+      <div class="source-item">
+        <strong>Homocisteína e risco CV — Cleveland Clinic / Frontiers Endo</strong>
+        Homocisteína como marcador independente. Redução com formas metiladas de B.
+      </div>
+      <div class="source-item">
+        <strong>Vitamina D e resistência insulínica — Nutrients 2024</strong>
+        Impacto da deficiência de D na sensibilidade à insulina e resposta ao GLP-1.
+      </div>
+      <div class="source-item">
+        <strong>Nature Medicine 2025</strong>
+        Mecanismo GIP/GLP-1 duplo — melhor perfil de sensibilidade insulínica vs. GLP-1 puro.
+      </div>
+    </div>
+  </div>
+
+
+  <div class="hdivider"></div>
+
+  <!-- ══ SEÇÃO 11: DIETA PERSONALIZADA ══ -->
+  <div class="section">
+    <div class="section-label">Seção 11</div>
+    <div class="section-title">Dieta Personalizada — Ciclo Tirzepatida</div>
+    <div class="section-desc">Planejamento para quem não tem tempo de cozinhar todo dia. Usa Bold, Growth Whey 80% e creatina como base estrutural, com alimentos de preparo rápido ou em batch no fim de semana.</div>
+
+    <!-- Metas nutricionais -->
+    <div class="stats-grid" style="margin-bottom:32px">
+      <div class="stat-card green">
+        <div class="label">Kcal / dia</div>
+        <div class="value">1.800</div>
+        <div class="sub">déficit via saciedade GLP-1</div>
+        <div class="ideal">Mínimo supressão: 1.200 kcal</div>
+      </div>
+      <div class="stat-card green">
+        <div class="label">Proteína / dia</div>
+        <div class="value">185g</div>
+        <div class="sub">≥ 1,6 g/kg · preserva músculo</div>
+        <div class="ideal">Mínimo supressão: 120g</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="label">Carboidratos</div>
+        <div class="value">150g</div>
+        <div class="sub">prioritizar complexos e pré-treino</div>
+        <div class="ideal">Reduzir em dias sem treino</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="label">Gorduras</div>
+        <div class="value">60g</div>
+        <div class="sub">foco em insaturadas</div>
+        <div class="ideal">Limitar em dias de náusea</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="label">Água</div>
+        <div class="value">3 L</div>
+        <div class="sub">GLP-1 reduz sensação de sede</div>
+        <div class="ideal">Mínimo absoluto: 2,5 L</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="label">Refeições</div>
+        <div class="value">4×</div>
+        <div class="sub">volumes menores — melhor tolerância</div>
+        <div class="ideal">Supressão: 3× mínimo</div>
+      </div>
+    </div>
+
+    <!-- ── CAFÉ DA MANHÃ ── -->
+    <div class="meal-block">
+      <div class="meal-type-header">
+        <div class="meal-type-icon">🌅</div>
+        <div class="meal-type-name">Café da manhã</div>
+        <div class="meal-type-target">~410 kcal · ~47g prot</div>
+      </div>
+      <div class="meal-opts">
+        <div class="meal-opt zero-prep">
+          <div class="meal-opt-title">⚡ Zero preparo — Bold + Shake</div>
+          <div class="meal-opt-desc">1 Bold bar + 1½ scoop Growth Whey em 300 ml leite desnatado. Tomar no carro ou no escritório sem montar nada.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">49g prot</span>
+            <span class="mac mac-k">415 kcal</span>
+            <span class="mac mac-t">0 min</span>
+            <span class="mac mac-z">zero cozinha</span>
+          </div>
+        </div>
+        <div class="meal-opt">
+          <div class="meal-opt-title">🥣 Shake de aveia</div>
+          <div class="meal-opt-desc">2 scoops Growth Whey + 40g aveia em flocos + 1 banana + 200 ml água ou leite. Misturar no shaker ou liquidificador.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">54g prot</span>
+            <span class="mac mac-k">490 kcal</span>
+            <span class="mac mac-t">2 min</span>
+          </div>
+        </div>
+        <div class="meal-opt">
+          <div class="meal-opt-title">🥛 Bowl de iogurte + whey</div>
+          <div class="meal-opt-desc">200g iogurte grego integral + 1 scoop Growth Whey mexido direto no pote + 100g morangos + 1 col. granola. Sem aquecimento.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">38g prot</span>
+            <span class="mac mac-k">390 kcal</span>
+            <span class="mac mac-t">2 min</span>
+          </div>
+        </div>
+        <div class="meal-opt">
+          <div class="meal-opt-title">🍳 Ovos mexidos rápidos</div>
+          <div class="meal-opt-desc">3 ovos mexidos no azeite + 2 fatias pão integral + 100g queijo cottage ao lado. Adicionar 1 scoop whey se abaixo de 40g prot.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">44g prot</span>
+            <span class="mac mac-k">480 kcal</span>
+            <span class="mac mac-t">7 min</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ALMOÇO ── -->
+    <div class="meal-block">
+      <div class="meal-type-header">
+        <div class="meal-type-icon">🍽️</div>
+        <div class="meal-type-name">Almoço</div>
+        <div class="meal-type-target">~500 kcal · ~50g prot</div>
+      </div>
+      <div class="meal-opts">
+        <div class="meal-opt zero-prep">
+          <div class="meal-opt-title">⚡ Atum + Batata Doce (batch)</div>
+          <div class="meal-opt-desc">2 latas atum ao natural (170g drenado) + 150g batata doce batch-cozida + fio azeite + limão. Batata doce fica 4 dias na geladeira.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">49g prot</span>
+            <span class="mac mac-k">420 kcal</span>
+            <span class="mac mac-t">3 min</span>
+            <span class="mac mac-z">batch</span>
+          </div>
+        </div>
+        <div class="meal-opt zero-prep">
+          <div class="meal-opt-title">⚡ Frango Batch + Arroz + Salada</div>
+          <div class="meal-opt-desc">200g frango grelhado (batch do fds) + 100g arroz integral + salada verde à vontade + azeite. Frango dura 5 dias — montagem pura.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">53g prot</span>
+            <span class="mac mac-k">480 kcal</span>
+            <span class="mac mac-t">5 min</span>
+            <span class="mac mac-z">batch</span>
+          </div>
+        </div>
+        <div class="meal-opt">
+          <div class="meal-opt-title">🌯 Wrap de Frango</div>
+          <div class="meal-opt-desc">1 tortilla integral + 150g frango desfiado (batch) + 2 col. cream cheese light + folhas + tomate. Prático para levar no trabalho.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">44g prot</span>
+            <span class="mac mac-k">405 kcal</span>
+            <span class="mac mac-t">5 min</span>
+          </div>
+        </div>
+        <div class="meal-opt">
+          <div class="meal-opt-title">🍝 Carne Moída + Macarrão Integral</div>
+          <div class="meal-opt-desc">150g carne moída (patinho) + 60g macarrão integral + molho de tomate. Carne e macarrão ficam prontos em 15 min simultâneos no fogão.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">40g prot</span>
+            <span class="mac mac-k">535 kcal</span>
+            <span class="mac mac-t">15 min</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LANCHE / PRÉ-TREINO ── -->
+    <div class="meal-block">
+      <div class="meal-type-header">
+        <div class="meal-type-icon">⚡</div>
+        <div class="meal-type-name">Lanche / Pré-treino</div>
+        <div class="meal-type-target">~320 kcal · ~37g prot</div>
+      </div>
+      <div class="meal-opts">
+        <div class="meal-opt zero-prep">
+          <div class="meal-opt-title">⚡ Shake Pré-treino + Creatina</div>
+          <div class="meal-opt-desc">1½ scoop Growth Whey + 5g creatina monohidrato + 300 ml água gelada. Tomar 30–60 min antes do treino. Creatina não tem sabor.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">36g prot</span>
+            <span class="mac mac-k">195 kcal</span>
+            <span class="mac mac-t">1 min</span>
+            <span class="mac mac-z">zero cozinha</span>
+          </div>
+        </div>
+        <div class="meal-opt zero-prep">
+          <div class="meal-opt-title">⚡ Bold + Cottage</div>
+          <div class="meal-opt-desc">1 Bold bar + 150g queijo cottage. Combina praticidade com proteína de digestão lenta (caseína). Ótimo para levar na bolsa.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">36g prot</span>
+            <span class="mac mac-k">360 kcal</span>
+            <span class="mac mac-t">0 min</span>
+            <span class="mac mac-z">zero cozinha</span>
+          </div>
+        </div>
+        <div class="meal-opt">
+          <div class="meal-opt-title">🥜 Pasta Amendoim + Pão + Whey</div>
+          <div class="meal-opt-desc">2 fatias pão integral + 30g pasta de amendoim + 1 scoop whey em copo de leite desnatado. Bom para dias sem treino — gordura boa + proteína.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">39g prot</span>
+            <span class="mac mac-k">455 kcal</span>
+            <span class="mac mac-t">2 min</span>
+          </div>
+        </div>
+        <div class="meal-opt">
+          <div class="meal-opt-title">🫙 Cottage + Frutas + Castanhas</div>
+          <div class="meal-opt-desc">200g queijo cottage + 100g morangos ou kiwi + 4 castanhas-do-pará. Simples, denso em nutrientes. Ótimo para dias de menor apetite.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">27g prot</span>
+            <span class="mac mac-k">290 kcal</span>
+            <span class="mac mac-t">0 min</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── JANTAR ── -->
+    <div class="meal-block">
+      <div class="meal-type-header">
+        <div class="meal-type-icon">🌙</div>
+        <div class="meal-type-name">Jantar</div>
+        <div class="meal-type-target">~440 kcal · ~45g prot</div>
+      </div>
+      <div class="meal-opts">
+        <div class="meal-opt">
+          <div class="meal-opt-title">🍳 Omelete Proteico</div>
+          <div class="meal-opt-desc">4 ovos + 80g queijo minas frescal recheado + pimentão + tomate + cebola. O jantar mais rápido com proteína alta. Sem acompanhamento pesado.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">37g prot</span>
+            <span class="mac mac-k">430 kcal</span>
+            <span class="mac mac-t">10 min</span>
+          </div>
+        </div>
+        <div class="meal-opt">
+          <div class="meal-opt-title">🐟 Salmão + Batata Doce</div>
+          <div class="meal-opt-desc">180g salmão na frigideira (8 min) + 150g batata doce batch. Ômega-3 extra além da suplementação + proteína de alto valor biológico.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">40g prot</span>
+            <span class="mac mac-k">450 kcal</span>
+            <span class="mac mac-t">12 min</span>
+          </div>
+        </div>
+        <div class="meal-opt zero-prep">
+          <div class="meal-opt-title">⚡ Frango Batch + Brócolis</div>
+          <div class="meal-opt-desc">200g frango batch + brócolis congelado no micro (5 min) + azeite. Jantar de 5 min se o frango já estiver feito no fds.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">51g prot</span>
+            <span class="mac mac-k">390 kcal</span>
+            <span class="mac mac-t">5 min</span>
+            <span class="mac mac-z">batch</span>
+          </div>
+        </div>
+        <div class="meal-opt">
+          <div class="meal-opt-title">🥩 Filé + Arroz + Feijão</div>
+          <div class="meal-opt-desc">150g alcatra ou contrafilé + 80g arroz integral + 80g feijão cozido. O clássico brasileiro que fecha os macros com perfeição.</div>
+          <div class="meal-macros">
+            <span class="mac mac-p">40g prot</span>
+            <span class="mac mac-k">388 kcal</span>
+            <span class="mac mac-t">15 min</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BATCH COOK CALLOUT -->
+    <div class="callout" style="margin-bottom:40px">
+      <div class="callout-title">Estratégia Batch Cook — 2h no fim de semana = semana resolvida</div>
+      <p>
+        <strong>Frango:</strong> Grelhar 1,2 kg no forno (180°C · 35 min · temperado com sal, alho, limão) → dividir em 6 porções de 200g → geladeira por até 5 dias.<br>
+        <strong>Batata doce:</strong> Lavar, furar com garfo, micro-ondas 8 min/unidade → fazer 6 de uma vez → geladeira 4 dias.<br>
+        <strong>Ovos cozidos:</strong> 6–8 ovos de uma vez → geladeira 5 dias → substituem proteína em qualquer refeição emergencial.<br>
+        Com esses 3 itens prontos, <strong>almoço e jantar ficam prontos em menos de 5 min</strong> em qualquer dia da semana.
+      </p>
+    </div>
+
+    <!-- ── PLANO SEMANAL ── -->
+    <div class="section-title" style="font-size:18px;margin-bottom:6px">Plano Alimentar — Semana Tipo</div>
+    <div class="section-desc" style="margin-bottom:16px">Injeção sugerida na quinta-feira. Maior supressão esperada nas primeiras 48–72h pós-injeção (Qui–Sex). Treinos: Seg, Qua e Sex.</div>
+    <div class="week-plan" style="margin-bottom:16px">
+      <table class="week-table">
+        <thead>
+          <tr>
+            <th>Dia</th>
+            <th>Café da manhã</th>
+            <th>Almoço</th>
+            <th>Lanche</th>
+            <th>Jantar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Seg <span style="font-size:10px;color:var(--green2)">🏋️ treino</span></td>
+            <td>Shake aveia · 54g prot</td>
+            <td>Frango batch + arroz · 53g</td>
+            <td>Shake pré-treino + creatina · 36g</td>
+            <td>Salmão + batata doce · 40g</td>
+          </tr>
+          <tr>
+            <td>Ter</td>
+            <td>Iogurte grego + whey · 38g</td>
+            <td>Atum + batata doce · 49g</td>
+            <td>Bold + cottage · 36g</td>
+            <td>Omelete 4 ovos · 37g</td>
+          </tr>
+          <tr>
+            <td>Qua <span style="font-size:10px;color:var(--green2)">🏋️ treino</span></td>
+            <td>Bold + shake whey · 49g</td>
+            <td>Wrap de frango · 44g</td>
+            <td>Shake pré-treino + creatina · 36g</td>
+            <td>Frango batch + brócolis · 51g</td>
+          </tr>
+          <tr>
+            <td>Qui <span class="week-inj">💉 injeção</span></td>
+            <td>Shake 1½ scoop gelado · 36g</td>
+            <td>Atum + batata doce · 49g</td>
+            <td>Cottage + frutas · 27g</td>
+            <td>Omelete leve · 37g — refeição pequena</td>
+          </tr>
+          <tr>
+            <td>Sex <span style="font-size:10px;color:var(--red2)">supressão</span> <span style="font-size:10px;color:var(--green2)">🏋️</span></td>
+            <td>Bold + shake (forçar) · 49g</td>
+            <td>Atum + batata doce · 49g</td>
+            <td>Shake pré-treino · 36g</td>
+            <td>Omelete · 37g</td>
+          </tr>
+          <tr>
+            <td>Sáb <span style="font-size:10px;color:var(--amber2)">batch cook</span></td>
+            <td>Ovos + pão + cottage · 44g</td>
+            <td>Filé + arroz + feijão · 40g</td>
+            <td>Pasta amendoim + pão + whey · 39g</td>
+            <td>Frango batch + brócolis · 51g</td>
+          </tr>
+          <tr>
+            <td>Dom <span style="font-size:10px;color:var(--amber2)">batch cook</span></td>
+            <td>Iogurte grego + whey · 38g</td>
+            <td>Frango + arroz + feijão · 53g</td>
+            <td>Bold + cottage · 36g</td>
+            <td>Salmão + batata doce · 40g</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout" style="margin-bottom:40px">
+      <div class="callout-title">Proteína total estimada por dia</div>
+      <p>
+        Dias normais (Seg/Ter/Qua/Sáb/Dom): <strong>175–190g</strong> — meta atingida.<br>
+        Dias pós-injeção (Qui/Sex): <strong>149–171g</strong> — ainda acima do mínimo de 120g. Se cair abaixo, adicionar 1 scoop whey extra em água a qualquer momento.
+      </p>
+    </div>
+
+    <!-- ── DIAS DE SUPRESSÃO ── -->
+    <div class="section-title" style="font-size:18px;margin-bottom:6px">Protocolo — Dias de Supressão Máxima</div>
+    <div class="section-desc" style="margin-bottom:16px">Comuns nas primeiras 48–72h pós-injeção. Meta: manter proteína mínima, não travar o metabolismo e não perder músculo.</div>
+    <div class="suppr-grid" style="margin-bottom:20px">
+      <div class="suppr-step">
+        <div class="suppr-time">08:00 — Acordar</div>
+        <div class="suppr-food">Shake whey gelado (1½ scoop)</div>
+        <div class="suppr-macro">36g prot · 195 kcal</div>
+      </div>
+      <div class="suppr-step">
+        <div class="suppr-time">12:00 — Almoço</div>
+        <div class="suppr-food">Atum na lata + banana</div>
+        <div class="suppr-macro">26g prot · 230 kcal</div>
+      </div>
+      <div class="suppr-step">
+        <div class="suppr-time">15:30 — Lanche</div>
+        <div class="suppr-food">Bold bar (forçar se necessário)</div>
+        <div class="suppr-macro">18g prot · 200 kcal</div>
+      </div>
+      <div class="suppr-step">
+        <div class="suppr-time">19:00 — Jantar</div>
+        <div class="suppr-food">Iogurte grego + 1 scoop whey</div>
+        <div class="suppr-macro">34g prot · 260 kcal</div>
+      </div>
+      <div class="suppr-step">
+        <div class="suppr-time">21:00 — Se necessário</div>
+        <div class="suppr-food">Cottage + 1 scoop whey em água</div>
+        <div class="suppr-macro">36g prot · 290 kcal</div>
+      </div>
+    </div>
+    <div class="alert-card amber" style="margin-bottom:40px">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-body">
+        <div class="alert-title">Regra dos dias de supressão — shakes frios são seus aliados</div>
+        <div class="alert-sub">
+          Líquidos gelados toleram muito melhor a náusea do que alimentos sólidos quentes. Evitar: frituras, queijos gordurosos, pratos muito condimentados e bebidas carbonatadas — potencializam o desconforto GI causado pelo GLP-1. <strong>Nunca jejuar o dia inteiro</strong>: 24h sem proteína em contexto de GLP-1 acelera o catabolismo muscular de forma significativa.
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ALERTAS NUTRICIONAIS ── -->
+    <div class="section-title" style="font-size:18px;margin-bottom:6px">Alertas Nutricionais — Específicos para Tirzepatida</div>
+    <div class="section-desc" style="margin-bottom:16px">Pontos críticos que a maioria dos usuários descobre tarde demais.</div>
+    <div class="concern-list" style="margin-bottom:40px">
+      <div class="concern-item">
+        <div class="concern-num">1</div>
+        <div>
+          <div class="concern-title">Comer devagar — o GLP-1 atrasa o esvaziamento gástrico</div>
+          <div class="concern-desc">Tirzepatida retarda o esvaziamento do estômago. Comer rápido, mesmo em volumes normais, provoca refluxo, náusea e desconforto intenso. Mastigar bem e fazer pausas entre garfadas reduz drasticamente os efeitos adversos — especialmente nas primeiras 4 semanas.</div>
+        </div>
+      </div>
+      <div class="concern-item">
+        <div class="concern-num">2</div>
+        <div>
+          <div class="concern-title">Hidratação ativa — GLP-1 bloqueia o sinal de sede</div>
+          <div class="concern-desc">O mecanismo GIP/GLP-1 pode atenuar a sensação de sede. Programar alarmes: 500 ml ao acordar, 500 ml antes de cada refeição, 500 ml pré-treino. Meta mínima 2,5 L/dia. Desidratação piora náusea, dor de cabeça e pode ser confundida com efeito adverso do medicamento.</div>
+        </div>
+      </div>
+      <div class="concern-item">
+        <div class="concern-num">3</div>
+        <div>
+          <div class="concern-title">Proteína é não-negociável — nem nos dias ruins</div>
+          <div class="concern-desc">Com tirzepatida, o corpo está em déficit calórico acentuado e perda rápida de peso. Sem proteína adequada, 25–40% do peso perdido pode ser massa muscular. 120g/dia é o piso absoluto — mesmo em dias com náusea intensa, priorizar shakes de whey em água gelada.</div>
+        </div>
+      </div>
+      <div class="concern-item">
+        <div class="concern-num">4</div>
+        <div>
+          <div class="concern-title">Álcool — sensibilidade amplificada pelo GLP-1</div>
+          <div class="concern-desc">GLP-1 retarda o esvaziamento gástrico, aumentando a absorção de álcool. Quantidade menor causa efeito maior — e piora a náusea intensamente. Evitar nas primeiras 48h pós-injeção. Se consumir em outros dias: máximo 1 dose, sempre com comida.</div>
+        </div>
+      </div>
+      <div class="concern-item">
+        <div class="concern-num">5</div>
+        <div>
+          <div class="concern-title">Não criar déficit extra por conta própria</div>
+          <div class="concern-desc">O GLP-1 já cria o déficit via saciedade. Reduzir intencionalmente abaixo de 1.600 kcal acelera a perda muscular e compromete o metabolismo de longo prazo. A saciedade do medicamento é o controlador — confiar nela em vez de restringir manualmente.</div>
+        </div>
+      </div>
+      <div class="concern-item">
+        <div class="concern-num">6</div>
+        <div>
+          <div class="concern-title">Creatina — manter todo o ciclo, todos os dias</div>
+          <div class="concern-desc">5g/dia de creatina monohidrato preserva força e massa muscular durante perda acelerada. Misturar no shake pré-treino. Dias sem treino: misturar em qualquer líquido — não tem sabor. Não precisa de fase de saturação. Não suspender em dias de supressão.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LISTA DE COMPRAS ── -->
+    <div class="section-title" style="font-size:18px;margin-bottom:6px">Lista de Compras — Por Categoria</div>
+    <div class="section-desc" style="margin-bottom:16px">Top 3 marcas por item, ordenadas por disponibilidade e custo-benefício no mercado brasileiro.</div>
+    <div class="shop-grid">
+
+      <div class="shop-cat">
+        <div class="shop-cat-head">🥩 Proteínas Animais</div>
+        <div class="shop-item">
+          <div class="shop-item-name">Peito de frango (filé)</div>
+          <div class="shop-brands"><em>1.</em> Sadia &nbsp;<em>2.</em> Seara &nbsp;<em>3.</em> Friboi<br>1,5–2 kg/semana para batch cook dominical</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Atum ao natural (lata 170g)</div>
+          <div class="shop-brands"><em>1.</em> Gomes da Costa &nbsp;<em>2.</em> Coqueiro &nbsp;<em>3.</em> La Pirata<br>12–16 latas/semana (2 latas = 1 refeição)</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Ovos (tipo 1 ou extra)</div>
+          <div class="shop-brands"><em>1.</em> Mantiqueira &nbsp;<em>2.</em> Korin &nbsp;<em>3.</em> Globo Ovos<br>2 dúzias/semana</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Carne moída (patinho)</div>
+          <div class="shop-brands"><em>1.</em> Friboi &nbsp;<em>2.</em> Seara &nbsp;<em>3.</em> JBS<br>500g–1 kg/semana</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Salmão (postas ou filé)</div>
+          <div class="shop-brands"><em>1.</em> Camargo &nbsp;<em>2.</em> Supreme Salmon &nbsp;<em>3.</em> avulso peixaria<br>2–3 postas/semana · congelado funciona bem</div>
+        </div>
+      </div>
+
+      <div class="shop-cat">
+        <div class="shop-cat-head">🥛 Laticínios</div>
+        <div class="shop-item">
+          <div class="shop-item-name">Iogurte grego integral</div>
+          <div class="shop-brands"><em>1.</em> Nestlé Grego &nbsp;<em>2.</em> Danio (Danone) &nbsp;<em>3.</em> Vigor Grego<br>2–3 potes de 500g/semana</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Queijo cottage</div>
+          <div class="shop-brands"><em>1.</em> Vigor &nbsp;<em>2.</em> Itambé &nbsp;<em>3.</em> Nestlé<br>2 potes de 400g/semana — proteína de digestão lenta</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Leite desnatado</div>
+          <div class="shop-brands"><em>1.</em> Piracanjuba &nbsp;<em>2.</em> Italac &nbsp;<em>3.</em> Parmalat<br>2 L/semana para dissolver whey</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Queijo minas frescal</div>
+          <div class="shop-brands"><em>1.</em> Tirolez &nbsp;<em>2.</em> Vigor &nbsp;<em>3.</em> Polenghi<br>1–2 unidades/semana para omeletes</div>
+        </div>
+      </div>
+
+      <div class="shop-cat">
+        <div class="shop-cat-head">🍠 Carboidratos Complexos</div>
+        <div class="shop-item">
+          <div class="shop-item-name">Aveia em flocos finos</div>
+          <div class="shop-brands"><em>1.</em> Quaker &nbsp;<em>2.</em> Taeq (Pão de Açúcar) &nbsp;<em>3.</em> Vitao<br>1 pacote 500g dura 2–3 semanas</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Batata doce</div>
+          <div class="shop-brands"><em>1.</em> A granel (feira) &nbsp;<em>2.</em> Hortifruti in natura &nbsp;<em>3.</em> Santa Helena (congelada)<br>1–1,5 kg/semana · micro-ondas 8 min/unid.</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Pão integral (mínimo 3g fibra/fatia)</div>
+          <div class="shop-brands"><em>1.</em> Wickbold &nbsp;<em>2.</em> Pullman Plus Vita &nbsp;<em>3.</em> Seven Boys<br>1 pacote/semana</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Arroz integral</div>
+          <div class="shop-brands"><em>1.</em> Camil &nbsp;<em>2.</em> Tio João &nbsp;<em>3.</em> Prato Fino<br>1 kg dura 2–3 semanas</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Macarrão integral</div>
+          <div class="shop-brands"><em>1.</em> Barilla Integrale &nbsp;<em>2.</em> Renata &nbsp;<em>3.</em> Garofalo<br>500g/semana</div>
+        </div>
+      </div>
+
+      <div class="shop-cat">
+        <div class="shop-cat-head">🥑 Gorduras Saudáveis</div>
+        <div class="shop-item">
+          <div class="shop-item-name">Azeite de oliva extra virgem</div>
+          <div class="shop-brands"><em>1.</em> Gallo &nbsp;<em>2.</em> Andorinha &nbsp;<em>3.</em> Carbonell<br>500 ml dura ~3 semanas com uso diário</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Pasta de amendoim (sem açúcar adicionado)</div>
+          <div class="shop-brands"><em>1.</em> Dr. Peanut &nbsp;<em>2.</em> Thiani &nbsp;<em>3.</em> Pasteurizou<br>1 pote 500g/semana · verificar ingredientes</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Castanha-do-pará</div>
+          <div class="shop-brands"><em>1.</em> Mundo Verde &nbsp;<em>2.</em> Amapá &nbsp;<em>3.</em> avulso a granel<br>200g/semana · limite 4 unid./dia (selênio)</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Abacate</div>
+          <div class="shop-brands"><em>1.</em> A granel (feira) &nbsp;<em>2.</em> Hortifruti &nbsp;<em>3.</em> qualquer supermercado<br>1–2 unid./semana · gordura mono ótima</div>
+        </div>
+      </div>
+
+      <div class="shop-cat">
+        <div class="shop-cat-head">🥦 Vegetais e Frutas</div>
+        <div class="shop-item">
+          <div class="shop-item-name">Brócolis / Couve-flor</div>
+          <div class="shop-brands"><em>1.</em> In natura (feira) &nbsp;<em>2.</em> Seara (congelado) &nbsp;<em>3.</em> Bonduelle (congelado)<br>Congelado é mais prático — micro 5 min direto</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Banana nanica</div>
+          <div class="shop-brands"><em>1.</em> In natura feira &nbsp;<em>2.</em> Hortifruti &nbsp;<em>3.</em> qualquer varejo<br>6–8 unid./semana · shake + potássio</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Morango / Kiwi / Frutas vermelhas</div>
+          <div class="shop-brands"><em>1.</em> In natura (feira) &nbsp;<em>2.</em> Bonduelle (congelado) &nbsp;<em>3.</em> Mais Fruta (congelado)<br>Baixo IG · antioxidantes · sabor no iogurte</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Salada higienizada (kit pronto)</div>
+          <div class="shop-brands"><em>1.</em> Bonduelle &nbsp;<em>2.</em> Mantiqueira &nbsp;<em>3.</em> Taeq<br>Poupa tempo — jogar no prato direto da embalagem</div>
+        </div>
+      </div>
+
+      <div class="shop-cat">
+        <div class="shop-cat-head">⚡ Suplementos e Praticidade</div>
+        <div class="shop-item">
+          <div class="shop-item-name">Whey protein 80% (já tem)</div>
+          <div class="shop-brands"><em>1.</em> Growth Supplements (atual) &nbsp;<em>2.</em> Max Titanium &nbsp;<em>3.</em> Optimum Nutrition<br>2–3 scoops/dia · ~28g prot/scoop</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Barra proteica Bold (já tem)</div>
+          <div class="shop-brands"><em>1.</em> Bold &nbsp;<em>2.</em> Integralmedica Protein Bar &nbsp;<em>3.</em> Quest Bar<br>Estoque mínimo: 14 barras/semana (2/dia)</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Creatina monohidrato (já tem)</div>
+          <div class="shop-brands"><em>1.</em> Growth Supplements &nbsp;<em>2.</em> Integral Medica &nbsp;<em>3.</em> Creapure (importada)<br>5g/dia · 1 pote 300g dura ~2 meses</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Tortilla / Wrap integral</div>
+          <div class="shop-brands"><em>1.</em> Mission Carb Balance &nbsp;<em>2.</em> Santa Maria &nbsp;<em>3.</em> Wickbold<br>Para wraps de frango — 1 pacote/semana</div>
+        </div>
+        <div class="shop-item">
+          <div class="shop-item-name">Cream cheese light</div>
+          <div class="shop-brands"><em>1.</em> Philadelphia Light &nbsp;<em>2.</em> Polenghi &nbsp;<em>3.</em> Vigor<br>Para wraps e omeletes — baixo custo calórico</div>
+        </div>
+      </div>
+
+    </div><!-- /.shop-grid -->
+
+    <!-- QUICK COMBOS -->
+    <div class="callout" style="margin-top:28px">
+      <div class="callout-title">Combos Rápidos — Sem Geladeira / Em Movimento / Emergência</div>
+      <p>
+        <strong>Combo Viagem:</strong> 1 Bold bar + 1 lata atum + 1 banana = ~40g prot, 420 kcal — refeição completa sem refrigeração.<br>
+        <strong>Combo Café Expresso:</strong> 2 scoops whey em 500 ml água no shaker + 1 pote cottage = ~55g prot, 420 kcal.<br>
+        <strong>Combo Emergência:</strong> 1 Bold bar + 30g pasta amendoim no pão + água = ~26g prot, 430 kcal — lanche de gaveta.<br>
+        <strong>Creatina:</strong> Pode ir em qualquer líquido (suco, água, shake) — sem sabor, sem timing específico. Não pular nem nos dias de náusea.
+      </p>
+    </div>
+
+  </div><!-- /.section -->
+
+</main>
+
+</body>
+</html>
