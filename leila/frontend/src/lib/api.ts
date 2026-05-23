@@ -59,6 +59,7 @@ export interface Property {
   parking_spots: number | null
   useful_area_m2: number | null
   is_occupied: boolean | null
+  heat_score: number | null            // calculado no banco via trigger (migration 007)
   scraped_at: string
   leila_sources?: Pick<Source, 'name' | 'icon_url'>
   leila_evaluations?: Evaluation | null
@@ -80,6 +81,9 @@ export interface PropertyFilters {
   property_types: string[]
   discount_min: number | null
   modality_categories: string[]
+  area_classifications: string[]
+  days_until_auction_max: number | null
+  has_evaluation: boolean
 }
 
 export interface Favorite {

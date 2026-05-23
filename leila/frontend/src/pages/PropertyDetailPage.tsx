@@ -92,15 +92,14 @@ export default function PropertyDetailPage() {
         </h1>
 
         {/* Photo */}
-        {property.photos?.[0] && (
-          <div className="rounded-2xl overflow-hidden mb-6 shadow-sm">
-            <img
-              src={property.photos[0]}
-              alt={property.title}
-              className="w-full h-72 object-cover"
-            />
-          </div>
-        )}
+        <div className="rounded-2xl overflow-hidden mb-6 shadow-sm bg-slate-100">
+          <img
+            src={property.photos?.[0] ?? '/property-placeholder.svg'}
+            alt={property.title}
+            className="w-full h-72 object-cover"
+            onError={(e) => { e.currentTarget.src = '/property-placeholder.svg' }}
+          />
+        </div>
 
         {/* Details grid */}
         <div className="grid grid-cols-2 gap-3 mb-6">

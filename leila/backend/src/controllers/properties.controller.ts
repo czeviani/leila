@@ -2,21 +2,24 @@ import { Request, Response } from 'express'
 import { supabaseAdmin } from '../config/supabase'
 
 const SORT_FIELDS: Record<string, string> = {
+  heat_score:   'heat_score',
   discount_pct: 'discount_pct',
   auction_price: 'auction_price',
   area_m2: 'area_m2',
   scraped_at: 'scraped_at',
+  auction_date: 'auction_date',
 }
 
 export const getProperties = async (req: Request, res: Response) => {
   const {
     state, city, type, price_min, price_max, discount_min, modality,
+    search, has_evaluation, area_classification, days_until_auction_max,
     page = 1, limit = 50,
-    sort_by = 'discount_pct', sort_order = 'desc',
+    sort_by = 'heat_score', sort_order = 'desc',
   } = req.query
   const offset = (Number(page) - 1) * Number(limit)
 
-  const sortField = SORT_FIELDS[String(sort_by)] ?? 'discount_pct'
+  const sortField = SORT_FIELDS[String(sort_by)] ?? 'heat_score'
   const ascending = String(sort_order) === 'asc'
 
   let query = req.supabase!
@@ -47,6 +50,33 @@ export const getProperties = async (req: Request, res: Response) => {
   if (modality) {
     const modalities = String(modality).split(',').map(m => m.trim()).filter(Boolean)
     query = modalities.length === 1 ? query.eq('auction_modality', modalities[0]) : query.in('auction_modality', modalities)
+  }
+
+  // Busca textual no servidor (não mais client-side)
+  if (search && String(search).trim().length >= 2) {
+    const s = String(search).trim()
+    query = query.or(`title.ilike.%${s}%,city.ilike.%${s}%,address.ilike.%${s}%`)
+  }
+
+  // Apenas imóveis com avaliação IA concluída
+  if (has_evaluation === 'true') {
+    query = query.not('leila_evaluations', 'is', null)
+  }
+
+  // Filtro por classificação de área
+  if (area_classification) {
+    const areas = String(area_classification).split(',').map(a => a.trim()).filter(Boolean)
+    query = areas.length === 1 ? query.eq('area_classification', areas[0]) : query.in('area_classification', areas)
+  }
+
+  // Filtro por urgência: leilão nos próximos N dias
+  if (days_until_auction_max) {
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() + Number(days_until_auction_max))
+    query = query
+      .not('auction_date', 'is', null)
+      .lte('auction_date', cutoff.toISOString())
+      .gte('auction_date', new Date().toISOString())
   }
 
   const { data, error, count } = await query

@@ -1,5 +1,6 @@
-import { ExternalLink, MapPin, TrendingDown, Ruler, Calendar, Sparkles, Check, ShoppingCart, Gavel, Users, Mail, Tag, Bed, Bath, Car, AlertTriangle } from 'lucide-react'
+import { ExternalLink, MapPin, TrendingDown, Ruler, Calendar, Sparkles, Check, ShoppingCart, Gavel, Users, Mail, Tag, Bed, Bath, Car, AlertTriangle, Flame, Zap } from 'lucide-react'
 import { Property } from '../../lib/api'
+import { getHeatInfo, daysUntilAuction } from '../../lib/heatScore'
 
 interface Props {
   property: Property
@@ -91,6 +92,7 @@ function fmtCompact(v: number) {
 export default function PropertyCard({ property, isFavorite, onToggleFavorite, onClick }: Props) {
   const evaluation = property.leila_evaluations ?? undefined
   const source = property.leila_sources
+  const heat = getHeatInfo(property)
   const typeConf = property.property_type
     ? (TYPE_CONFIG[property.property_type] ?? { label: property.property_type, bg: 'bg-slate-100', text: 'text-slate-600' })
     : null
@@ -98,14 +100,12 @@ export default function PropertyCard({ property, isFavorite, onToggleFavorite, o
   const rec = evaluation?.recommendation ? REC_CONFIG[evaluation.recommendation] : null
   const modalityConf = property.auction_modality ? MODALITY_BADGE[property.auction_modality] : null
 
-  // Área efetiva: useful_area_m2 → area_m2
   const displayArea = property.useful_area_m2 ?? property.area_m2
   const pricePerM2 = displayArea && displayArea > 0 ? property.auction_price / displayArea : null
-
-  // Classificação de área: IA sobrescreve heurística
   const effectiveArea = evaluation?.area_classification ?? property.area_classification
   const areaConf = effectiveArea && effectiveArea !== 'indefinido' ? AREA_BADGE[effectiveArea] : null
 
+  const daysLeft = daysUntilAuction(property.auction_date)
   const auctionDate = property.auction_date
     ? new Date(property.auction_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
     : null
@@ -117,11 +117,26 @@ export default function PropertyCard({ property, isFavorite, onToggleFavorite, o
       className="group bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 cursor-pointer flex flex-col"
       onClick={onClick}
     >
-      {/* ── Accent bar (discount tier) ──────────────────────────────────── */}
-      <div className={`h-1 w-full flex-shrink-0 ${discountBarColor(property.discount_pct)}`} />
+      {/* ── Heat accent bar ──────────────────────────────────────────────── */}
+      <div className={`h-1 w-full flex-shrink-0 ${heat.dot.replace('bg-', 'bg-').includes('orange') ? 'bg-orange-400' : discountBarColor(property.discount_pct)}`} />
 
-      {/* ── Top row: discount + tags ──────────────────────────────────────── */}
+      {/* ── Top row: heat + discount + tags ──────────────────────────────── */}
       <div className="flex items-center gap-1.5 px-3.5 pt-2.5 flex-wrap">
+        {/* Heat badge — apenas quente/warm */}
+        {(heat.tier === 'hot' || heat.tier === 'warm') && (
+          <span className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0 ${heat.bg} ${heat.text} ${heat.border} border`}>
+            {heat.tier === 'hot' ? <Flame size={9} /> : <Zap size={9} />}
+            {heat.label}
+          </span>
+        )}
+
+        {/* Occupied — risco de destaque */}
+        {property.is_occupied && (
+          <span className="flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 border border-red-200 flex-shrink-0">
+            <AlertTriangle size={9} />OCUPADO
+          </span>
+        )}
+
         {/* Discount badge */}
         {property.discount_pct != null && property.discount_pct > 0 ? (
           <span className={`flex items-center gap-0.5 text-[11px] font-bold flex-shrink-0 ${discountTextColor(property.discount_pct)}`}>
@@ -132,7 +147,7 @@ export default function PropertyCard({ property, isFavorite, onToggleFavorite, o
           <span className="text-[10px] font-medium text-slate-400 flex-shrink-0">S/desc.</span>
         )}
 
-        {/* Separator + type */}
+        {/* Type */}
         {typeConf && (
           <>
             <span className="text-slate-300 text-[10px]">·</span>
@@ -218,12 +233,6 @@ export default function PropertyCard({ property, isFavorite, onToggleFavorite, o
                 <span className="text-xs font-semibold">{Math.round(displayArea)} m²</span>
               </div>
             )}
-            {property.is_occupied && (
-              <div className="flex items-center gap-1 text-red-600 ml-auto">
-                <AlertTriangle size={11} />
-                <span className="text-[10px] font-semibold">Ocupado</span>
-              </div>
-            )}
           </div>
         )}
 
@@ -251,12 +260,21 @@ export default function PropertyCard({ property, isFavorite, onToggleFavorite, o
 
           {/* Meta row */}
           <div className="flex items-center justify-between mt-1">
-            {auctionDate && (
+            {/* Urgência */}
+            {daysLeft !== null && daysLeft >= 0 ? (
+              <div className={`flex items-center gap-1 text-[10px] font-semibold ${
+                daysLeft <= 3 ? 'text-red-600' : daysLeft <= 7 ? 'text-amber-600' : 'text-slate-400'
+              }`}>
+                {daysLeft <= 3 && <AlertTriangle size={9} />}
+                <Calendar size={9} />
+                {daysLeft === 0 ? 'Hoje!' : daysLeft <= 30 ? `${daysLeft}d` : auctionDate}
+              </div>
+            ) : auctionDate ? (
               <div className="flex items-center gap-1 text-[10px] text-slate-400">
                 <Calendar size={9} />
                 {auctionDate}
               </div>
-            )}
+            ) : null}
             {property.edital_url && (
               <a
                 href={property.edital_url}

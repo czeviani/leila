@@ -1,10 +1,26 @@
 import { useState, useEffect, useRef } from 'react'
-import { SlidersHorizontal, X, Search, MapPin, ShoppingCart, Gavel, Users, Mail, Tag } from 'lucide-react'
+import { SlidersHorizontal, X, Search, MapPin, ShoppingCart, Gavel, Users, Mail, Tag, Sparkles, Clock } from 'lucide-react'
 import { PropertyFilters } from '../../lib/api'
 import { useFilters, useSaveFilters, useCities } from '../../hooks/useProperties'
 
 const PROPERTY_TYPES = ['apartamento', 'casa', 'terreno', 'loja', 'galpão', 'sala', 'sobrado']
 const UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
+
+// Regiões como atalhos
+const REGIONS: Record<string, { label: string; states: string[] }> = {
+  sudeste:      { label: 'Sudeste',      states: ['SP', 'RJ', 'MG', 'ES'] },
+  sul:          { label: 'Sul',          states: ['PR', 'SC', 'RS'] },
+  centroOeste:  { label: 'Centro-Oeste', states: ['GO', 'MT', 'MS', 'DF'] },
+  nordeste:     { label: 'Nordeste',     states: ['BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE', 'AL'] },
+  norte:        { label: 'Norte',        states: ['AC', 'AM', 'AP', 'PA', 'RO', 'RR', 'TO'] },
+}
+
+const AREA_CLASSIFICATIONS = [
+  { key: 'nobre',          label: 'Nobre',        color: 'text-violet-700', bg: 'bg-violet-50',  border: 'border-violet-200' },
+  { key: 'intermediário',  label: 'Intermediária', color: 'text-blue-700',   bg: 'bg-blue-50',    border: 'border-blue-200'   },
+  { key: 'popular',        label: 'Popular',       color: 'text-amber-700',  bg: 'bg-amber-50',   border: 'border-amber-200'  },
+  { key: 'comunidade',     label: 'Comunidade',    color: 'text-red-700',    bg: 'bg-red-50',     border: 'border-red-200'    },
+]
 
 export const MODALITY_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string }> = {
   compra_direta:    { label: 'Compra Direta',  icon: ShoppingCart, color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
@@ -13,6 +29,12 @@ export const MODALITY_CONFIG: Record<string, { label: string; icon: React.Elemen
   primeira_praca:   { label: '1ª Praça',        icon: Users,        color: 'text-amber-700',   bg: 'bg-amber-50',   border: 'border-amber-200'   },
   proposta_fechada: { label: 'Proposta',        icon: Mail,         color: 'text-violet-700',  bg: 'bg-violet-50',  border: 'border-violet-200'  },
 }
+
+const URGENCY_OPTIONS = [
+  { label: '7 dias',  value: 7  },
+  { label: '30 dias', value: 30 },
+  { label: '90 dias', value: 90 },
+]
 
 interface Props {
   onFilterChange: (params: Record<string, string | number | undefined>) => void
@@ -27,6 +49,9 @@ function filtersToParams(filters: PropertyFilters): Record<string, string | numb
   if (filters.property_types?.length) params.type = filters.property_types.join(',')
   if (filters.discount_min) params.discount_min = filters.discount_min
   if (filters.modality_categories?.length) params.modality = filters.modality_categories.join(',')
+  if (filters.area_classifications?.length) params.area_classification = filters.area_classifications.join(',')
+  if (filters.days_until_auction_max) params.days_until_auction_max = filters.days_until_auction_max
+  if (filters.has_evaluation) params.has_evaluation = 'true'
   return params
 }
 
@@ -45,13 +70,14 @@ export default function FilterPanel({ onFilterChange }: Props) {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([])
   const [discountMin, setDiscountMin] = useState('')
   const [selectedModalities, setSelectedModalities] = useState<string[]>([])
+  const [selectedAreaClassifications, setSelectedAreaClassifications] = useState<string[]>([])
+  const [daysUntilAuction, setDaysUntilAuction] = useState<number | null>(null)
+  const [hasEvaluation, setHasEvaluation] = useState(false)
 
-  // City autocomplete
   const [citySearch, setCitySearch] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const { data: citySuggestions = [] } = useCities(citySearch)
 
-  // Load saved filters into local state + auto-apply once
   useEffect(() => {
     if (!savedFilters || initialApplied.current) return
     initialApplied.current = true
@@ -62,12 +88,14 @@ export default function FilterPanel({ onFilterChange }: Props) {
     if (savedFilters.property_types?.length) setSelectedTypes(savedFilters.property_types)
     if (savedFilters.discount_min) setDiscountMin(String(savedFilters.discount_min))
     if (savedFilters.modality_categories?.length) setSelectedModalities(savedFilters.modality_categories)
+    if (savedFilters.area_classifications?.length) setSelectedAreaClassifications(savedFilters.area_classifications)
+    if (savedFilters.days_until_auction_max) setDaysUntilAuction(savedFilters.days_until_auction_max)
+    if (savedFilters.has_evaluation) setHasEvaluation(savedFilters.has_evaluation)
 
     const params = filtersToParams(savedFilters)
     if (Object.keys(params).length > 0) onFilterChange(params)
   }, [savedFilters]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Close panel on outside click
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
@@ -83,11 +111,27 @@ export default function FilterPanel({ onFilterChange }: Props) {
     setShowSuggestions(false)
     cityInputRef.current?.focus()
   }
-
   const removeCity = (city: string) => setSelectedCities(prev => prev.filter(c => c !== city))
   const toggleState = (uf: string) => setSelectedStates(prev => prev.includes(uf) ? prev.filter(s => s !== uf) : [...prev, uf])
   const toggleType = (t: string) => setSelectedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
   const toggleModality = (m: string) => setSelectedModalities(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m])
+  const toggleAreaClass = (a: string) => setSelectedAreaClassifications(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a])
+
+  const applyRegion = (regionKey: string) => {
+    const region = REGIONS[regionKey]
+    if (!region) return
+    const allSelected = region.states.every(s => selectedStates.includes(s))
+    if (allSelected) {
+      setSelectedStates(prev => prev.filter(s => !region.states.includes(s)))
+    } else {
+      setSelectedStates(prev => [...new Set([...prev, ...region.states])])
+    }
+  }
+
+  const isRegionActive = (regionKey: string) => {
+    const region = REGIONS[regionKey]
+    return region.states.every(s => selectedStates.includes(s))
+  }
 
   const apply = () => {
     const filters: PropertyFilters = {
@@ -98,6 +142,9 @@ export default function FilterPanel({ onFilterChange }: Props) {
       property_types: selectedTypes,
       discount_min: discountMin ? Number(discountMin) : null,
       modality_categories: selectedModalities,
+      area_classifications: selectedAreaClassifications,
+      days_until_auction_max: daysUntilAuction,
+      has_evaluation: hasEvaluation,
     }
     saveFilters.mutate(filters)
     onFilterChange(filtersToParams(filters))
@@ -108,14 +155,22 @@ export default function FilterPanel({ onFilterChange }: Props) {
     setPriceMin(''); setPriceMax(''); setSelectedStates([])
     setSelectedCities([]); setSelectedTypes([]); setDiscountMin('')
     setCitySearch(''); setSelectedModalities([])
-    const empty: PropertyFilters = { price_min: null, price_max: null, states: [], cities: [], property_types: [], discount_min: null, modality_categories: [] }
+    setSelectedAreaClassifications([]); setDaysUntilAuction(null); setHasEvaluation(false)
+    const empty: PropertyFilters = {
+      price_min: null, price_max: null, states: [], cities: [], property_types: [],
+      discount_min: null, modality_categories: [], area_classifications: [],
+      days_until_auction_max: null, has_evaluation: false,
+    }
     saveFilters.mutate(empty)
     onFilterChange({})
     setOpen(false)
   }
 
-  const activeCount = selectedStates.length + selectedCities.length + selectedTypes.length +
-    (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (discountMin ? 1 : 0) + selectedModalities.length
+  const activeCount =
+    selectedStates.length + selectedCities.length + selectedTypes.length +
+    (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (discountMin ? 1 : 0) +
+    selectedModalities.length + selectedAreaClassifications.length +
+    (daysUntilAuction ? 1 : 0) + (hasEvaluation ? 1 : 0)
 
   const filteredSuggestions = citySuggestions.filter(c => !selectedCities.includes(c))
 
@@ -139,7 +194,10 @@ export default function FilterPanel({ onFilterChange }: Props) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-12 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl p-5 space-y-5" style={{ width: '340px' }}>
+        <div
+          className="absolute right-0 top-12 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl p-5 space-y-5 overflow-y-auto"
+          style={{ width: '360px', maxHeight: 'calc(100vh - 120px)' }}
+        >
           {/* Header */}
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-slate-900">Filtros</p>
@@ -148,7 +206,45 @@ export default function FilterPanel({ onFilterChange }: Props) {
             </button>
           </div>
 
-          {/* Modality */}
+          {/* ── Apenas com IA ─────────────────────────────── */}
+          <button
+            onClick={() => setHasEvaluation(!hasEvaluation)}
+            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border text-sm font-medium transition-all ${
+              hasEvaluation
+                ? 'bg-slate-900 text-white border-slate-900'
+                : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            <Sparkles size={14} className={hasEvaluation ? 'text-white' : 'text-slate-400'} />
+            <div className="text-left">
+              <p className="font-semibold">Apenas com Avaliação IA</p>
+              <p className={`text-[11px] ${hasEvaluation ? 'text-slate-300' : 'text-slate-400'}`}>
+                Mostra só imóveis já analisados
+              </p>
+            </div>
+          </button>
+
+          {/* ── Regiões ────────────────────────────────────── */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Região</p>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(REGIONS).map(([key, region]) => (
+                <button
+                  key={key}
+                  onClick={() => applyRegion(key)}
+                  className={`text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-all duration-100 ${
+                    isRegionActive(key)
+                      ? 'bg-slate-900 text-white border-slate-900'
+                      : 'border-slate-200 text-slate-600 hover:border-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  {region.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Modalidade ─────────────────────────────────── */}
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Tipo de Negociação</p>
             <div className="grid grid-cols-2 gap-1.5">
@@ -160,9 +256,7 @@ export default function FilterPanel({ onFilterChange }: Props) {
                     key={key}
                     onClick={() => toggleModality(key)}
                     className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-medium transition-all ${
-                      active
-                        ? `${cfg.bg} ${cfg.color} ${cfg.border}`
-                        : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                      active ? `${cfg.bg} ${cfg.color} ${cfg.border}` : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
                     <Icon size={12} className="flex-shrink-0" />
@@ -173,7 +267,50 @@ export default function FilterPanel({ onFilterChange }: Props) {
             </div>
           </div>
 
-          {/* Price */}
+          {/* ── Classificação de Área ──────────────────────── */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Classificação de Área</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {AREA_CLASSIFICATIONS.map(cfg => {
+                const active = selectedAreaClassifications.includes(cfg.key)
+                return (
+                  <button
+                    key={cfg.key}
+                    onClick={() => toggleAreaClass(cfg.key)}
+                    className={`text-xs font-medium px-2.5 py-2 rounded-xl border transition-all ${
+                      active ? `${cfg.bg} ${cfg.color} ${cfg.border}` : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    {cfg.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* ── Urgência ───────────────────────────────────── */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">
+              <span className="flex items-center gap-1.5"><Clock size={11} />Leilão nos próximos</span>
+            </p>
+            <div className="flex gap-1.5 flex-wrap">
+              {URGENCY_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setDaysUntilAuction(daysUntilAuction === opt.value ? null : opt.value)}
+                  className={`text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-all ${
+                    daysUntilAuction === opt.value
+                      ? 'bg-red-100 text-red-700 border-red-200'
+                      : 'border-slate-200 text-slate-600 hover:border-slate-400'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Faixa de Preço ─────────────────────────────── */}
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Faixa de Preço</p>
             <div className="flex gap-2">
@@ -192,7 +329,7 @@ export default function FilterPanel({ onFilterChange }: Props) {
             </div>
           </div>
 
-          {/* Discount */}
+          {/* ── Desconto mínimo ────────────────────────────── */}
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Desconto mínimo</p>
             <div className="relative">
@@ -206,7 +343,7 @@ export default function FilterPanel({ onFilterChange }: Props) {
             </div>
           </div>
 
-          {/* States */}
+          {/* ── Estados ────────────────────────────────────── */}
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Estados</p>
             <div className="flex flex-wrap gap-1.5">
@@ -226,29 +363,22 @@ export default function FilterPanel({ onFilterChange }: Props) {
             </div>
           </div>
 
-          {/* Cities — autocomplete */}
+          {/* ── Cidades (autocomplete) ─────────────────────── */}
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Cidades</p>
-
-            {/* Selected city chips */}
             {selectedCities.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2.5">
                 {selectedCities.map(city => (
                   <span key={city} className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 bg-slate-900 text-white rounded-lg">
                     <MapPin size={10} />
                     {city}
-                    <button
-                      onClick={() => removeCity(city)}
-                      className="ml-0.5 hover:text-slate-300 transition-colors"
-                    >
+                    <button onClick={() => removeCity(city)} className="ml-0.5 hover:text-slate-300 transition-colors">
                       <X size={10} />
                     </button>
                   </span>
                 ))}
               </div>
             )}
-
-            {/* Search input */}
             <div className="relative">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
@@ -260,8 +390,6 @@ export default function FilterPanel({ onFilterChange }: Props) {
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
                 className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-xl text-sm bg-slate-50/50 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-slate-400 focus:bg-white transition-all"
               />
-
-              {/* Suggestions dropdown */}
               {showSuggestions && filteredSuggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden max-h-40 overflow-y-auto">
                   {filteredSuggestions.map(city => (
@@ -276,7 +404,6 @@ export default function FilterPanel({ onFilterChange }: Props) {
                   ))}
                 </div>
               )}
-
               {showSuggestions && citySearch.trim().length >= 2 && filteredSuggestions.length === 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-10 px-3 py-2.5">
                   <p className="text-xs text-slate-400">Nenhuma cidade encontrada.</p>
@@ -285,7 +412,7 @@ export default function FilterPanel({ onFilterChange }: Props) {
             </div>
           </div>
 
-          {/* Types */}
+          {/* ── Tipo de Imóvel ─────────────────────────────── */}
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Tipo de Imóvel</p>
             <div className="flex flex-wrap gap-1.5">
@@ -306,16 +433,10 @@ export default function FilterPanel({ onFilterChange }: Props) {
           </div>
 
           <div className="flex gap-2 pt-1 border-t border-slate-100">
-            <button
-              onClick={reset}
-              className="flex-1 py-2.5 text-sm font-medium border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all"
-            >
+            <button onClick={reset} className="flex-1 py-2.5 text-sm font-medium border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all">
               Limpar filtros
             </button>
-            <button
-              onClick={apply}
-              className="flex-1 py-2.5 text-sm font-semibold bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all shadow-sm shadow-slate-900/20"
-            >
+            <button onClick={apply} className="flex-1 py-2.5 text-sm font-semibold bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all shadow-sm shadow-slate-900/20">
               Aplicar
             </button>
           </div>
