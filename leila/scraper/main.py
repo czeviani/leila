@@ -43,8 +43,9 @@ def _get_supabase() -> Client:
     return _supabase
 
 
-async def _upsert_properties(properties: list[ScrapedProperty]) -> ScrapeResult:
+async def _upsert_properties(properties: list[ScrapedProperty], scrape_start: datetime) -> ScrapeResult:
     result = ScrapeResult(total=len(properties))
+    now = scrape_start.isoformat()
 
     for prop in properties:
         row = {
@@ -75,8 +76,9 @@ async def _upsert_properties(properties: list[ScrapedProperty]) -> ScrapeResult:
             "property_condition": prop.property_condition,
             "useful_area_m2": prop.useful_area_m2,
             "features": prop.features or {},
-            "scraped_at": datetime.now(timezone.utc).isoformat(),
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "is_active": True,
+            "scraped_at": now,
+            "updated_at": now,
         }
 
         try:
@@ -86,13 +88,36 @@ async def _upsert_properties(properties: list[ScrapedProperty]) -> ScrapeResult:
             ).execute()
 
             if response.data:
-                # Supabase upsert returns data — check if insert vs update
-                result.inserted += 1  # simplified: count as inserted
+                result.inserted += 1
         except Exception as e:
             print(f"[upsert] Erro para {prop.external_id}: {e}")
             result.errors += 1
 
     return result
+
+
+async def _deactivate_missing(source_id: str, scraped_states: list[str], scrape_start: datetime):
+    """Marca como inativos imóveis que não apareceram na rodada atual do scrape.
+
+    Só age sobre estados que tiveram ao menos 1 imóvel retornado — evita desativar
+    imóveis de UFs bloqueadas pelo WAF da Caixa (que retornam lista vazia).
+    """
+    if not scraped_states:
+        return
+
+    try:
+        resp = _get_supabase().table("leila_properties").update({
+            "is_active": False,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("source_id", source_id).in_("state", scraped_states).lt(
+            "scraped_at", scrape_start.isoformat()
+        ).eq("is_active", True).execute()
+
+        deactivated = len(resp.data) if resp.data else 0
+        if deactivated:
+            print(f"[Scraper] {source_id}: {deactivated} imóveis marcados como inativos ({', '.join(scraped_states)})")
+    except Exception as e:
+        print(f"[Scraper] Erro ao desativar inativos ({source_id}): {e}")
 
 
 async def _update_source_timestamp(source_id: str):
@@ -122,9 +147,12 @@ async def scrape_all():
     for source_id in active_ids:
         SourceClass = SOURCES[source_id]
         source = SourceClass()
+        scrape_start = datetime.now(timezone.utc)
         try:
             properties = await source.scrape()
-            result = await _upsert_properties(properties)
+            result = await _upsert_properties(properties, scrape_start)
+            scraped_states = list({p.state for p in properties if p.state})
+            await _deactivate_missing(source_id, scraped_states, scrape_start)
             await _update_source_timestamp(source_id)
             all_results[source_id] = result.__dict__
         except Exception as e:
@@ -143,9 +171,12 @@ async def scrape_source(source_id: str, background_tasks: BackgroundTasks):
     source = SourceClass()
 
     print(f"[Scraper] Starting {source_id}...")
+    scrape_start = datetime.now(timezone.utc)
     properties = await source.scrape()
 
-    result = await _upsert_properties(properties)
+    result = await _upsert_properties(properties, scrape_start)
+    scraped_states = list({p.state for p in properties if p.state})
+    await _deactivate_missing(source_id, scraped_states, scrape_start)
     await _update_source_timestamp(source_id)
 
     print(f"[Scraper] {source_id} done: {result}")

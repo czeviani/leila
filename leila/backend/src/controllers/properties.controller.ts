@@ -25,6 +25,7 @@ export const getProperties = async (req: Request, res: Response) => {
   let query = req.supabase!
     .from('leila_properties')
     .select('*, leila_sources(name, icon_url), leila_evaluations(*)', { count: 'exact' })
+    .eq('is_active', true)
     .order(sortField, { ascending, nullsFirst: false })
     .range(offset, offset + Number(limit) - 1)
 
@@ -92,6 +93,7 @@ export const getPropertyCities = async (req: Request, res: Response) => {
   const { data, error } = await req.supabase!
     .from('leila_properties')
     .select('city')
+    .eq('is_active', true)
     .ilike('city', `%${String(search).trim()}%`)
     .not('city', 'is', null)
     .limit(300)

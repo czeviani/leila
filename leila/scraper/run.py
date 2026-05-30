@@ -18,8 +18,9 @@ SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
 
 
-async def upsert_properties(supabase, properties: list[ScrapedProperty]) -> ScrapeResult:
+async def upsert_properties(supabase, properties: list[ScrapedProperty], scrape_start: datetime) -> ScrapeResult:
     result = ScrapeResult(total=len(properties))
+    now = scrape_start.isoformat()
     for prop in properties:
         row = {
             "source_id": prop.source_id,
@@ -39,8 +40,9 @@ async def upsert_properties(supabase, properties: list[ScrapedProperty]) -> Scra
             "photos": prop.photos,
             "auction_date": prop.auction_date.isoformat() if prop.auction_date else None,
             "raw_data": prop.raw_data,
-            "scraped_at": datetime.now(timezone.utc).isoformat(),
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "is_active": True,
+            "scraped_at": now,
+            "updated_at": now,
         }
         try:
             supabase.table("leila_properties").upsert(
@@ -51,6 +53,24 @@ async def upsert_properties(supabase, properties: list[ScrapedProperty]) -> Scra
             print(f"  [erro] {prop.external_id}: {e}")
             result.errors += 1
     return result
+
+
+async def deactivate_missing(supabase, source_id: str, scraped_states: list[str], scrape_start: datetime):
+    if not scraped_states:
+        return
+    try:
+        resp = supabase.table("leila_properties").update({
+            "is_active": False,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("source_id", source_id).in_("state", scraped_states).lt(
+            "scraped_at", scrape_start.isoformat()
+        ).eq("is_active", True).execute()
+
+        deactivated = len(resp.data) if resp.data else 0
+        if deactivated:
+            print(f"  {deactivated} imóveis marcados como inativos ({', '.join(scraped_states)})")
+    except Exception as e:
+        print(f"  [erro] desativar inativos: {e}")
 
 
 async def update_source_timestamp(supabase, source_id: str):
@@ -78,9 +98,12 @@ async def main():
         print(f"\n=== {source_id} ===")
         SourceClass = SOURCES[source_id]
         source = SourceClass()
+        scrape_start = datetime.now(timezone.utc)
         try:
             properties = await source.scrape()
-            result = await upsert_properties(supabase, properties)
+            result = await upsert_properties(supabase, properties, scrape_start)
+            scraped_states = list({p.state for p in properties if p.state})
+            await deactivate_missing(supabase, source_id, scraped_states, scrape_start)
             await update_source_timestamp(supabase, source_id)
             total_props += result.inserted
             print(f"  total={result.total} inserted={result.inserted} errors={result.errors}")
