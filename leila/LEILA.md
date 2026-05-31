@@ -10,7 +10,7 @@
 
 Plataforma pessoal de rastreamento e avaliação de imóveis de leilão bancário (Caixa Econômica Federal, Banco do Brasil, Santander). Agrega 25k+ imóveis via scraping, aplica pré-filtros configuráveis pelo usuário e usa IA (Claude) para avaliar imóveis selecionados com análise financeira completa.
 
-**Usuário único:** Caique Zeviani (caiquezeviani@gmail.com). Sem multi-tenant, sem RLS ativa.
+**Usuário único:** Caique Zeviani (caiquezeviani@gmail.com). Sem multi-tenant. RLS ativa em todas as tabelas desde 2026-05-31.
 
 ---
 
@@ -319,7 +319,7 @@ Imóveis selecionados para avaliação IA. Relação `user_id × property_id`.
 
 **Containers Docker:**
 - `leila-api` → porta 3001 → exposto via Traefik em `leila-api.zekeon.com`
-- `leila-scraper` → porta 8000 → acesso interno apenas
+- `leila-scraper` → porta `127.0.0.1:8000` → bind local, **não exposto publicamente**
 
 **CRÍTICO — Traefik:**
 - Configuração em `/etc/easypanel/traefik/config/leila.yaml`
@@ -327,6 +327,16 @@ Imóveis selecionados para avaliação IA. Relação `user_id × property_id`.
 - Motivo: container standalone não é acessível via hostname no overlay Docker Swarm do Easypanel
 - Se o IP do servidor mudar, atualizar `/etc/easypanel/traefik/config/leila.yaml`
 - Após `docker compose build && docker compose up -d`, o Traefik continua funcionando sem ação adicional
+
+**Segurança (aplicada 2026-05-31):**
+- **CORS:** restrito a `CORS_ORIGINS=https://leila-lemon.vercel.app` no backend
+- **Rate limiting:** `/api` geral 300 req/15min; `/api/evaluations` 5 req/min (express-rate-limit)
+- **Scraper auth:** todos os endpoints exigem header `X-Scraper-Secret` — secret em `backend/.env` e `scraper/.env`
+- **RLS:** ativa em todas as 6 tabelas leila_*
+  - `leila_properties`, `leila_sources`: SELECT para usuários autenticados (escrita via service_role do scraper)
+  - `leila_filters`, `leila_favorites`, `leila_evaluations`, `leila_settings`: ALL com `auth.uid() = user_id`
+- **vercel.json:** CSP sem `unsafe-eval`, HSTS `max-age=63072000`, `Permissions-Policy`
+- **LLM model whitelist:** `settings.controller.ts` valida modelo contra lista fixa por provider
 
 **Rede Docker:**
 - Containers na rede `leila-net`
