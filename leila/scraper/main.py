@@ -11,7 +11,7 @@ import os
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Header
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
@@ -37,6 +37,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Leila Scraper", lifespan=lifespan)
+
+SCRAPER_SECRET = os.environ.get("SCRAPER_SECRET", "")
+
+
+async def verify_secret(x_scraper_secret: str = Header(default="")):
+    if not SCRAPER_SECRET or x_scraper_secret != SCRAPER_SECRET:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
 
 def _get_supabase() -> Client:
@@ -127,7 +134,7 @@ async def _update_source_timestamp(source_id: str):
     }).eq("id", source_id).execute()
 
 
-@app.get("/status")
+@app.get("/status", dependencies=[Depends(verify_secret)])
 async def status():
     return {
         "service": "leila-scraper",
@@ -137,7 +144,7 @@ async def status():
     }
 
 
-@app.post("/scrape/all")
+@app.post("/scrape/all", dependencies=[Depends(verify_secret)])
 async def scrape_all():
     # Get active sources from DB
     active = _get_supabase().table("leila_sources").select("id").eq("active", True).execute()
@@ -162,7 +169,7 @@ async def scrape_all():
     return all_results
 
 
-@app.post("/scrape/{source_id}")
+@app.post("/scrape/{source_id}", dependencies=[Depends(verify_secret)])
 async def scrape_source(source_id: str, background_tasks: BackgroundTasks):
     if source_id not in SOURCES:
         raise HTTPException(status_code=404, detail=f"Source '{source_id}' not found")
@@ -199,7 +206,7 @@ def _run_enrichment():
         print(f"[Enrichment] Erro no background: {e}")
 
 
-@app.post("/enrich")
+@app.post("/enrich", dependencies=[Depends(verify_secret)])
 async def enrich_endpoint(dry_run: bool = False):
     """
     Enriquece propriedades sem dados estruturados usando IA (Haiku).

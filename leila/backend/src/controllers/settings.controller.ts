@@ -3,6 +3,11 @@ import { Request, Response } from 'express'
 const VALID_PROVIDERS = ['anthropic', 'openrouter'] as const
 type LlmProvider = typeof VALID_PROVIDERS[number]
 
+const VALID_MODELS: Record<LlmProvider, string[]> = {
+  anthropic:   ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-opus-4-6'],
+  openrouter:  ['anthropic/claude-haiku-4-5', 'anthropic/claude-sonnet-4-6'],
+}
+
 const DEFAULTS = {
   llm_provider: 'anthropic' as LlmProvider,
   llm_model: 'claude-sonnet-4-6',
@@ -29,8 +34,8 @@ export const upsertSettings = async (req: Request, res: Response) => {
   if (!VALID_PROVIDERS.includes(llm_provider)) {
     return res.status(400).json({ error: `Provider inválido. Use: ${VALID_PROVIDERS.join(' | ')}` })
   }
-  if (!llm_model || typeof llm_model !== 'string') {
-    return res.status(400).json({ error: 'Modelo inválido' })
+  if (!llm_model || typeof llm_model !== 'string' || !VALID_MODELS[llm_provider as LlmProvider]?.includes(llm_model)) {
+    return res.status(400).json({ error: `Modelo inválido para ${llm_provider}. Válidos: ${VALID_MODELS[llm_provider as LlmProvider]?.join(', ')}` })
   }
 
   const { data, error } = await req.supabase!
