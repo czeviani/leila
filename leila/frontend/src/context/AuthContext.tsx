@@ -18,13 +18,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    const hash = (window as any).__OAUTH_HASH__ || window.location.hash
+    if (hash.includes('access_token=')) {
+      const p = new URLSearchParams(hash.substring(1))
+      const access_token  = p.get('access_token')
+      const refresh_token = p.get('refresh_token')
+      if (access_token && refresh_token) {
+        supabase.auth.setSession({ access_token, refresh_token }).then(() => {
+          window.history.replaceState(null, '', window.location.pathname)
+          setLoading(false)
+        })
+        return () => subscription.unsubscribe()
+      }
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setLoading(false)
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
     })
 
     return () => subscription.unsubscribe()
