@@ -110,20 +110,20 @@ export default memo(function PropertyRow({ property, isFavorite, onToggleFavorit
 
   return (
     <div
-      className="group relative flex items-center bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 transition-all duration-150 cursor-pointer"
+      className="group relative flex items-center bg-white dark:bg-[#15181e] border-0 hover:bg-slate-50/50 dark:hover:bg-white/[0.03] transition-all duration-150 cursor-pointer"
       onClick={onClick}
     >
       {/* Left heat bar */}
       <div className={`w-1 self-stretch flex-shrink-0 ${leftBarColor(heat.score)}`} />
 
       {/* Heat score badge */}
-      <div className="flex-shrink-0 w-14 flex flex-col items-center justify-center px-2 py-3 border-r border-slate-100">
+      <div className="flex-shrink-0 w-14 flex flex-col items-center justify-center px-2 py-3 border-r border-slate-100 dark:border-slate-800/80 dark:border-slate-800/80">
         <span className="text-base leading-none">{heat.shortLabel}</span>
         <span className="text-[9px] font-bold text-slate-400 mt-0.5">{heat.score}</span>
       </div>
 
       {/* Discount */}
-      <div className="flex-shrink-0 w-16 px-2 py-3 flex items-center justify-center border-r border-slate-100">
+      <div className="flex-shrink-0 w-16 px-2 py-3 flex items-center justify-center border-r border-slate-100 dark:border-slate-800/80">
         {property.discount_pct != null && property.discount_pct > 0 ? (
           <span className={`flex items-center gap-0.5 text-xs font-bold px-2 py-1 rounded-md ${discountColor(property.discount_pct)}`}>
             <TrendingDown size={10} />
@@ -135,7 +135,7 @@ export default memo(function PropertyRow({ property, isFavorite, onToggleFavorit
       </div>
 
       {/* Type + Modality + Occupied */}
-      <div className="flex-shrink-0 w-28 px-2 py-3 flex flex-col gap-1 border-r border-slate-100">
+      <div className="flex-shrink-0 w-28 px-2 py-3 flex flex-col gap-1 border-r border-slate-100 dark:border-slate-800/80">
         <div className="flex items-center gap-1 flex-wrap">
           {typeLabel && (
             <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded-md">{typeLabel}</span>
@@ -158,9 +158,9 @@ export default memo(function PropertyRow({ property, isFavorite, onToggleFavorit
       </div>
 
       {/* Location */}
-      <div className="flex-shrink-0 w-36 px-3 py-3 border-r border-slate-100">
-        <div className="flex items-center gap-1 text-xs font-semibold text-slate-700 truncate">
-          <MapPin size={10} className="text-slate-400 flex-shrink-0" />
+      <div className="flex-shrink-0 w-36 px-3 py-3 border-r border-slate-100 dark:border-slate-800/80">
+        <div className="flex items-center gap-1 text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">
+          <MapPin size={10} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
           <span className="truncate">{[property.city, property.state].filter(Boolean).join(' — ')}</span>
         </div>
         {areaConf && (
@@ -172,8 +172,8 @@ export default memo(function PropertyRow({ property, isFavorite, onToggleFavorit
       </div>
 
       {/* Title — flex grows */}
-      <div className="flex-1 min-w-0 px-3 py-3 border-r border-slate-100">
-        <p className="text-xs text-slate-700 font-medium truncate">{property.title}</p>
+      <div className="flex-1 min-w-0 px-3 py-3 border-r border-slate-100 dark:border-slate-800/80">
+        <p className="text-xs text-slate-700 dark:text-slate-300 font-medium truncate">{property.title}</p>
         {/* Metrics inline */}
         <div className="flex items-center gap-2 mt-0.5">
           {property.bedrooms != null && (
@@ -200,24 +200,24 @@ export default memo(function PropertyRow({ property, isFavorite, onToggleFavorit
       </div>
 
       {/* Price */}
-      <div className="flex-shrink-0 w-32 px-3 py-3 border-r border-slate-100 text-right">
-        <p className="text-sm font-bold text-slate-900 leading-tight">{fmtCompact(property.auction_price)}</p>
+      <div className="flex-shrink-0 w-32 px-3 py-3 border-r border-slate-100 dark:border-slate-800/80 text-right">
+        <p className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-tight num">{fmtCompact(property.auction_price)}</p>
         {pricePerM2 && (
-          <p className="text-[10px] text-slate-400 mt-0.5">{fmtCompact(pricePerM2)}/m²</p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 num">{fmtCompact(pricePerM2)}/m²</p>
         )}
       </div>
 
       {/* Urgency */}
-      <div className="flex-shrink-0 w-16 px-2 py-3 flex items-center justify-center border-r border-slate-100">
+      <div className="flex-shrink-0 w-16 px-2 py-3 flex items-center justify-center border-r border-slate-100 dark:border-slate-800/80">
         <UrgencyBadge auctionDate={property.auction_date} />
       </div>
 
       {/* AI evaluation */}
-      <div className="flex-shrink-0 w-20 px-2 py-3 border-r border-slate-100 flex flex-col items-center justify-center">
+      <div className="flex-shrink-0 w-20 px-2 py-3 border-r border-slate-100 dark:border-slate-800/80 flex flex-col items-center justify-center">
         {evaluation?.status === 'done' && evaluation.score != null ? (
           <>
-            <span className={`text-sm font-bold tabular-nums ${
-              evaluation.score >= 7.5 ? 'text-emerald-600' : evaluation.score >= 5 ? 'text-amber-600' : 'text-red-500'
+            <span className={`text-sm font-bold num ${
+              evaluation.score >= 7.5 ? 'text-emerald-600 dark:text-emerald-400' : evaluation.score >= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'
             }`}>
               {evaluation.score.toFixed(1)}
             </span>
@@ -228,9 +228,9 @@ export default memo(function PropertyRow({ property, isFavorite, onToggleFavorit
             )}
           </>
         ) : evaluation?.status === 'processing' ? (
-          <span className="w-3 h-3 border border-slate-300 border-t-slate-500 rounded-full animate-spin" />
+          <span className="w-3 h-3 border border-slate-300 dark:border-slate-600 border-t-slate-500 dark:border-t-slate-400 rounded-full animate-spin" />
         ) : (
-          <span className="text-[10px] text-slate-300">—</span>
+          <span className="text-[10px] text-slate-300 dark:text-slate-700">—</span>
         )}
       </div>
 
@@ -243,7 +243,7 @@ export default memo(function PropertyRow({ property, isFavorite, onToggleFavorit
             target="_blank"
             rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
-            className="p-1.5 rounded-lg text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-1.5 rounded-lg text-slate-300 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
             title="Abrir edital"
           >
             <ExternalLink size={12} />
@@ -255,8 +255,8 @@ export default memo(function PropertyRow({ property, isFavorite, onToggleFavorit
           onClick={e => { e.stopPropagation(); onToggleFavorite() }}
           className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-semibold transition-all duration-150 ${
             isFavorite
-              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-              : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
+              ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200'
           }`}
           title={isFavorite ? 'Selecionado para avaliação' : 'Selecionar para avaliação IA'}
         >
@@ -266,7 +266,7 @@ export default memo(function PropertyRow({ property, isFavorite, onToggleFavorit
         {/* Descartar */}
         <button
           onClick={e => { e.stopPropagation(); onDismiss() }}
-          className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+          className="p-1.5 rounded-lg text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors opacity-0 group-hover:opacity-100"
           title="Descartar imóvel"
         >
           <X size={12} />
