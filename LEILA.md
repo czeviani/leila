@@ -43,7 +43,7 @@ Plataforma pessoal de rastreamento e avaliação de imóveis de leilão bancári
 ## Localização dos Arquivos
 
 ```
-/root/.openclaw/workspace/leila/
+/root/projects/web/leila/
 ├── CLAUDE.md              ← guia de engenharia resumido
 ├── LEILA.md               ← ESTE ARQUIVO (referência definitiva)
 ├── docker-compose.yml     ← containers backend + scraper na VPS
@@ -359,7 +359,7 @@ cd /root/.openclaw/workspace && npx vercel --prod --yes
 
 ### Backend
 ```bash
-cd /root/.openclaw/workspace/leila
+cd /root/projects/web/leila
 docker compose build leila-api && docker compose up -d leila-api
 ```
 
