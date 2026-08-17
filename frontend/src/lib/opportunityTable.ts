@@ -61,14 +61,16 @@ export function writeTablePreferences(preferences: OpportunityTablePreferences) 
 }
 
 export function effectiveArea(property: Property) {
-  return property.filter_area_m2 ?? property.useful_area_m2 ?? property.area_m2
+  const candidates = [property.filter_area_m2, property.useful_area_m2, property.area_m2]
+  return candidates.find(area => area != null && area >= 5) ?? null
 }
 
 export function effectivePricePerM2(property: Property) {
-  if (property.price_per_m2 != null) return property.price_per_m2
-  if (property.effective_price_per_m2 != null) return property.effective_price_per_m2
+  const informed = property.price_per_m2 ?? property.effective_price_per_m2
+  if (informed != null) return informed >= 100 && informed <= 100_000 ? informed : null
   const area = effectiveArea(property)
-  return area && area > 0 ? property.auction_price / area : null
+  const calculated = area ? property.auction_price / area : null
+  return calculated != null && calculated >= 100 && calculated <= 100_000 ? calculated : null
 }
 
 export function opportunityScore(property: Property) {
