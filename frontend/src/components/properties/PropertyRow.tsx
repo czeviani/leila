@@ -1,282 +1,192 @@
-import { memo } from 'react'
+import { memo, MouseEvent } from 'react'
 import {
-  MapPin, Ruler, TrendingDown, ExternalLink, AlertTriangle,
-  Check, Sparkles, ShoppingCart, Gavel, Users, Mail, Tag,
-  Bed, Bath, Car, Landmark, X,
+  AlertTriangle, BedDouble, Building2, CalendarClock, Car, Check,
+  ExternalLink, Eye, Heart, MapPin, RotateCcw, Scale, ShieldCheck, X,
 } from 'lucide-react'
 import { Property } from '../../lib/api'
-import { getHeatInfo, daysUntilAuction } from '../../lib/heatScore'
-
-// ── Configs ──────────────────────────────────────────────────────────────────
+import {
+  confidenceLabel, effectiveArea, effectivePricePerM2, neighborhoodInsight,
+  neighborhoodName, opportunityFactors, opportunityScore, OpportunityColumn,
+  TableDensity,
+} from '../../lib/opportunityTable'
+import { daysUntilAuction } from '../../lib/heatScore'
 
 const TYPE_LABELS: Record<string, string> = {
-  apartamento: 'Apto', casa: 'Casa', terreno: 'Terreno',
-  loja: 'Loja', galpão: 'Galpão', sala: 'Sala',
-  sobrado: 'Sobrado', prédio: 'Prédio',
+  apartamento: 'Apartamento', casa: 'Casa', terreno: 'Terreno', loja: 'Loja',
+  galpão: 'Galpão', sala: 'Sala', sobrado: 'Sobrado', prédio: 'Prédio',
 }
 
-const MODALITY_SHORT: Record<string, { label: string; icon: React.ElementType; color: string; bg: string }> = {
-  compra_direta:    { label: 'Direto', icon: ShoppingCart, color: 'text-emerald-700', bg: 'bg-emerald-50' },
-  segunda_praca:    { label: '2ª Praça', icon: Tag,          color: 'text-sky-700',     bg: 'bg-sky-50'     },
-  leilao_online:    { label: 'Online',  icon: Gavel,        color: 'text-blue-700',    bg: 'bg-blue-50'    },
-  primeira_praca:   { label: '1ª Praça', icon: Users,       color: 'text-amber-700',   bg: 'bg-amber-50'   },
-  proposta_fechada: { label: 'Proposta', icon: Mail,         color: 'text-violet-700',  bg: 'bg-violet-50'  },
-}
+const money = (value: number) => value.toLocaleString('pt-BR', {
+  style: 'currency', currency: 'BRL', maximumFractionDigits: 0,
+})
 
-const AREA_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
-  nobre:         { label: 'Nobre',   color: 'text-violet-600', dot: 'bg-violet-500' },
-  'intermediário': { label: 'Inter.', color: 'text-blue-600',   dot: 'bg-blue-500'   },
-  popular:       { label: 'Popular', color: 'text-amber-600',  dot: 'bg-amber-500'  },
-  comunidade:    { label: 'Comun.', color: 'text-red-500',    dot: 'bg-red-500'    },
-}
+const pricePerM2 = (value: number) => value.toLocaleString('pt-BR', {
+  style: 'currency', currency: 'BRL', maximumFractionDigits: 0,
+})
 
-const REC_LABELS: Record<string, string> = {
-  strong_buy: 'Ótimo', consider: 'Bom', risky: 'Risco', avoid: 'Evitar',
+function action(event: MouseEvent, callback: () => void) {
+  event.stopPropagation()
+  callback()
 }
-const REC_COLORS: Record<string, string> = {
-  strong_buy: 'text-emerald-600', consider: 'text-blue-600', risky: 'text-amber-600', avoid: 'text-red-500',
-}
-
-function discountColor(pct: number): string {
-  if (pct >= 40) return 'text-emerald-700 bg-emerald-100'
-  if (pct >= 25) return 'text-sky-700 bg-sky-100'
-  if (pct >= 10) return 'text-amber-700 bg-amber-100'
-  return 'text-slate-600 bg-slate-100'
-}
-
-function leftBarColor(score: number): string {
-  if (score >= 60) return 'bg-orange-400'
-  if (score >= 40) return 'bg-amber-400'
-  if (score >= 20) return 'bg-blue-300'
-  return 'bg-slate-200'
-}
-
-function fmtCompact(v: number): string {
-  if (v >= 1_000_000) return `R$ ${(v / 1_000_000).toFixed(1)}M`
-  if (v >= 1_000)     return `R$ ${(v / 1_000).toFixed(0)}k`
-  return `R$ ${v.toFixed(0)}`
-}
-
-// ── Urgency badge ─────────────────────────────────────────────────────────────
-
-function UrgencyBadge({ auctionDate }: { auctionDate: string | null }) {
-  const days = daysUntilAuction(auctionDate)
-  if (days === null) return null
-  if (days < 0) return <span className="text-[10px] text-slate-400 whitespace-nowrap">Encerrado</span>
-  if (days === 0) return (
-    <span className="flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 border border-red-200 whitespace-nowrap">
-      <AlertTriangle size={9} /> Hoje
-    </span>
-  )
-  if (days <= 3) return (
-    <span className="flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 border border-red-200 whitespace-nowrap">
-      <AlertTriangle size={9} /> {days}d
-    </span>
-  )
-  if (days <= 7) return (
-    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-200 whitespace-nowrap">
-      {days}d
-    </span>
-  )
-  if (days <= 30) return (
-    <span className="text-[10px] text-slate-500 whitespace-nowrap">{days}d</span>
-  )
-  return (
-    <span className="text-[10px] text-slate-400 whitespace-nowrap">
-      {new Date(auctionDate!).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-    </span>
-  )
-}
-
-// ── PropertyRow ───────────────────────────────────────────────────────────────
 
 interface Props {
   property: Property
+  columns: OpportunityColumn[]
+  density: TableDensity
+  selected: boolean
+  selectionDisabled: boolean
   isFavorite: boolean
+  onToggleSelection: () => void
   onToggleFavorite: () => void
   onDismiss: () => void
   onClick: () => void
 }
 
-export default memo(function PropertyRow({ property, isFavorite, onToggleFavorite, onDismiss, onClick }: Props) {
-  const heat = getHeatInfo(property)
-  const evaluation = property.leila_evaluations
-  const modConf = property.auction_modality ? MODALITY_SHORT[property.auction_modality] : null
-  const typeLabel = property.property_type ? (TYPE_LABELS[property.property_type] ?? property.property_type) : null
-  const displayArea = property.useful_area_m2 ?? property.area_m2
-  const pricePerM2 = displayArea && displayArea > 0 ? property.auction_price / displayArea : null
-  const effectiveArea = evaluation?.area_classification && evaluation.area_classification !== 'indefinido'
-    ? evaluation.area_classification
-    : property.area_classification
-  const areaConf = effectiveArea && effectiveArea !== 'indefinido' ? AREA_CONFIG[effectiveArea] : null
+export default memo(function PropertyRow({
+  property, columns, density, selected, selectionDisabled, isFavorite,
+  onToggleSelection, onToggleFavorite, onDismiss, onClick,
+}: Props) {
+  const score = opportunityScore(property)
+  const factors = opportunityFactors(property)
+  const area = effectiveArea(property)
+  const perM2 = effectivePricePerM2(property)
+  const bairro = neighborhoodName(property)
+  const neighborhood = neighborhoodInsight(property)
+  const days = daysUntilAuction(property.auction_date)
+  const source = property.leila_sources?.name ?? property.source_id
+  const documentTags = property.leila_document_analyses?.status === 'done'
+    ? property.leila_document_analyses.tags?.slice(0, 2) ?? []
+    : []
+  const isDiscarded = Boolean(property.leila_discarded_properties?.length)
+  const yPadding = density === 'compact' ? 'py-2.5' : 'py-4'
 
   return (
-    <div
-      className="group relative flex items-center bg-white dark:bg-[#15181e] border-0 hover:bg-slate-50/50 dark:hover:bg-white/[0.03] transition-all duration-150 cursor-pointer"
+    <tr
       onClick={onClick}
+      className={`group cursor-pointer border-b border-[#e2eaea] bg-white transition-colors last:border-b-0 hover:bg-[#f4f9f9] ${selected ? 'bg-[#edf7f6]' : ''}`}
     >
-      {/* Left heat bar */}
-      <div className={`w-1 self-stretch flex-shrink-0 ${leftBarColor(heat.score)}`} />
+      <td className={`sticky left-0 z-10 w-12 bg-inherit px-3 ${yPadding}`}>
+        <button
+          type="button"
+          disabled={selectionDisabled && !selected}
+          onClick={event => action(event, onToggleSelection)}
+          aria-label={selected ? `Remover ${property.title} da comparação` : `Comparar ${property.title}`}
+          title={selectionDisabled && !selected ? 'Compare no máximo 4 imóveis' : 'Selecionar para comparar'}
+          className={`grid h-7 w-7 place-items-center rounded-lg border transition ${selected
+            ? 'border-[#176B87] bg-[#176B87] text-white'
+            : 'border-[#b9ccce] bg-white text-transparent hover:border-[#176B87] disabled:cursor-not-allowed disabled:opacity-35'}`}
+        >
+          <Check size={14} strokeWidth={3} />
+        </button>
+      </td>
 
-      {/* Heat score badge */}
-      <div className="flex-shrink-0 w-14 flex flex-col items-center justify-center px-2 py-3 border-r border-slate-100 dark:border-slate-800/80 dark:border-slate-800/80">
-        <span className="text-base leading-none">{heat.shortLabel}</span>
-        <span className="text-[9px] font-bold text-slate-400 mt-0.5">{heat.score}</span>
-      </div>
-
-      {/* Discount */}
-      <div className="flex-shrink-0 w-16 px-2 py-3 flex items-center justify-center border-r border-slate-100 dark:border-slate-800/80">
-        {property.discount_pct != null && property.discount_pct > 0 ? (
-          <span className={`flex items-center gap-0.5 text-xs font-bold px-2 py-1 rounded-md ${discountColor(property.discount_pct)}`}>
-            <TrendingDown size={10} />
-            -{property.discount_pct.toFixed(0)}%
-          </span>
-        ) : (
-          <span className="text-[10px] text-slate-400">S/desc.</span>
-        )}
-      </div>
-
-      {/* Type + Modality + Occupied */}
-      <div className="flex-shrink-0 w-28 px-2 py-3 flex flex-col gap-1 border-r border-slate-100 dark:border-slate-800/80">
-        <div className="flex items-center gap-1 flex-wrap">
-          {typeLabel && (
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded-md">{typeLabel}</span>
-          )}
-          {property.is_occupied && (
-            <span className="flex items-center gap-0.5 text-[9px] font-bold px-1 py-0.5 bg-red-100 text-red-700 rounded border border-red-200">
-              <AlertTriangle size={8} />OCP
-            </span>
-          )}
-        </div>
-        {modConf && (() => {
-          const Icon = modConf.icon
-          return (
-            <span className={`flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-md w-fit ${modConf.bg} ${modConf.color}`}>
-              <Icon size={9} />
-              {modConf.label}
-            </span>
-          )
-        })()}
-      </div>
-
-      {/* Location */}
-      <div className="flex-shrink-0 w-36 px-3 py-3 border-r border-slate-100 dark:border-slate-800/80">
-        <div className="flex items-center gap-1 text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">
-          <MapPin size={10} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
-          <span className="truncate">{[property.city, property.state].filter(Boolean).join(' — ')}</span>
-        </div>
-        {areaConf && (
-          <div className={`flex items-center gap-1 mt-0.5 text-[10px] font-semibold ${areaConf.color}`}>
-            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${areaConf.dot}`} />
-            {areaConf.label}
+      {columns.includes('opportunity') && (
+        <td className={`min-w-[180px] px-3 ${yPadding}`}>
+          <div className="flex items-baseline gap-2">
+            <strong className="num text-lg text-[#163447]">{score}</strong>
+            <span className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">/ 100</span>
           </div>
-        )}
-      </div>
+          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[#dfeaea]" title={`Evidências: ${factors.join(', ')}`}>
+            <span
+              className={`block h-full rounded-full ${score >= 75 ? 'bg-[#167261]' : score >= 50 ? 'bg-[#176B87]' : score >= 30 ? 'bg-[#C68A2D]' : 'bg-[#B33A48]'}`}
+              style={{ width: `${Math.max(4, Math.min(100, score))}%` }}
+            />
+          </div>
+          <p className="mt-1 max-w-[170px] truncate text-[10px] text-slate-500">{factors.join(' · ')}</p>
+          {property.opportunity_confidence && <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">{confidenceLabel(property.opportunity_confidence)}</p>}
+        </td>
+      )}
 
-      {/* Title — flex grows */}
-      <div className="flex-1 min-w-0 px-3 py-3 border-r border-slate-100 dark:border-slate-800/80">
-        <p className="text-xs text-slate-700 dark:text-slate-300 font-medium truncate">{property.title}</p>
-        {/* Metrics inline */}
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className="flex items-center gap-0.5 text-[10px] font-semibold text-[#176B87]">
-            <Landmark size={9} />{property.leila_sources?.name ?? property.source_id}
-          </span>
-          {property.bedrooms != null && (
-            <span className="flex items-center gap-0.5 text-[10px] text-slate-400">
-              <Bed size={9} />{property.bedrooms}
+      {columns.includes('location') && (
+        <td className={`sticky left-12 z-[9] min-w-[190px] bg-inherit px-3 ${yPadding}`}>
+          <p className="truncate text-sm font-extrabold text-[#163447]">{bairro ?? 'Bairro não informado'}</p>
+          <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500">
+            <MapPin size={11} /> {[property.city, property.state].filter(Boolean).join(' · ') || 'Localização pendente'}
+          </p>
+        </td>
+      )}
+
+      {columns.includes('property') && (
+        <td className={`min-w-[230px] max-w-[290px] px-3 ${yPadding}`}>
+          <p className="truncate text-sm font-bold text-[#163447]">{TYPE_LABELS[property.property_type ?? ''] ?? property.property_type ?? 'Imóvel'}</p>
+          <p className="mt-0.5 truncate text-xs text-slate-500" title={property.title}>{property.title}</p>
+          <div className="mt-1.5 flex items-center gap-2 text-[10px] font-semibold text-[#176B87]">
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#eaf4f5] px-2 py-0.5"><Building2 size={10} />{source}</span>
+            {property.bedrooms != null && <span className="inline-flex items-center gap-0.5 text-slate-500"><BedDouble size={10} />{property.bedrooms}</span>}
+            {!!property.parking_spots && <span className="inline-flex items-center gap-0.5 text-slate-500"><Car size={10} />{property.parking_spots}</span>}
+          </div>
+        </td>
+      )}
+
+      {columns.includes('area') && (
+        <td className={`whitespace-nowrap px-3 text-right ${yPadding}`}>
+          {area ? <span className="num text-sm font-bold text-[#163447]">{Math.round(area)} <small className="font-sans font-semibold text-slate-400">m²</small></span> : <span className="text-slate-300">—</span>}
+        </td>
+      )}
+
+      {columns.includes('price') && (
+        <td className={`whitespace-nowrap px-3 text-right ${yPadding}`}>
+          <p className="num text-sm font-bold text-[#163447]">{money(property.auction_price)}</p>
+          <p className="text-[10px] text-slate-400">lance inicial</p>
+        </td>
+      )}
+
+      {columns.includes('pricePerM2') && (
+        <td className={`whitespace-nowrap px-3 text-right ${yPadding}`}>
+          {perM2 ? <span className="num text-xs font-semibold text-[#176B87]">{pricePerM2(perM2)}</span> : <span className="text-slate-300">—</span>}
+        </td>
+      )}
+
+      {columns.includes('discount') && (
+        <td className={`whitespace-nowrap px-3 text-right ${yPadding}`}>
+          {property.discount_pct != null && property.discount_pct > 0 ? (
+            <><p className="num text-sm font-bold text-[#167261]">−{property.discount_pct.toFixed(0)}%</p><p className="text-[10px] text-slate-400">vs. avaliação</p></>
+          ) : <span className="text-slate-300">—</span>}
+        </td>
+      )}
+
+      {columns.includes('neighborhood') && (
+        <td className={`min-w-[145px] px-3 ${yPadding}`}>
+          {neighborhood.score != null ? (
+            <>
+              <div className="flex items-center gap-2"><strong className="num text-sm text-[#163447]">{neighborhood.score.toFixed(1)}</strong><Scale size={12} className="text-[#176B87]" /></div>
+              <p className="mt-0.5 text-[10px] font-semibold text-slate-500">{neighborhood.label ?? confidenceLabel(neighborhood.confidence)}</p>
+            </>
+          ) : (
+            <><p className="text-xs font-semibold text-slate-500">Em formação</p><p className="mt-0.5 text-[10px] text-slate-400">dados insuficientes</p></>
+          )}
+        </td>
+      )}
+
+      {columns.includes('status') && (
+        <td className={`min-w-[165px] px-3 ${yPadding}`}>
+          <div className="flex flex-wrap gap-1">
+            {property.is_occupied === true && <span className="inline-flex items-center gap-1 rounded-full bg-[#fff3e5] px-2 py-1 text-[10px] font-bold text-[#985a12]"><AlertTriangle size={10} />Ocupado</span>}
+            {property.is_occupied === false && <span className="inline-flex items-center gap-1 rounded-full bg-[#e9f6f2] px-2 py-1 text-[10px] font-bold text-[#167261]"><ShieldCheck size={10} />Desocupado</span>}
+            {property.is_occupied == null && <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-500">Ocupação pendente</span>}
+            {documentTags.map(tag => <span key={tag} className="max-w-[145px] truncate rounded-full bg-[#eef5f6] px-2 py-1 text-[10px] font-semibold text-[#176B87]">{tag}</span>)}
+          </div>
+        </td>
+      )}
+
+      {columns.includes('deadline') && (
+        <td className={`whitespace-nowrap px-3 ${yPadding}`}>
+          {days == null ? <span className="text-xs text-slate-400">Sem prazo</span> : (
+            <span className={`inline-flex items-center gap-1 text-xs font-bold ${days <= 7 ? 'text-[#B33A48]' : 'text-slate-600'}`}>
+              <CalendarClock size={12} />{days < 0 ? 'Encerrado' : days === 0 ? 'Hoje' : `${days} dias`}
             </span>
           )}
-          {property.bathrooms != null && (
-            <span className="flex items-center gap-0.5 text-[10px] text-slate-400">
-              <Bath size={9} />{property.bathrooms}
-            </span>
-          )}
-          {property.parking_spots != null && property.parking_spots > 0 && (
-            <span className="flex items-center gap-0.5 text-[10px] text-slate-400">
-              <Car size={9} />{property.parking_spots}
-            </span>
-          )}
-          {displayArea != null && displayArea > 0 && (
-            <span className="flex items-center gap-0.5 text-[10px] text-slate-400">
-              <Ruler size={9} />{Math.round(displayArea)}m²
-            </span>
-          )}
+        </td>
+      )}
+
+      <td className={`sticky right-0 z-10 whitespace-nowrap bg-inherit px-2 ${yPadding}`}>
+        <div className="flex items-center justify-end gap-0.5">
+          <button type="button" onClick={event => action(event, onClick)} aria-label="Abrir imóvel" title="Abrir imóvel" className="rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-[#176B87]"><Eye size={15} /></button>
+          <button type="button" onClick={event => action(event, onToggleFavorite)} aria-label={isFavorite ? 'Remover dos favoritos' : 'Favoritar'} title={isFavorite ? 'Remover dos favoritos' : 'Favoritar'} className={`rounded-lg p-2 transition hover:bg-white ${isFavorite ? 'text-[#B33A48]' : 'text-slate-400 hover:text-[#B33A48]'}`}><Heart size={15} fill={isFavorite ? 'currentColor' : 'none'} /></button>
+          {property.edital_url && <a href={property.edital_url} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()} aria-label="Abrir documento oficial" title="Abrir documento oficial" className="inline-block rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-[#176B87]"><ExternalLink size={15} /></a>}
+          <button type="button" onClick={event => action(event, onDismiss)} aria-label={isDiscarded ? 'Restaurar imóvel' : 'Descartar imóvel'} title={isDiscarded ? 'Restaurar imóvel' : 'Descartar imóvel'} className={`rounded-lg p-2 transition ${isDiscarded ? 'text-[#167261] hover:bg-[#edf8f5]' : 'text-slate-300 hover:bg-[#fff0f1] hover:text-[#B33A48]'}`}>{isDiscarded ? <RotateCcw size={15} /> : <X size={15} />}</button>
         </div>
-      </div>
-
-      {/* Price */}
-      <div className="flex-shrink-0 w-32 px-3 py-3 border-r border-slate-100 dark:border-slate-800/80 text-right">
-        <p className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-tight num">{fmtCompact(property.auction_price)}</p>
-        {pricePerM2 && (
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 num">{fmtCompact(pricePerM2)}/m²</p>
-        )}
-      </div>
-
-      {/* Urgency */}
-      <div className="flex-shrink-0 w-16 px-2 py-3 flex items-center justify-center border-r border-slate-100 dark:border-slate-800/80">
-        <UrgencyBadge auctionDate={property.auction_date} />
-      </div>
-
-      {/* AI evaluation */}
-      <div className="flex-shrink-0 w-20 px-2 py-3 border-r border-slate-100 dark:border-slate-800/80 flex flex-col items-center justify-center">
-        {evaluation?.status === 'done' && evaluation.score != null ? (
-          <>
-            <span className={`text-sm font-bold num ${
-              evaluation.score >= 7.5 ? 'text-emerald-600 dark:text-emerald-400' : evaluation.score >= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'
-            }`}>
-              {evaluation.score.toFixed(1)}
-            </span>
-            {evaluation.recommendation && (
-              <span className={`text-[9px] font-semibold ${REC_COLORS[evaluation.recommendation] ?? 'text-slate-400'}`}>
-                {REC_LABELS[evaluation.recommendation]}
-              </span>
-            )}
-          </>
-        ) : evaluation?.status === 'processing' ? (
-          <span className="w-3 h-3 border border-slate-300 dark:border-slate-600 border-t-slate-500 dark:border-t-slate-400 rounded-full animate-spin" />
-        ) : (
-          <span className="text-[10px] text-slate-300 dark:text-slate-700">—</span>
-        )}
-      </div>
-
-      {/* Actions */}
-      <div className="flex-shrink-0 flex items-center gap-1 px-2 py-3">
-        {/* Edital link */}
-        {property.edital_url && (
-          <a
-            href={property.edital_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            className="p-1.5 rounded-lg text-slate-300 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            title="Abrir edital"
-          >
-            <ExternalLink size={12} />
-          </a>
-        )}
-
-        {/* Favoritar / Avaliar */}
-        <button
-          onClick={e => { e.stopPropagation(); onToggleFavorite() }}
-          className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-semibold transition-all duration-150 ${
-            isFavorite
-              ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50'
-              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200'
-          }`}
-          title={isFavorite ? 'Selecionado para avaliação' : 'Selecionar para avaliação IA'}
-        >
-          {isFavorite ? <Check size={11} /> : <Sparkles size={11} />}
-        </button>
-
-        {/* Descartar */}
-        <button
-          onClick={e => { e.stopPropagation(); onDismiss() }}
-          className="p-1.5 rounded-lg text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors opacity-0 group-hover:opacity-100"
-          title="Descartar imóvel"
-        >
-          <X size={12} />
-        </button>
-      </div>
-    </div>
+      </td>
+    </tr>
   )
 })

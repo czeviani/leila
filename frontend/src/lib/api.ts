@@ -43,6 +43,8 @@ export interface Property {
   address: string | null
   city: string | null
   state: string | null
+  /** Bairro normalizado pelo pipeline. Opcional durante a transição da API. */
+  neighborhood?: string | null
   property_type: string | null
   area_m2: number | null
   appraised_value: number | null
@@ -60,6 +62,35 @@ export interface Property {
   parking_spots: number | null
   useful_area_m2: number | null
   filter_area_m2: number | null
+  price_per_m2?: number | null
+  effective_price_per_m2?: number | null
+  opportunity_score?: number | null
+  opportunity_confidence?: 'high' | 'medium' | 'low' | 'alta' | 'média' | 'baixa' | string | null
+  opportunity_components?: {
+    discount?: { points?: number; max_points?: number; value_pct?: number | null }
+    relative_value?: { points?: number; max_points?: number; property_price_per_m2?: number | null; neighborhood_median_price_per_m2?: number | null }
+    data_quality?: { points?: number; max_points?: number; quality_score?: number | null }
+    availability_trust?: { points?: number; max_points?: number; status?: string | null; last_verified_at?: string | null }
+    scope?: string
+    excludes?: string[]
+  } | null
+  opportunity_factors?: Array<string | {
+    label?: string
+    name?: string
+    impact?: 'positive' | 'negative' | 'neutral' | string
+    value?: number | string
+  }> | null
+  neighborhood_score?: number | null
+  neighborhood_confidence?: 'high' | 'medium' | 'low' | 'alta' | 'média' | 'baixa' | string | null
+  neighborhood_profile?: {
+    score?: number | null
+    confidence?: 'high' | 'medium' | 'low' | 'alta' | 'média' | 'baixa' | string | null
+    label?: string | null
+    summary?: string | null
+    trend?: string | null
+    liquidity?: string | null
+    evidence_count?: number | null
+  } | null
   is_occupied: boolean | null
   heat_score: number | null            // calculado no banco via trigger (migration 007)
   is_active: boolean
@@ -72,6 +103,7 @@ export interface Property {
   leila_sources?: Pick<Source, 'name' | 'icon_url' | 'url'>
   leila_evaluations?: Evaluation | null
   leila_document_analyses?: DocumentAnalysisRecord | null
+  leila_discarded_properties?: Array<{ id: string }>
 }
 
 export interface PropertiesResponse {
@@ -96,11 +128,30 @@ export interface PropertyFilters {
   area_min: number | null
   area_max: number | null
   source_ids: string[]
+  neighborhoods: string[]
+  price_per_m2_min: number | null
+  price_per_m2_max: number | null
+  opportunity_score_min: number | null
+  neighborhood_score_min: number | null
 }
 
 export interface CityOption {
   name: string
   count: number
+}
+
+export interface NeighborhoodProfile {
+  id: string
+  state: string
+  city: string
+  neighborhood: string
+  property_count: number
+  priced_property_count: number
+  median_price_per_m2: number | null
+  median_discount_pct: number | null
+  score: number | null
+  confidence: 'low' | 'medium' | 'high'
+  calculated_at: string
 }
 
 export type DocumentFindingStatus = 'allowed' | 'not_allowed' | 'conditional' | 'not_found'
@@ -138,6 +189,15 @@ export interface Favorite {
   user_id: string
   property_id: string
   notes: string | null
+  created_at: string
+  leila_properties?: Property
+}
+
+export interface DiscardedProperty {
+  id: string
+  user_id: string
+  property_id: string
+  reason: string | null
   created_at: string
   leila_properties?: Property
 }
@@ -314,12 +374,27 @@ export const api = {
       if (states.length) q.set('state', states.join(','))
       return apiFetch<CityOption[]>(`/api/properties/cities?${q}`)
     },
+    neighborhoods: (search: string, state?: string, city?: string) => {
+      const q = new URLSearchParams()
+      if (search.trim()) q.set('search', search.trim())
+      if (state) q.set('state', state)
+      if (city) q.set('city', city)
+      q.set('limit', '200')
+      return apiFetch<NeighborhoodProfile[]>(`/api/properties/neighborhoods?${q}`)
+    },
     documentAnalysis: (id: string) => apiFetch<DocumentAnalysisRecord>(`/api/properties/${id}/document-analysis`),
     requestDocumentAnalysis: (id: string, force = false) =>
       apiFetch<DocumentAnalysisRecord>(`/api/properties/${id}/document-analysis`, {
         method: 'POST',
         body: JSON.stringify({ force }),
       }),
+    discarded: () => apiFetch<DiscardedProperty[]>('/api/properties/discarded'),
+    discard: (id: string, reason?: string) =>
+      apiFetch<DiscardedProperty>(`/api/properties/${id}/discard`, {
+        method: 'POST',
+        body: JSON.stringify(reason ? { reason } : {}),
+      }),
+    restore: (id: string) => apiFetch<void>(`/api/properties/${id}/discard`, { method: 'DELETE' }),
   },
 
   // ── Filters ──────────────────────────────────────────────────────────────
