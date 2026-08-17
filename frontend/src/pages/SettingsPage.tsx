@@ -79,7 +79,8 @@ export default function SettingsPage() {
     )
   }
 
-  const activeSources = sources?.filter(s => s.active).length ?? 0
+  const activeSources = sources?.filter(s => s.active && s.implemented !== false).length ?? 0
+  const pendingSources = sources?.filter(s => s.implemented === false).length ?? 0
   const activeModalities: string[] = savedFilters?.modality_categories ?? []
 
   const toggleModality = (key: string) => {
@@ -284,7 +285,9 @@ export default function SettingsPage() {
               <div>
                 <h2 className="text-sm font-semibold text-slate-900">Fontes de Leilão</h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  {sourcesLoading ? 'Carregando...' : `${activeSources} ativa${activeSources !== 1 ? 's' : ''} de ${sources?.length ?? 0}`}
+                  {sourcesLoading
+                    ? 'Carregando...'
+                    : `${activeSources} operante${activeSources !== 1 ? 's' : ''}${pendingSources ? ` · ${pendingSources} em integração` : ''}`}
                 </p>
               </div>
             </div>
@@ -318,11 +321,13 @@ export default function SettingsPage() {
                 className="flex items-center justify-between px-5 py-4 hover:bg-slate-50/50 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${source.active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${source.active && source.implemented !== false ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800">{source.name}</p>
                     <p className="text-xs text-slate-400 mt-0.5 truncate">
-                      {source.last_scraped_at
+                      {source.implemented === false
+                        ? 'Em integração — ainda não participa da cobertura'
+                        : source.last_scraped_at
                         ? `Última busca: ${new Date(source.last_scraped_at).toLocaleString('pt-BR')}`
                         : 'Nunca executado'}
                     </p>
@@ -330,16 +335,19 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                  {source.active
+                  {source.active && source.implemented !== false
                     ? <CheckCircle2 size={15} className="text-emerald-500" />
                     : <XCircle size={15} className="text-slate-300" />
                   }
                   <button
                     onClick={() => toggleSource.mutate({ id: source.id, active: !source.active })}
+                    disabled={source.implemented === false}
+                    aria-label={source.implemented === false ? `${source.name} ainda não disponível` : `${source.active ? 'Desativar' : 'Ativar'} ${source.name}`}
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none ${
                       source.active ? 'bg-slate-900' : 'bg-slate-200'
+                    } ${source.implemented === false ? 'cursor-not-allowed opacity-40' : ''
                     }`}
-                    title={source.active ? 'Desativar fonte' : 'Ativar fonte'}
+                    title={source.implemented === false ? 'Integração ainda não disponível' : source.active ? 'Desativar fonte' : 'Ativar fonte'}
                   >
                     <span
                       className="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200"

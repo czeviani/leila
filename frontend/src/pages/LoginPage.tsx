@@ -44,55 +44,53 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left panel — branding */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative bg-slate-950 flex-col justify-between p-12 overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative bg-[#163447] flex-col justify-between p-12 overflow-hidden">
         {/* Subtle grid */}
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)`,
-            backgroundSize: '48px 48px',
+            backgroundImage: `linear-gradient(rgba(102,199,202,.7) 1px, transparent 1px), linear-gradient(90deg, rgba(102,199,202,.7) 1px, transparent 1px)`,
+            backgroundSize: '64px 64px',
           }}
         />
-        {/* Glow blobs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600 rounded-full opacity-10 blur-[120px]" />
-        <div className="absolute bottom-1/3 right-1/4 w-72 h-72 bg-violet-600 rounded-full opacity-10 blur-[100px]" />
+        <div className="absolute -right-24 top-28 h-72 w-72 rotate-12 border border-[#66c7ca]/20" />
+        <div className="absolute -right-6 top-44 h-72 w-72 rotate-12 border border-[#66c7ca]/20" />
 
         {/* Logo */}
         <div className="relative z-10">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              <svg className="w-5 h-5 text-[#66c7ca]" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <path d="M7 6v19h8M7 15h9l8-8v18" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="m17 20 3 3 6-7" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <span className="text-white font-semibold text-lg tracking-tight">Leila</span>
+            <div><span className="text-white font-display font-extrabold text-lg tracking-tight">Leila Radar</span><p className="text-[10px] uppercase tracking-[.18em] text-[#9fdadd]">Fonte → dado → decisão</p></div>
           </div>
         </div>
 
         {/* Hero content */}
         <div className="relative z-10 max-w-lg">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-white/60 font-medium mb-8">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Avaliação IA em tempo real
+            <span className="w-1.5 h-1.5 rounded-full bg-[#66c7ca]" />
+            Inteligência com procedência verificável
           </div>
 
           <h1 className="text-4xl xl:text-5xl font-bold text-white leading-[1.1] tracking-tight mb-6">
-            Encontre leilões com<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-violet-400">
-              vantagem real
-            </span>
+            Veja a origem.<br />
+            <span className="text-[#9fdadd]">Decida com clareza.</span>
           </h1>
 
           <p className="text-white/50 text-lg leading-relaxed mb-12">
-            Agregamos imóveis de leilão de múltiplas fontes e usamos IA para avaliar cada oportunidade — antes que você perca tempo.
+            Rastreie imóveis, confira quando cada anúncio foi observado e leve apenas oportunidades verificáveis para sua diligência.
           </p>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-6">
             {[
-              { value: '10+', label: 'Fontes monitoradas' },
-              { value: '0.1s', label: 'Por avaliação IA' },
-              { value: '100%', label: 'Privado' },
+              { value: '27 UFs', label: 'Cobertura Caixa configurada' },
+              { value: '2×/dia', label: 'Rotina de coleta' },
+              { value: 'Por imóvel', label: 'Trilha de procedência' },
             ].map(({ value, label }) => (
               <div key={label}>
                 <p className="text-2xl font-bold text-white">{value}</p>
@@ -106,7 +104,7 @@ export default function LoginPage() {
         <div className="relative z-10">
           <blockquote className="border-l-2 border-white/10 pl-4">
             <p className="text-white/40 text-sm italic">
-              "O melhor negócio é aquele que você vê antes de todo mundo."
+              “A fonte oficial é a referência final antes de qualquer lance.”
             </p>
           </blockquote>
         </div>
@@ -118,11 +116,12 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="flex items-center gap-2 mb-10 lg:hidden">
             <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              <svg className="w-4 h-4 text-[#66c7ca]" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <path d="M7 6v19h8M7 15h9l8-8v18" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="m17 20 3 3 6-7" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <span className="font-semibold text-slate-900">Leila</span>
+            <span className="font-display font-extrabold text-[#163447]">Leila Radar</span>
           </div>
 
           <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">

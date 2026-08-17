@@ -32,6 +32,7 @@ export interface Source {
   active: boolean
   scraper_key: string
   last_scraped_at: string | null
+  implemented?: boolean
 }
 
 export interface Property {
@@ -60,8 +61,14 @@ export interface Property {
   useful_area_m2: number | null
   is_occupied: boolean | null
   heat_score: number | null            // calculado no banco via trigger (migration 007)
+  is_active: boolean
+  availability_status: 'available' | 'suspect' | 'unavailable'
+  last_seen_at: string | null
+  last_verified_at: string | null
+  missing_count: number
+  data_quality_score: number
   scraped_at: string
-  leila_sources?: Pick<Source, 'name' | 'icon_url'>
+  leila_sources?: Pick<Source, 'name' | 'icon_url' | 'url'>
   leila_evaluations?: Evaluation | null
 }
 

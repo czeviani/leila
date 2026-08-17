@@ -6,9 +6,19 @@
 
 ---
 
-## O que é a Leila
+## O que é a Leila Radar
 
-Plataforma pessoal de rastreamento e avaliação de imóveis de leilão bancário (Caixa Econômica Federal, Banco do Brasil, Santander). Agrega 25k+ imóveis via scraping, aplica pré-filtros configuráveis pelo usuário e usa IA (Claude) para avaliar imóveis selecionados com análise financeira completa.
+Plataforma pessoal de diligência para imóveis de leilão bancário. A cobertura executável atual é Caixa em 27 UFs; BB e Santander são roadmap e não podem ser ativados sem adapter validado. A interface deixa explícitas a procedência, a última observação e a completude dos dados. A IA é apoio à triagem, nunca confirmação de disponibilidade nem substituta da fonte oficial.
+
+### Contrato de confiança (Migration 009)
+
+- `availability_status`: `available` (observado), `suspect` (uma ausência em coleta válida) ou `unavailable` (duas ausências consecutivas).
+- Falha de UF, WAF ou escrita impede reconciliação; uma rodada parcial nunca remove anúncios.
+- `last_seen_at` registra a última presença; `last_verified_at` só avança em observação positiva ou confirmação negativa final.
+- `data_quality_score` mede completude de campos (0–100), não veracidade nem qualidade do investimento.
+- `leila_ingestion_runs` registra status, regiões verificadas/falhas e contagens de cada execução.
+- `leila_reconcile_missing` faz a reconciliação set-based e atômica como `service_role`.
+- Aplicar `009_data_trust_pipeline.sql` antes de publicar scraper/backend compatíveis.
 
 **Usuário único:** Caique Zeviani (caiquezeviani@gmail.com). Sem multi-tenant. RLS ativa em todas as tabelas desde 2026-05-31.
 

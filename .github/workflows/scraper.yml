@@ -2,8 +2,8 @@ name: Leila Scraper
 
 on:
   schedule:
-    # Terça e Sexta às 10h UTC (7h horário de Brasília)
-    - cron: '0 10 * * 2,5'
+    # Todos os dias às 07h e 19h BRT. Freshness importa para disponibilidade.
+    - cron: '0 10,22 * * *'
   workflow_dispatch:
     # Disparo manual via GitHub UI ou API
 
@@ -29,6 +29,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.LEILA_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.LEILA_SUPABASE_SERVICE_KEY }}
-          PROXY_ROTATION: 'false'
-          SCRAPER_UFS: ${{ vars.LEILA_SCRAPER_UFS || 'SP,RJ,MG,PR,RS,SC,GO,DF,BA,CE,PE' }}
+          PROXY_ROTATION: 'true'
+          PROXY_LIST: ${{ secrets.LEILA_PROXY_LIST }}
+          SCRAPER_UFS: ${{ vars.LEILA_SCRAPER_UFS || 'AC,AL,AM,AP,BA,CE,DF,ES,GO,MA,MG,MS,MT,PA,PB,PE,PI,PR,RJ,RN,RO,RR,RS,SC,SE,SP,TO' }}
         run: python run.py

@@ -8,12 +8,74 @@ const SORT_FIELDS: Record<string, string> = {
   area_m2: 'area_m2',
   scraped_at: 'scraped_at',
   auction_date: 'auction_date',
+  data_quality_score: 'data_quality_score',
+  last_verified_at: 'last_verified_at',
+  last_seen_at: 'last_seen_at',
+}
+
+const AVAILABILITY_STATUSES = new Set(['available', 'suspect', 'unavailable'])
+
+const parseAvailabilityStatuses = (value: unknown): string[] | null => {
+  if (value === undefined) return []
+  const statuses = String(value).split(',').map(status => status.trim()).filter(Boolean)
+  return statuses.length > 0 && statuses.every(status => AVAILABILITY_STATUSES.has(status))
+    ? [...new Set(statuses)]
+    : null
+}
+
+const parseBoundedNumber = (value: unknown, min: number, max: number): number | null => {
+  if (value === undefined) return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : null
+}
+
+type TrustProperty = {
+  availability_status?: string | null
+  data_quality_score?: number | null
+  last_verified_at?: string | null
+}
+
+const summarizePageTrust = (properties: TrustProperty[], freshnessHours: number) => {
+  const freshnessCutoff = Date.now() - freshnessHours * 60 * 60 * 1000
+  const statusCounts = { available: 0, suspect: 0, unavailable: 0, unknown: 0 }
+  let qualityTotal = 0
+  let qualitySamples = 0
+  let freshCount = 0
+
+  for (const property of properties) {
+    const status = property.availability_status
+    if (status === 'available' || status === 'suspect' || status === 'unavailable') {
+      statusCounts[status] += 1
+    } else {
+      statusCounts.unknown += 1
+    }
+
+    if (typeof property.data_quality_score === 'number') {
+      qualityTotal += property.data_quality_score
+      qualitySamples += 1
+    }
+
+    if (property.last_verified_at && new Date(property.last_verified_at).getTime() >= freshnessCutoff) {
+      freshCount += 1
+    }
+  }
+
+  return {
+    scope: 'page',
+    sample_size: properties.length,
+    availability: statusCounts,
+    average_quality: qualitySamples ? Math.round(qualityTotal / qualitySamples) : null,
+    freshness_hours: freshnessHours,
+    verified_fresh: freshCount,
+    verified_stale_or_unknown: properties.length - freshCount,
+  }
 }
 
 export const getProperties = async (req: Request, res: Response) => {
   const {
     state, city, type, price_min, price_max, discount_min, modality,
     search, has_evaluation, area_classification, days_until_auction_max,
+    availability_status, availability, status, verified_within_hours, quality_min, occupied,
     page = 1, limit = 50,
     sort_by = 'heat_score', sort_order = 'desc',
   } = req.query
@@ -22,12 +84,57 @@ export const getProperties = async (req: Request, res: Response) => {
   const sortField = SORT_FIELDS[String(sort_by)] ?? 'heat_score'
   const ascending = String(sort_order) === 'asc'
 
+  const requestedAvailability = availability_status ?? availability ?? status
+  const availabilityStatuses = parseAvailabilityStatuses(requestedAvailability)
+  if (availabilityStatuses === null) {
+    return res.status(400).json({
+      error: 'availability_status deve conter available, suspect e/ou unavailable',
+    })
+  }
+
+  const verifiedHours = parseBoundedNumber(verified_within_hours, 1, 8760)
+  if (verified_within_hours !== undefined && verifiedHours === null) {
+    return res.status(400).json({ error: 'verified_within_hours deve ser um número entre 1 e 8760' })
+  }
+
+  const qualityMinimum = parseBoundedNumber(quality_min, 0, 100)
+  if (quality_min !== undefined && qualityMinimum === null) {
+    return res.status(400).json({ error: 'quality_min deve ser um número entre 0 e 100' })
+  }
+
   let query = req.supabase!
     .from('leila_properties')
-    .select('*, leila_sources(name, icon_url), leila_evaluations(*)', { count: 'exact' })
-    .eq('is_active', true)
+    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*)', { count: 'exact' })
     .order(sortField, { ascending, nullsFirst: false })
     .range(offset, offset + Number(limit) - 1)
+
+  if (availabilityStatuses.length > 0) {
+    query = availabilityStatuses.length === 1
+      ? query.eq('availability_status', availabilityStatuses[0])
+      : query.in('availability_status', availabilityStatuses)
+    if (!availabilityStatuses.includes('unavailable')) query = query.eq('is_active', true)
+  } else {
+    // Default seguro: mantém compatibilidade com is_active e não oferece anúncios indisponíveis.
+    query = query.eq('is_active', true).neq('availability_status', 'unavailable')
+  }
+
+  if (verified_within_hours !== undefined && verifiedHours !== null) {
+    const cutoff = new Date(Date.now() - verifiedHours * 60 * 60 * 1000).toISOString()
+    query = query.not('last_verified_at', 'is', null).gte('last_verified_at', cutoff)
+  }
+
+  if (quality_min !== undefined && qualityMinimum !== null) {
+    query = query.gte('data_quality_score', qualityMinimum)
+  }
+
+  if (occupied !== undefined) {
+    if (occupied !== 'true' && occupied !== 'false' && occupied !== 'unknown') {
+      return res.status(400).json({ error: 'occupied deve ser true, false ou unknown' })
+    }
+    query = occupied === 'unknown'
+      ? query.is('is_occupied', null)
+      : query.eq('is_occupied', occupied === 'true')
+  }
 
   if (state) {
     const states = String(state).split(',').map(s => s.trim()).filter(Boolean)
@@ -83,7 +190,13 @@ export const getProperties = async (req: Request, res: Response) => {
   const { data, error, count } = await query
 
   if (error) return res.status(500).json({ error: error.message })
-  return res.json({ data, total: count, page: Number(page), limit: Number(limit) })
+  return res.json({
+    data,
+    total: count,
+    page: Number(page),
+    limit: Number(limit),
+    trust: summarizePageTrust((data ?? []) as TrustProperty[], verifiedHours ?? 24),
+  })
 }
 
 export const getPropertyCities = async (req: Request, res: Response) => {
@@ -109,7 +222,7 @@ export const getPropertyById = async (req: Request, res: Response) => {
 
   const { data, error } = await supabaseAdmin
     .from('leila_properties')
-    .select('*, leila_sources(name, icon_url), leila_evaluations(*)')
+    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*)')
     .eq('id', id)
     .single()
 

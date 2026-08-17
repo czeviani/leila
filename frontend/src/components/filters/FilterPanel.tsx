@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { SlidersHorizontal, X, Search, MapPin, ShoppingCart, Gavel, Users, Mail, Tag, Sparkles, Clock } from 'lucide-react'
+import { SlidersHorizontal, X, Search, MapPin, ShoppingCart, Gavel, Users, Mail, Tag, Sparkles, Clock, ShieldCheck, CircleDot } from 'lucide-react'
 import { PropertyFilters } from '../../lib/api'
 import { useFilters, useSaveFilters, useCities } from '../../hooks/useProperties'
 
@@ -14,13 +14,6 @@ const REGIONS: Record<string, { label: string; states: string[] }> = {
   nordeste:     { label: 'Nordeste',     states: ['BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE', 'AL'] },
   norte:        { label: 'Norte',        states: ['AC', 'AM', 'AP', 'PA', 'RO', 'RR', 'TO'] },
 }
-
-const AREA_CLASSIFICATIONS = [
-  { key: 'nobre',          label: 'Nobre',        color: 'text-violet-700', bg: 'bg-violet-50',  border: 'border-violet-200' },
-  { key: 'intermediário',  label: 'Intermediária', color: 'text-blue-700',   bg: 'bg-blue-50',    border: 'border-blue-200'   },
-  { key: 'popular',        label: 'Popular',       color: 'text-amber-700',  bg: 'bg-amber-50',   border: 'border-amber-200'  },
-  { key: 'comunidade',     label: 'Comunidade',    color: 'text-red-700',    bg: 'bg-red-50',     border: 'border-red-200'    },
-]
 
 export const MODALITY_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string; bg: string; border: string }> = {
   compra_direta:    { label: 'Compra Direta',  icon: ShoppingCart, color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
@@ -60,6 +53,8 @@ export default function FilterPanel({ onFilterChange }: Props) {
   const saveFilters = useSaveFilters()
   const panelRef = useRef<HTMLDivElement>(null)
   const cityInputRef = useRef<HTMLInputElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
   const initialApplied = useRef(false)
 
   const [open, setOpen] = useState(false)
@@ -73,6 +68,9 @@ export default function FilterPanel({ onFilterChange }: Props) {
   const [selectedAreaClassifications, setSelectedAreaClassifications] = useState<string[]>([])
   const [daysUntilAuction, setDaysUntilAuction] = useState<number | null>(null)
   const [hasEvaluation, setHasEvaluation] = useState(false)
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
+  const [qualityOnly, setQualityOnly] = useState(false)
+  const [occupancy, setOccupancy] = useState<'' | 'true' | 'false' | 'unknown'>('')
 
   const [citySearch, setCitySearch] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -99,10 +97,25 @@ export default function FilterPanel({ onFilterChange }: Props) {
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false)
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setOpen(false)
+        triggerRef.current?.focus()
+      }
     }
+    const keyHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
+    const focusTimer = window.setTimeout(() => closeRef.current?.focus(), 0)
     document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('keydown', keyHandler)
+    return () => {
+      window.clearTimeout(focusTimer)
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('keydown', keyHandler)
+    }
   }, [open])
 
   const addCity = (city: string) => {
@@ -115,7 +128,6 @@ export default function FilterPanel({ onFilterChange }: Props) {
   const toggleState = (uf: string) => setSelectedStates(prev => prev.includes(uf) ? prev.filter(s => s !== uf) : [...prev, uf])
   const toggleType = (t: string) => setSelectedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
   const toggleModality = (m: string) => setSelectedModalities(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m])
-  const toggleAreaClass = (a: string) => setSelectedAreaClassifications(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a])
 
   const applyRegion = (regionKey: string) => {
     const region = REGIONS[regionKey]
@@ -147,7 +159,12 @@ export default function FilterPanel({ onFilterChange }: Props) {
       has_evaluation: hasEvaluation,
     }
     saveFilters.mutate(filters)
-    onFilterChange(filtersToParams(filters))
+    onFilterChange({
+      ...filtersToParams(filters),
+      ...(verifiedOnly ? { availability: 'available', verified_within_hours: 168 } : {}),
+      ...(qualityOnly ? { quality_min: 70 } : {}),
+      ...(occupancy ? { occupied: occupancy } : {}),
+    })
     setOpen(false)
   }
 
@@ -156,6 +173,7 @@ export default function FilterPanel({ onFilterChange }: Props) {
     setSelectedCities([]); setSelectedTypes([]); setDiscountMin('')
     setCitySearch(''); setSelectedModalities([])
     setSelectedAreaClassifications([]); setDaysUntilAuction(null); setHasEvaluation(false)
+    setVerifiedOnly(false); setQualityOnly(false); setOccupancy('')
     const empty: PropertyFilters = {
       price_min: null, price_max: null, states: [], cities: [], property_types: [],
       discount_min: null, modality_categories: [], area_classifications: [],
@@ -169,25 +187,29 @@ export default function FilterPanel({ onFilterChange }: Props) {
   const activeCount =
     selectedStates.length + selectedCities.length + selectedTypes.length +
     (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (discountMin ? 1 : 0) +
-    selectedModalities.length + selectedAreaClassifications.length +
-    (daysUntilAuction ? 1 : 0) + (hasEvaluation ? 1 : 0)
+    selectedModalities.length +
+    (daysUntilAuction ? 1 : 0) + (hasEvaluation ? 1 : 0) +
+    (verifiedOnly ? 1 : 0) + (qualityOnly ? 1 : 0) + (occupancy ? 1 : 0)
 
   const filteredSuggestions = citySuggestions.filter(c => !selectedCities.includes(c))
 
   return (
     <div className="relative" ref={panelRef}>
       <button
+        ref={triggerRef}
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-2 px-3.5 py-2.5 border rounded-xl text-sm font-medium transition-all duration-150 ${
+        aria-expanded={open}
+        aria-controls="property-filter-panel"
+        className={`flex h-12 items-center justify-center gap-2 px-4 border rounded-xl text-sm font-bold transition-all duration-150 ${
           activeCount > 0
-            ? 'border-slate-900 bg-slate-900 text-white'
-            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+            ? 'border-[#176B87] bg-[#176B87] text-white'
+            : 'border-[#cddcdd] bg-white text-[#163447] hover:border-[#176B87]'
         }`}
       >
         <SlidersHorizontal size={15} />
         Filtros
         {activeCount > 0 && (
-          <span className="bg-white text-slate-900 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center leading-none">
+          <span className="bg-white text-[#176B87] text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center leading-none">
             {activeCount}
           </span>
         )}
@@ -195,15 +217,42 @@ export default function FilterPanel({ onFilterChange }: Props) {
 
       {open && (
         <div
-          className="absolute right-0 top-12 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl p-5 space-y-5 overflow-y-auto"
-          style={{ width: '360px', maxHeight: 'calc(100vh - 120px)' }}
+          id="property-filter-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Filtros de imóveis"
+          className="fixed inset-3 z-50 space-y-5 overflow-y-auto rounded-2xl border border-[#cddcdd] bg-white p-5 shadow-2xl sm:absolute sm:inset-auto sm:right-0 sm:top-14 sm:max-h-[calc(100vh-110px)] sm:w-[390px]"
         >
           {/* Header */}
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-900">Filtros</p>
-            <button onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+            <div>
+              <p className="text-base font-bold text-[#163447]">Refinar oportunidades</p>
+              <p className="text-xs text-slate-500">Comece pela confiabilidade, depois pelo retorno.</p>
+            </div>
+            <button ref={closeRef} aria-label="Fechar filtros" onClick={() => { setOpen(false); triggerRef.current?.focus() }} className="min-h-11 min-w-11 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
               <X size={15} />
             </button>
+          </div>
+
+          <section className="rounded-xl border border-[#cfe0e1] bg-[#f3f8f8] p-3.5">
+            <p className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#176B87]"><ShieldCheck size={14} />Confiabilidade</p>
+            <div className="space-y-2">
+              <button type="button" onClick={() => setVerifiedOnly(!verifiedOnly)} className={`flex min-h-11 w-full items-center gap-3 rounded-lg border px-3 text-left text-sm font-semibold transition ${verifiedOnly ? 'border-[#167261] bg-white text-[#126252]' : 'border-transparent text-slate-600 hover:bg-white'}`}>
+                <CircleDot size={14} /> Observado na fonte nos últimos 7 dias
+              </button>
+              <button type="button" onClick={() => setQualityOnly(!qualityOnly)} className={`flex min-h-11 w-full items-center gap-3 rounded-lg border px-3 text-left text-sm font-semibold transition ${qualityOnly ? 'border-[#176B87] bg-white text-[#176B87]' : 'border-transparent text-slate-600 hover:bg-white'}`}>
+                <CircleDot size={14} /> Cadastro com pelo menos 70% dos dados
+              </button>
+            </div>
+          </section>
+
+          <div>
+            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500">Ocupação</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              {([['false', 'Desocupado'], ['true', 'Ocupado'], ['unknown', 'Não informado']] as const).map(([value, label]) => (
+                <button type="button" key={value} onClick={() => setOccupancy(occupancy === value ? '' : value)} className={`min-h-10 rounded-lg border px-2 text-xs font-semibold ${occupancy === value ? 'border-[#176B87] bg-[#176B87] text-white' : 'border-slate-200 text-slate-600'}`}>{label}</button>
+              ))}
+            </div>
           </div>
 
           {/* ── Apenas com IA ─────────────────────────────── */}
@@ -260,27 +309,6 @@ export default function FilterPanel({ onFilterChange }: Props) {
                     }`}
                   >
                     <Icon size={12} className="flex-shrink-0" />
-                    {cfg.label}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* ── Classificação de Área ──────────────────────── */}
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Classificação de Área</p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {AREA_CLASSIFICATIONS.map(cfg => {
-                const active = selectedAreaClassifications.includes(cfg.key)
-                return (
-                  <button
-                    key={cfg.key}
-                    onClick={() => toggleAreaClass(cfg.key)}
-                    className={`text-xs font-medium px-2.5 py-2 rounded-xl border transition-all ${
-                      active ? `${cfg.bg} ${cfg.color} ${cfg.border}` : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                    }`}
-                  >
                     {cfg.label}
                   </button>
                 )
@@ -436,8 +464,8 @@ export default function FilterPanel({ onFilterChange }: Props) {
             <button onClick={reset} className="flex-1 py-2.5 text-sm font-medium border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all">
               Limpar filtros
             </button>
-            <button onClick={apply} className="flex-1 py-2.5 text-sm font-semibold bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all shadow-sm shadow-slate-900/20">
-              Aplicar
+            <button onClick={apply} className="flex-1 py-2.5 text-sm font-semibold bg-[#163447] text-white rounded-xl hover:bg-[#0f293a] transition-all">
+              Ver resultados
             </button>
           </div>
         </div>

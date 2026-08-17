@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 
 from sources import SOURCES
-from sources.base import ScrapedProperty, ScrapeResult
+from sources.base import ScrapedProperty, ScrapeResult, calculate_data_quality
 from proxy.manager import proxy_count
 from enrichment import enrich_properties
 
@@ -84,6 +84,11 @@ async def _upsert_properties(properties: list[ScrapedProperty], scrape_start: da
             "useful_area_m2": prop.useful_area_m2,
             "features": prop.features or {},
             "is_active": True,
+            "availability_status": "available",
+            "last_seen_at": now,
+            "last_verified_at": now,
+            "missing_count": 0,
+            "data_quality_score": calculate_data_quality(prop),
             "scraped_at": now,
             "updated_at": now,
         }
@@ -103,28 +108,56 @@ async def _upsert_properties(properties: list[ScrapedProperty], scrape_start: da
     return result
 
 
-async def _deactivate_missing(source_id: str, scraped_states: list[str], scrape_start: datetime):
-    """Marca como inativos imóveis que não apareceram na rodada atual do scrape.
+async def _reconcile_missing(source_id: str, verified_states: list[str], scrape_start: datetime):
+    """Reconcilia ausências apenas em regiões cuja coleta foi comprovadamente válida.
 
-    Só age sobre estados que tiveram ao menos 1 imóvel retornado — evita desativar
-    imóveis de UFs bloqueadas pelo WAF da Caixa (que retornam lista vazia).
+    Primeira ausência = suspect (continua visível com alerta). Segunda ausência
+    consecutiva = unavailable. Assim uma oscilação do CSV não apaga oportunidades.
     """
-    if not scraped_states:
+    if not verified_states:
         return
 
-    try:
-        resp = _get_supabase().table("leila_properties").update({
-            "is_active": False,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("source_id", source_id).in_("state", scraped_states).lt(
-            "scraped_at", scrape_start.isoformat()
-        ).eq("is_active", True).execute()
+    response = _get_supabase().rpc("leila_reconcile_missing", {
+        "p_source_id": source_id,
+        "p_verified_states": verified_states,
+        "p_scrape_start": scrape_start.isoformat(),
+    }).execute()
+    summary = (response.data or [{}])[0]
+    suspect_count = int(summary.get("suspect_count") or 0)
+    unavailable_count = int(summary.get("unavailable_count") or 0)
+    if suspect_count or unavailable_count:
+        print(f"[Scraper] {source_id}: {suspect_count} suspeitos, {unavailable_count} indisponíveis")
 
-        deactivated = len(resp.data) if resp.data else 0
-        if deactivated:
-            print(f"[Scraper] {source_id}: {deactivated} imóveis marcados como inativos ({', '.join(scraped_states)})")
+
+def _start_run(source_id: str) -> str | None:
+    try:
+        resp = _get_supabase().table("leila_ingestion_runs").insert({
+            "source_id": source_id, "status": "running"
+        }).execute()
+        return resp.data[0]["id"] if resp.data else None
     except Exception as e:
-        print(f"[Scraper] Erro ao desativar inativos ({source_id}): {e}")
+        print(f"[Scraper] Não foi possível registrar início da coleta: {e}")
+        return None
+
+
+def _finish_run(run_id: str | None, status: str, result: ScrapeResult | None,
+                verified: list[str], failed: list[str], error: str | None = None):
+    if not run_id:
+        return
+    payload = {
+        "status": status,
+        "finished_at": datetime.now(timezone.utc).isoformat(),
+        "found_count": result.total if result else 0,
+        "written_count": result.inserted if result else 0,
+        "error_count": (result.errors if result else 0) + (1 if error else 0),
+        "verified_regions": verified,
+        "failed_regions": failed,
+        "diagnostics": {"error": error} if error else {},
+    }
+    try:
+        _get_supabase().table("leila_ingestion_runs").update(payload).eq("id", run_id).execute()
+    except Exception as e:
+        print(f"[Scraper] Não foi possível concluir registro da coleta: {e}")
 
 
 async def _update_source_timestamp(source_id: str):
@@ -154,18 +187,40 @@ async def scrape_all():
     for source_id in active_ids:
         SourceClass = SOURCES[source_id]
         source = SourceClass()
+        run_id = _start_run(source_id)
         scrape_start = datetime.now(timezone.utc)
         try:
             properties = await source.scrape()
             result = await _upsert_properties(properties, scrape_start)
-            scraped_states = list({p.state for p in properties if p.state})
-            await _deactivate_missing(source_id, scraped_states, scrape_start)
-            await _update_source_timestamp(source_id)
-            all_results[source_id] = result.__dict__
+            successful_regions = getattr(source, "successful_regions", None)
+            verified = list(successful_regions) if successful_regions is not None else list({p.state for p in properties if p.state})
+            failed = list(getattr(source, "failed_regions", []))
+            # Se qualquer escrita falhou, não há como distinguir o anúncio
+            # ausente daquele que foi visto mas não persistido. Não reconcilia.
+            if verified and result.errors == 0:
+                await _reconcile_missing(source_id, verified, scrape_start)
+            run_status = "failed" if not verified else ("partial" if failed or result.errors else "success")
+            if run_status == "success":
+                await _update_source_timestamp(source_id)
+            _finish_run(run_id, run_status, result, verified, failed)
+            all_results[source_id] = {
+                **result.__dict__,
+                "status": run_status,
+                "verified_regions": verified,
+                "failed_regions": failed,
+            }
         except Exception as e:
             print(f"[Scraper] Erro em {source_id}: {e}")
-            all_results[source_id] = {"error": str(e)}
+            _finish_run(run_id, "failed", None, [], [], str(e))
+            all_results[source_id] = {"status": "failed", "error": str(e)}
 
+    if not all_results:
+        raise HTTPException(status_code=503, detail="Nenhuma fonte ativa implementada")
+    if all(result.get("status") == "failed" for result in all_results.values()):
+        raise HTTPException(status_code=502, detail={
+            "message": "Nenhuma fonte produziu uma coleta válida",
+            "results": all_results,
+        })
     return all_results
 
 
@@ -176,15 +231,29 @@ async def scrape_source(source_id: str, background_tasks: BackgroundTasks):
 
     SourceClass = SOURCES[source_id]
     source = SourceClass()
+    run_id = _start_run(source_id)
 
     print(f"[Scraper] Starting {source_id}...")
     scrape_start = datetime.now(timezone.utc)
-    properties = await source.scrape()
-
-    result = await _upsert_properties(properties, scrape_start)
-    scraped_states = list({p.state for p in properties if p.state})
-    await _deactivate_missing(source_id, scraped_states, scrape_start)
-    await _update_source_timestamp(source_id)
+    try:
+        properties = await source.scrape()
+        result = await _upsert_properties(properties, scrape_start)
+        successful_regions = getattr(source, "successful_regions", None)
+        verified = list(successful_regions) if successful_regions is not None else list({p.state for p in properties if p.state})
+        failed = list(getattr(source, "failed_regions", []))
+        if verified and result.errors == 0:
+            await _reconcile_missing(source_id, verified, scrape_start)
+        run_status = "failed" if not verified else ("partial" if failed or result.errors else "success")
+        if run_status == "success":
+            await _update_source_timestamp(source_id)
+        _finish_run(run_id, run_status, result, verified, failed)
+        if run_status == "failed":
+            raise HTTPException(status_code=502, detail="Nenhuma região produziu uma coleta válida")
+    except HTTPException:
+        raise
+    except Exception as e:
+        _finish_run(run_id, "failed", None, [], [], str(e))
+        raise HTTPException(status_code=502, detail=f"Falha na coleta de {source_id}") from e
 
     print(f"[Scraper] {source_id} done: {result}")
 
@@ -194,7 +263,12 @@ async def scrape_source(source_id: str, background_tasks: BackgroundTasks):
     else:
         print("[Scraper] ANTHROPIC_API_KEY não configurado — pulando enriquecimento IA")
 
-    return result.__dict__
+    return {
+        **result.__dict__,
+        "status": run_status,
+        "verified_regions": verified,
+        "failed_regions": failed,
+    }
 
 
 def _run_enrichment():

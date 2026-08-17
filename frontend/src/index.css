@@ -4,44 +4,44 @@
 
 @layer base {
   :root {
-    --background: 0 0% 97%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 180 20% 96%;
+    --foreground: 201 53% 18%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --card-foreground: 201 53% 18%;
+    --primary: 194 71% 31%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 177 18% 92%;
+    --secondary-foreground: 201 53% 18%;
+    --muted: 177 18% 94%;
+    --muted-foreground: 196 22% 42%;
+    --accent: 177 18% 92%;
+    --accent-foreground: 187 72% 23%;
+    --destructive: 350 51% 46%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 176 20% 88%;
+    --input: 176 20% 84%;
+    --ring: 194 71% 31%;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 47% 7%;
-    --foreground: 210 40% 96%;
-    --card: 222.2 47% 9%;
-    --card-foreground: 210 40% 96%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: 198 36% 8%;
+    --foreground: 177 20% 94%;
+    --card: 198 32% 11%;
+    --card-foreground: 177 20% 94%;
+    --primary: 183 48% 61%;
+    --primary-foreground: 198 36% 8%;
+    --secondary: 197 24% 17%;
+    --secondary-foreground: 177 20% 94%;
+    --muted: 197 24% 17%;
+    --muted-foreground: 191 14% 66%;
+    --accent: 192 29% 20%;
+    --accent-foreground: 183 48% 70%;
+    --destructive: 350 45% 39%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 193 20% 21%;
+    --input: 193 20% 25%;
+    --ring: 183 48% 61%;
   }
 
   * {
@@ -51,7 +51,7 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Source Sans 3', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-size: 14px;
@@ -59,15 +59,138 @@
   }
 
   h1, h2, h3, h4 {
-    letter-spacing: -0.02em;
+    font-family: 'Manrope', 'Source Sans 3', system-ui, sans-serif;
+    letter-spacing: -0.025em;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  :focus-visible {
+    outline: 3px solid rgb(23 107 135 / 0.38);
+    outline-offset: 2px;
+  }
+
+  .dark :focus-visible {
+    outline-color: rgb(99 197 204 / 0.58);
+  }
+
+  ::selection {
+    background: rgb(23 107 135 / 0.2);
+    color: #163447;
   }
 }
 
 @layer utilities {
+  .font-display {
+    font-family: 'Manrope', 'Source Sans 3', system-ui, sans-serif;
+  }
+
   .num {
+    font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
     font-variant-numeric: tabular-nums;
   }
+
   .leila-ease {
     transition-timing-function: cubic-bezier(.4, 0, .2, 1);
+  }
+}
+
+@layer components {
+  .skip-link {
+    position: fixed;
+    left: 1rem;
+    top: 1rem;
+    z-index: 100;
+    transform: translateY(-160%);
+    border-radius: 0.75rem;
+    background: #163447;
+    color: white;
+    padding: 0.7rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    box-shadow: 0 10px 25px rgb(13 36 46 / 0.2);
+    transition: transform 150ms ease;
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+
+  .brand-mark {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.8rem;
+    background: #163447;
+    color: #66c7ca;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  }
+
+  .dark .brand-mark {
+    background: #1c3c49;
+    color: #76d1d5;
+  }
+
+  .provenance-line {
+    display: grid;
+    grid-template-columns: auto 1fr auto 1fr auto;
+    align-items: center;
+    gap: 0.4rem;
+    color: #718a92;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .provenance-line i {
+    position: relative;
+    display: block;
+    height: 1px;
+    background: #b8cdcc;
+  }
+
+  .provenance-line i::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: 50%;
+    width: 5px;
+    height: 5px;
+    transform: translateY(-50%);
+    border-radius: 999px;
+    background: #167261;
+    box-shadow: 0 0 0 2px #dff0ec;
+  }
+
+  .dark .provenance-line {
+    color: #8299a1;
+  }
+
+  .dark .provenance-line i {
+    background: #35515c;
+  }
+
+  .dark .provenance-line i::after {
+    background: #63c5a9;
+    box-shadow: 0 0 0 2px #173a38;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

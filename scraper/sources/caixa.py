@@ -27,6 +27,7 @@ from curl_cffi.requests import AsyncSession
 from .base import BaseSource, ScrapedProperty
 from .area_classifier import classify_area
 from .description_parser import parse_description
+from proxy.manager import get_proxy
 
 SOURCE_ID = "caixa"
 BASE_URL = "https://venda-imoveis.caixa.gov.br"
@@ -42,9 +43,7 @@ ALL_UFS = [
 # UFs padrão: principais mercados de leilão do Brasil
 # Pode ser sobrescrito via env: SCRAPER_UFS=SP,RJ,MG
 _env_ufs = os.getenv("SCRAPER_UFS", "").strip()
-DEFAULT_UFS = [u.strip().upper() for u in _env_ufs.split(",") if u.strip()] if _env_ufs else [
-    "SP", "RJ", "MG", "PR", "RS", "SC", "GO", "DF", "BA", "CE", "PE"
-]
+DEFAULT_UFS = [u.strip().upper() for u in _env_ufs.split(",") if u.strip()] if _env_ufs else ALL_UFS
 
 PROPERTY_TYPE_MAP = {
     "AP": "apartamento",
@@ -135,6 +134,9 @@ class CaixaSource(BaseSource):
 
     def __init__(self, ufs: Optional[list[str]] = None):
         self.ufs = ufs or DEFAULT_UFS
+        self.successful_regions: list[str] = []
+        self.failed_regions: list[str] = []
+        self.proxy = get_proxy()
 
     async def _scrape_uf(self, session: AsyncSession, uf: str) -> list[ScrapedProperty]:
         url = CSV_URL.format(uf=uf)
@@ -142,10 +144,11 @@ class CaixaSource(BaseSource):
 
         try:
             await asyncio.sleep(random.uniform(1.0, 3.0))
-            response = await session.get(url, timeout=30)
+            response = await session.get(url, timeout=30, proxy=self.proxy)
             response.raise_for_status()
         except Exception as e:
             print(f"[Caixa] Erro ao baixar CSV para {uf}: {e}")
+            self.failed_regions.append(uf)
             return []
 
         content = response.content.decode("latin-1", errors="replace")
@@ -153,6 +156,7 @@ class CaixaSource(BaseSource):
         # Detectar CAPTCHA/WAF em vez de CSV
         if content.strip().startswith("<") or "CAPTCHA" in content or "Bot Manager" in content:
             print(f"[Caixa] {uf}: bloqueado por WAF (recebeu HTML)")
+            self.failed_regions.append(uf)
             return []
 
         # O CSV da Caixa tem linhas de metadata antes do cabeçalho real.
@@ -168,6 +172,7 @@ class CaixaSource(BaseSource):
 
         if header_idx is None:
             print(f"[Caixa] {uf}: header CSV não encontrado")
+            self.failed_regions.append(uf)
             return []
 
         csv_content = "\n".join(lines[header_idx:])
@@ -181,6 +186,12 @@ class CaixaSource(BaseSource):
                 print(f"[Caixa] Erro ao parsear linha ({uf}): {e}")
 
         print(f"[Caixa] {uf}: {len(properties)} imóveis")
+        if properties:
+            self.successful_regions.append(uf)
+        else:
+            # Um CSV parseado com zero linhas é anômalo para a fonte e não pode
+            # servir de evidência para remover todos os anúncios daquela UF.
+            self.failed_regions.append(uf)
         return properties
 
     def _parse_row(self, row: dict, uf: str) -> Optional[ScrapedProperty]:
@@ -330,7 +341,8 @@ class CaixaSource(BaseSource):
             try:
                 await session.get(
                     "https://venda-imoveis.caixa.gov.br/sistema/login-site.asp",
-                    timeout=15
+                    timeout=15,
+                    proxy=self.proxy,
                 )
                 await asyncio.sleep(2)
             except Exception:

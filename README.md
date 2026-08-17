@@ -1,6 +1,8 @@
-# Leila
+# Leila Radar
 
-Plataforma para rastrear e avaliar imóveis de leilão de múltiplas fontes (Caixa Econômica Federal, Banco do Brasil, Santander, etc.). Aplica filtros configuráveis e usa IA (Claude) para avaliar automaticamente os imóveis que passam nos critérios.
+Mesa de diligência para imóveis de leilão, orientada a procedência e disponibilidade. A plataforma distingue anúncios observados, suspeitos e indisponíveis, registra a saúde de cada coleta e usa IA apenas como apoio à triagem.
+
+> Cobertura executável atual: Caixa Econômica Federal em 27 UFs. Banco do Brasil e Santander permanecem visíveis como integrações futuras, mas não podem ser ativados até terem coletores validados.
 
 ## Stack
 
