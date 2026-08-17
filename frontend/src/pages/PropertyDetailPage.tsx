@@ -4,8 +4,9 @@ import {
   CircleHelp, CircleX, Clock3, Database, ExternalLink, FileText, Gavel,
   Heart, Home, MapPin, Ruler, ShieldCheck, Sparkles, TrendingDown,
 } from 'lucide-react'
-import { useProperty, useFavorites, useToggleFavorite, useRequestEvaluation } from '../hooks/useProperties'
+import { useProperty, useFavorites, useToggleFavorite, useRequestEvaluation, useDocumentAnalysis, useRequestDocumentAnalysis } from '../hooks/useProperties'
 import InvestmentDashboard from '../components/evaluator/InvestmentDashboard'
+import DocumentAnalysisPanel from '../components/documents/DocumentAnalysisPanel'
 import type { Property } from '../lib/api'
 
 function formatBRL(v: number) {
@@ -135,6 +136,8 @@ export default function PropertyDetailPage() {
   const { data: favorites } = useFavorites()
   const toggleFav = useToggleFavorite()
   const requestEval = useRequestEvaluation()
+  const { data: documentAnalysis, isLoading: documentAnalysisLoading } = useDocumentAnalysis(id!)
+  const requestDocumentAnalysis = useRequestDocumentAnalysis()
 
   if (isLoading) {
     return (
@@ -299,6 +302,15 @@ export default function PropertyDetailPage() {
             <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{property.description}</p>
           </section>
         )}
+
+        <DocumentAnalysisPanel
+          record={documentAnalysis}
+          isLoading={documentAnalysisLoading}
+          isRequesting={requestDocumentAnalysis.isPending}
+          requestError={requestDocumentAnalysis.isError ? (requestDocumentAnalysis.error as Error).message : null}
+          canAnalyze={Boolean(property.edital_url) && availability !== 'unavailable'}
+          onAnalyze={force => requestDocumentAnalysis.mutate({ propertyId: property.id, force })}
+        />
 
         {/* AI Evaluation */}
         <section aria-labelledby="ai-heading" className="overflow-hidden rounded-2xl">

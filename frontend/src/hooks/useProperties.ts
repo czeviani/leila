@@ -7,11 +7,11 @@ export const useProperties = (params: Record<string, string | number | undefined
     queryFn: () => api.properties.list(params),
   })
 
-export const useCities = (search: string) =>
+export const useCities = (search: string, states: string[]) =>
   useQuery({
-    queryKey: ['cities', search],
-    queryFn: () => api.properties.cities(search),
-    enabled: search.trim().length >= 2,
+    queryKey: ['cities', search, states],
+    queryFn: () => api.properties.cities(search, states),
+    enabled: states.length > 0 || search.trim().length >= 2,
     staleTime: 1000 * 60 * 10,
   })
 
@@ -27,6 +27,26 @@ export const useProperty = (id: string) =>
     },
     refetchIntervalInBackground: true,
   })
+
+export const useDocumentAnalysis = (propertyId: string) =>
+  useQuery({
+    queryKey: ['document-analysis', propertyId],
+    queryFn: () => api.properties.documentAnalysis(propertyId),
+    enabled: Boolean(propertyId),
+    refetchInterval: query => query.state.data?.status === 'processing' ? 2500 : false,
+  })
+
+export const useRequestDocumentAnalysis = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ propertyId, force = false }: { propertyId: string; force?: boolean }) =>
+      api.properties.requestDocumentAnalysis(propertyId, force),
+    onSuccess: data => {
+      qc.setQueryData(['document-analysis', data.property_id], data)
+      qc.invalidateQueries({ queryKey: ['property', data.property_id] })
+    },
+  })
+}
 
 export const useFilters = () =>
   useQuery({

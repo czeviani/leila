@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { SlidersHorizontal, X, Search, MapPin, ShoppingCart, Gavel, Users, Mail, Tag, Sparkles, Clock, ShieldCheck, CircleDot } from 'lucide-react'
 import { PropertyFilters } from '../../lib/api'
-import { useFilters, useSaveFilters, useCities } from '../../hooks/useProperties'
+import { useFilters, useSaveFilters, useCities, useSources } from '../../hooks/useProperties'
 
 const PROPERTY_TYPES = ['apartamento', 'casa', 'terreno', 'loja', 'galpão', 'sala', 'sobrado']
 const UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
@@ -29,22 +29,33 @@ const URGENCY_OPTIONS = [
   { label: '90 dias', value: 90 },
 ]
 
+const AREA_CLASSIFICATIONS = [
+  { value: 'nobre', label: 'Nobre' },
+  { value: 'intermediário', label: 'Intermediária' },
+  { value: 'popular', label: 'Popular' },
+  { value: 'comunidade', label: 'Comunidade' },
+  { value: 'indefinido', label: 'Não classificada' },
+]
+
 interface Props {
   onFilterChange: (params: Record<string, string | number | undefined>) => void
 }
 
 function filtersToParams(filters: PropertyFilters): Record<string, string | number | undefined> {
   const params: Record<string, string | number | undefined> = {}
-  if (filters.price_min) params.price_min = filters.price_min
-  if (filters.price_max) params.price_max = filters.price_max
+  if (filters.price_min != null) params.price_min = filters.price_min
+  if (filters.price_max != null) params.price_max = filters.price_max
   if (filters.states?.length) params.state = filters.states.join(',')
   if (filters.cities?.length) params.city = filters.cities.join(',')
   if (filters.property_types?.length) params.type = filters.property_types.join(',')
-  if (filters.discount_min) params.discount_min = filters.discount_min
+  if (filters.discount_min != null) params.discount_min = filters.discount_min
   if (filters.modality_categories?.length) params.modality = filters.modality_categories.join(',')
   if (filters.area_classifications?.length) params.area_classification = filters.area_classifications.join(',')
   if (filters.days_until_auction_max) params.days_until_auction_max = filters.days_until_auction_max
   if (filters.has_evaluation) params.has_evaluation = 'true'
+  if (filters.area_min != null) params.area_min = filters.area_min
+  if (filters.area_max != null) params.area_max = filters.area_max
+  if (filters.source_ids?.length) params.source = filters.source_ids.join(',')
   return params
 }
 
@@ -66,6 +77,9 @@ export default function FilterPanel({ onFilterChange }: Props) {
   const [discountMin, setDiscountMin] = useState('')
   const [selectedModalities, setSelectedModalities] = useState<string[]>([])
   const [selectedAreaClassifications, setSelectedAreaClassifications] = useState<string[]>([])
+  const [areaMin, setAreaMin] = useState('')
+  const [areaMax, setAreaMax] = useState('')
+  const [selectedSources, setSelectedSources] = useState<string[]>([])
   const [daysUntilAuction, setDaysUntilAuction] = useState<number | null>(null)
   const [hasEvaluation, setHasEvaluation] = useState(false)
   const [verifiedOnly, setVerifiedOnly] = useState(false)
@@ -74,7 +88,8 @@ export default function FilterPanel({ onFilterChange }: Props) {
 
   const [citySearch, setCitySearch] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const { data: citySuggestions = [] } = useCities(citySearch)
+  const { data: citySuggestions = [], isFetching: citiesLoading } = useCities(citySearch, selectedStates)
+  const { data: sources = [] } = useSources()
 
   useEffect(() => {
     if (!savedFilters || initialApplied.current) return
@@ -89,6 +104,9 @@ export default function FilterPanel({ onFilterChange }: Props) {
     if (savedFilters.area_classifications?.length) setSelectedAreaClassifications(savedFilters.area_classifications)
     if (savedFilters.days_until_auction_max) setDaysUntilAuction(savedFilters.days_until_auction_max)
     if (savedFilters.has_evaluation) setHasEvaluation(savedFilters.has_evaluation)
+    if (savedFilters.area_min != null) setAreaMin(String(savedFilters.area_min))
+    if (savedFilters.area_max != null) setAreaMax(String(savedFilters.area_max))
+    if (savedFilters.source_ids?.length) setSelectedSources(savedFilters.source_ids)
 
     const params = filtersToParams(savedFilters)
     if (Object.keys(params).length > 0) onFilterChange(params)
@@ -125,9 +143,15 @@ export default function FilterPanel({ onFilterChange }: Props) {
     cityInputRef.current?.focus()
   }
   const removeCity = (city: string) => setSelectedCities(prev => prev.filter(c => c !== city))
-  const toggleState = (uf: string) => setSelectedStates(prev => prev.includes(uf) ? prev.filter(s => s !== uf) : [...prev, uf])
+  const toggleState = (uf: string) => {
+    setSelectedStates(prev => prev.includes(uf) ? prev.filter(s => s !== uf) : [...prev, uf])
+    setSelectedCities([])
+    setCitySearch('')
+  }
   const toggleType = (t: string) => setSelectedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
   const toggleModality = (m: string) => setSelectedModalities(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m])
+  const toggleAreaClassification = (value: string) => setSelectedAreaClassifications(prev => prev.includes(value) ? prev.filter(item => item !== value) : [...prev, value])
+  const toggleSource = (value: string) => setSelectedSources(prev => prev.includes(value) ? prev.filter(item => item !== value) : [...prev, value])
 
   const applyRegion = (regionKey: string) => {
     const region = REGIONS[regionKey]
@@ -138,6 +162,8 @@ export default function FilterPanel({ onFilterChange }: Props) {
     } else {
       setSelectedStates(prev => [...new Set([...prev, ...region.states])])
     }
+    setSelectedCities([])
+    setCitySearch('')
   }
 
   const isRegionActive = (regionKey: string) => {
@@ -157,6 +183,9 @@ export default function FilterPanel({ onFilterChange }: Props) {
       area_classifications: selectedAreaClassifications,
       days_until_auction_max: daysUntilAuction,
       has_evaluation: hasEvaluation,
+      area_min: areaMin ? Number(areaMin) : null,
+      area_max: areaMax ? Number(areaMax) : null,
+      source_ids: selectedSources,
     }
     saveFilters.mutate(filters)
     onFilterChange({
@@ -173,11 +202,13 @@ export default function FilterPanel({ onFilterChange }: Props) {
     setSelectedCities([]); setSelectedTypes([]); setDiscountMin('')
     setCitySearch(''); setSelectedModalities([])
     setSelectedAreaClassifications([]); setDaysUntilAuction(null); setHasEvaluation(false)
+    setAreaMin(''); setAreaMax(''); setSelectedSources([])
     setVerifiedOnly(false); setQualityOnly(false); setOccupancy('')
     const empty: PropertyFilters = {
       price_min: null, price_max: null, states: [], cities: [], property_types: [],
       discount_min: null, modality_categories: [], area_classifications: [],
       days_until_auction_max: null, has_evaluation: false,
+      area_min: null, area_max: null, source_ids: [],
     }
     saveFilters.mutate(empty)
     onFilterChange({})
@@ -188,10 +219,12 @@ export default function FilterPanel({ onFilterChange }: Props) {
     selectedStates.length + selectedCities.length + selectedTypes.length +
     (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (discountMin ? 1 : 0) +
     selectedModalities.length +
+    selectedAreaClassifications.length + selectedSources.length +
+    (areaMin ? 1 : 0) + (areaMax ? 1 : 0) +
     (daysUntilAuction ? 1 : 0) + (hasEvaluation ? 1 : 0) +
     (verifiedOnly ? 1 : 0) + (qualityOnly ? 1 : 0) + (occupancy ? 1 : 0)
 
-  const filteredSuggestions = citySuggestions.filter(c => !selectedCities.includes(c))
+  const filteredSuggestions = citySuggestions.filter(city => !selectedCities.includes(city.name))
 
   return (
     <div className="relative" ref={panelRef}>
@@ -245,6 +278,22 @@ export default function FilterPanel({ onFilterChange }: Props) {
               </button>
             </div>
           </section>
+
+          <div>
+            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500">Fonte do imóvel</p>
+            <div className="flex flex-wrap gap-1.5">
+              {sources.filter(source => source.active).map(source => (
+                <button
+                  type="button"
+                  key={source.id}
+                  onClick={() => toggleSource(source.id)}
+                  className={`min-h-10 rounded-lg border px-3 text-xs font-semibold transition ${selectedSources.includes(source.id) ? 'border-[#176B87] bg-[#176B87] text-white' : 'border-slate-200 text-slate-600 hover:border-[#176B87]'}`}
+                >
+                  {source.name}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div>
             <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500">Ocupação</p>
@@ -338,6 +387,23 @@ export default function FilterPanel({ onFilterChange }: Props) {
             </div>
           </div>
 
+          <div>
+            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500">Classificação regional</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {AREA_CLASSIFICATIONS.map(option => (
+                <button
+                  type="button"
+                  key={option.value}
+                  onClick={() => toggleAreaClassification(option.value)}
+                  className={`min-h-10 rounded-lg border px-3 text-left text-xs font-semibold transition ${selectedAreaClassifications.includes(option.value) ? 'border-[#176B87] bg-[#eaf4f5] text-[#176B87]' : 'border-slate-200 text-slate-600 hover:border-[#176B87]'}`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-400">Estimativa por localização e valor de avaliação por m².</p>
+          </div>
+
           {/* ── Faixa de Preço ─────────────────────────────── */}
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Faixa de Preço</p>
@@ -369,6 +435,47 @@ export default function FilterPanel({ onFilterChange }: Props) {
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 pointer-events-none">%</span>
             </div>
+          </div>
+
+          <div>
+            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500">Metragem</p>
+            <div className="flex gap-2">
+              <label className="flex-1">
+                <span className="sr-only">Área mínima</span>
+                <input
+                  type="number"
+                  min="0"
+                  inputMode="decimal"
+                  placeholder="Mín. m²"
+                  value={areaMin}
+                  onChange={event => setAreaMin(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-[#176B87] focus:bg-white"
+                />
+              </label>
+              <label className="flex-1">
+                <span className="sr-only">Área máxima</span>
+                <input
+                  type="number"
+                  min="0"
+                  inputMode="decimal"
+                  placeholder="Máx. m²"
+                  value={areaMax}
+                  onChange={event => setAreaMax(event.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-[#176B87] focus:bg-white"
+                />
+              </label>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {[
+                ['Até 50 m²', '', '50'],
+                ['50–100 m²', '50', '100'],
+                ['100–200 m²', '100', '200'],
+                ['200+ m²', '200', ''],
+              ].map(([label, min, max]) => (
+                <button type="button" key={label} onClick={() => { setAreaMin(min); setAreaMax(max) }} className="rounded-full border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 transition hover:border-[#176B87] hover:text-[#176B87]">{label}</button>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] text-slate-400">Usa área útil quando disponível; caso contrário, a área total.</p>
           </div>
 
           {/* ── Estados ────────────────────────────────────── */}
@@ -411,7 +518,7 @@ export default function FilterPanel({ onFilterChange }: Props) {
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
                 ref={cityInputRef}
-                placeholder="Digite o nome da cidade..."
+                placeholder={selectedStates.length ? 'Buscar nas cidades disponíveis...' : 'Selecione um estado ou digite a cidade...'}
                 value={citySearch}
                 onChange={e => { setCitySearch(e.target.value); setShowSuggestions(true) }}
                 onFocus={() => setShowSuggestions(true)}
@@ -422,22 +529,29 @@ export default function FilterPanel({ onFilterChange }: Props) {
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden max-h-40 overflow-y-auto">
                   {filteredSuggestions.map(city => (
                     <button
-                      key={city}
-                      onMouseDown={() => addCity(city)}
-                      className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
+                      key={city.name}
+                      onMouseDown={() => addCity(city.name)}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
                     >
                       <MapPin size={11} className="text-slate-400 flex-shrink-0" />
-                      {city}
+                      <span className="min-w-0 flex-1 truncate">{city.name}</span>
+                      <span className="font-mono text-[11px] text-slate-400">{city.count.toLocaleString('pt-BR')}</span>
                     </button>
                   ))}
                 </div>
               )}
-              {showSuggestions && citySearch.trim().length >= 2 && filteredSuggestions.length === 0 && (
+              {showSuggestions && (selectedStates.length > 0 || citySearch.trim().length >= 2) && filteredSuggestions.length === 0 && !citiesLoading && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-10 px-3 py-2.5">
                   <p className="text-xs text-slate-400">Nenhuma cidade encontrada.</p>
                 </div>
               )}
+              {showSuggestions && citiesLoading && (
+                <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-lg">
+                  <p className="text-xs text-slate-400">Carregando cidades disponíveis…</p>
+                </div>
+              )}
             </div>
+            {selectedStates.length > 0 && <p className="mt-2 text-[11px] text-slate-400">A lista considera somente imóveis ativos nos estados selecionados.</p>}
           </div>
 
           {/* ── Tipo de Imóvel ─────────────────────────────── */}

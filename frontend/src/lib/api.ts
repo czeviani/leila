@@ -59,6 +59,7 @@ export interface Property {
   bathrooms: number | null
   parking_spots: number | null
   useful_area_m2: number | null
+  filter_area_m2: number | null
   is_occupied: boolean | null
   heat_score: number | null            // calculado no banco via trigger (migration 007)
   is_active: boolean
@@ -70,6 +71,7 @@ export interface Property {
   scraped_at: string
   leila_sources?: Pick<Source, 'name' | 'icon_url' | 'url'>
   leila_evaluations?: Evaluation | null
+  leila_document_analyses?: DocumentAnalysisRecord | null
 }
 
 export interface PropertiesResponse {
@@ -91,6 +93,44 @@ export interface PropertyFilters {
   area_classifications: string[]
   days_until_auction_max: number | null
   has_evaluation: boolean
+  area_min: number | null
+  area_max: number | null
+  source_ids: string[]
+}
+
+export interface CityOption {
+  name: string
+  count: number
+}
+
+export type DocumentFindingStatus = 'allowed' | 'not_allowed' | 'conditional' | 'not_found'
+
+export interface DocumentAnalysisData {
+  summary: string
+  fgts: { status: DocumentFindingStatus; note: string }
+  financing: { status: DocumentFindingStatus; note: string }
+  occupancy: { status: 'occupied' | 'vacant' | 'unknown'; note: string }
+  condominium_debt: { status: DocumentFindingStatus; responsibility: string; note: string }
+  tax_debt: { status: DocumentFindingStatus; responsibility: string; note: string }
+  payment_methods: string[]
+  risks: Array<{ severity: 'high' | 'medium' | 'low'; title: string; detail: string }>
+  confidence: 'high' | 'medium' | 'low'
+}
+
+export interface DocumentAnalysisRecord {
+  id?: string
+  property_id: string
+  status: 'not_started' | 'processing' | 'done' | 'error' | 'unavailable'
+  source_url?: string
+  provider?: string | null
+  model?: string | null
+  tags?: string[]
+  analysis?: DocumentAnalysisData | null
+  evidence?: Array<{ field: string; excerpt: string }>
+  input_tokens?: number
+  output_tokens?: number
+  error_message?: string | null
+  analyzed_at?: string | null
 }
 
 export interface Favorite {
@@ -268,7 +308,18 @@ export const api = {
       return apiFetch<PropertiesResponse>(`/api/properties?${q}`)
     },
     get: (id: string) => apiFetch<Property>(`/api/properties/${id}`),
-    cities: (search: string) => apiFetch<string[]>(`/api/properties/cities?search=${encodeURIComponent(search)}`),
+    cities: (search: string, states: string[] = []) => {
+      const q = new URLSearchParams()
+      if (search.trim()) q.set('search', search.trim())
+      if (states.length) q.set('state', states.join(','))
+      return apiFetch<CityOption[]>(`/api/properties/cities?${q}`)
+    },
+    documentAnalysis: (id: string) => apiFetch<DocumentAnalysisRecord>(`/api/properties/${id}/document-analysis`),
+    requestDocumentAnalysis: (id: string, force = false) =>
+      apiFetch<DocumentAnalysisRecord>(`/api/properties/${id}/document-analysis`, {
+        method: 'POST',
+        body: JSON.stringify({ force }),
+      }),
   },
 
   // ── Filters ──────────────────────────────────────────────────────────────
