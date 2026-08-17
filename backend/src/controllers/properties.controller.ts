@@ -14,6 +14,7 @@ const SORT_FIELDS: Record<string, string> = {
 }
 
 const AVAILABILITY_STATUSES = new Set(['available', 'suspect', 'unavailable'])
+const AREA_CLASSIFICATIONS = new Set(['nobre', 'intermediário', 'popular', 'comunidade', 'indefinido'])
 
 const parseAvailabilityStatuses = (value: unknown): string[] | null => {
   if (value === undefined) return []
@@ -73,7 +74,8 @@ const summarizePageTrust = (properties: TrustProperty[], freshnessHours: number)
 
 export const getProperties = async (req: Request, res: Response) => {
   const {
-    state, city, type, price_min, price_max, discount_min, modality,
+    state, city, type, source, price_min, price_max, discount_min, modality,
+    area_min, area_max,
     search, has_evaluation, area_classification, days_until_auction_max,
     availability_status, availability, status, verified_within_hours, quality_min, occupied,
     page = 1, limit = 50,
@@ -83,6 +85,18 @@ export const getProperties = async (req: Request, res: Response) => {
 
   const sortField = SORT_FIELDS[String(sort_by)] ?? 'heat_score'
   const ascending = String(sort_order) === 'asc'
+  const areaMinimum = parseBoundedNumber(area_min, 0, 1_000_000)
+  const areaMaximum = parseBoundedNumber(area_max, 0, 1_000_000)
+
+  if (area_min !== undefined && areaMinimum === null) {
+    return res.status(400).json({ error: 'area_min deve ser um número entre 0 e 1.000.000' })
+  }
+  if (area_max !== undefined && areaMaximum === null) {
+    return res.status(400).json({ error: 'area_max deve ser um número entre 0 e 1.000.000' })
+  }
+  if (areaMinimum !== null && areaMaximum !== null && areaMinimum > areaMaximum) {
+    return res.status(400).json({ error: 'A área mínima não pode ser maior que a área máxima' })
+  }
 
   const requestedAvailability = availability_status ?? availability ?? status
   const availabilityStatuses = parseAvailabilityStatuses(requestedAvailability)
@@ -104,7 +118,7 @@ export const getProperties = async (req: Request, res: Response) => {
 
   let query = req.supabase!
     .from('leila_properties')
-    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*)', { count: 'exact' })
+    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(status, tags, analysis, analyzed_at)', { count: 'exact' })
     .order(sortField, { ascending, nullsFirst: false })
     .range(offset, offset + Number(limit) - 1)
 
@@ -142,11 +156,7 @@ export const getProperties = async (req: Request, res: Response) => {
   }
   if (city) {
     const cities = String(city).split(',').map(c => c.trim()).filter(Boolean)
-    if (cities.length === 1) {
-      query = query.ilike('city', `%${cities[0]}%`)
-    } else {
-      query = query.or(cities.map(c => `city.ilike.%${c}%`).join(','))
-    }
+    query = cities.length === 1 ? query.eq('city', cities[0]) : query.in('city', cities)
   }
   if (type) {
     const types = String(type).split(',').map(t => t.trim()).filter(Boolean)
@@ -155,6 +165,12 @@ export const getProperties = async (req: Request, res: Response) => {
   if (price_min) query = query.gte('auction_price', Number(price_min))
   if (price_max) query = query.lte('auction_price', Number(price_max))
   if (discount_min) query = query.gte('discount_pct', Number(discount_min))
+  if (areaMinimum !== null) query = query.gte('filter_area_m2', areaMinimum)
+  if (areaMaximum !== null) query = query.lte('filter_area_m2', areaMaximum)
+  if (source) {
+    const sources = String(source).split(',').map(value => value.trim()).filter(Boolean)
+    query = sources.length === 1 ? query.eq('source_id', sources[0]) : query.in('source_id', sources)
+  }
   if (modality) {
     const modalities = String(modality).split(',').map(m => m.trim()).filter(Boolean)
     query = modalities.length === 1 ? query.eq('auction_modality', modalities[0]) : query.in('auction_modality', modalities)
@@ -174,6 +190,9 @@ export const getProperties = async (req: Request, res: Response) => {
   // Filtro por classificação de área
   if (area_classification) {
     const areas = String(area_classification).split(',').map(a => a.trim()).filter(Boolean)
+    if (areas.some(area => !AREA_CLASSIFICATIONS.has(area))) {
+      return res.status(400).json({ error: 'Classificação regional inválida' })
+    }
     query = areas.length === 1 ? query.eq('area_classification', areas[0]) : query.in('area_classification', areas)
   }
 
@@ -200,21 +219,25 @@ export const getProperties = async (req: Request, res: Response) => {
 }
 
 export const getPropertyCities = async (req: Request, res: Response) => {
-  const { search } = req.query
-  if (!search || String(search).trim().length < 2) return res.json([])
+  const { search, state } = req.query
+  const states = state
+    ? String(state).split(',').map(value => value.trim().toUpperCase()).filter(Boolean)
+    : []
+  const normalizedSearch = search ? String(search).trim() : ''
 
-  const { data, error } = await req.supabase!
-    .from('leila_properties')
-    .select('city')
-    .eq('is_active', true)
-    .ilike('city', `%${String(search).trim()}%`)
-    .not('city', 'is', null)
-    .limit(300)
+  if (states.length === 0 && normalizedSearch.length < 2) return res.json([])
+
+  const { data, error } = await req.supabase!.rpc('leila_filter_cities', {
+    p_states: states,
+    p_search: normalizedSearch || null,
+  })
 
   if (error) return res.status(500).json({ error: error.message })
 
-  const cities = [...new Set((data ?? []).map((r: { city: string }) => r.city).filter(Boolean))].sort().slice(0, 30)
-  return res.json(cities)
+  return res.json((data ?? []).map((row: { name: string; property_count: number | string }) => ({
+    name: row.name,
+    count: Number(row.property_count),
+  })))
 }
 
 export const getPropertyById = async (req: Request, res: Response) => {
@@ -222,7 +245,7 @@ export const getPropertyById = async (req: Request, res: Response) => {
 
   const { data, error } = await supabaseAdmin
     .from('leila_properties')
-    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*)')
+    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(*)')
     .eq('id', id)
     .single()
 

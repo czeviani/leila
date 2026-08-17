@@ -2,7 +2,7 @@ import { memo } from 'react'
 import {
   MapPin, Ruler, TrendingDown, ExternalLink, AlertTriangle,
   Check, Sparkles, ShoppingCart, Gavel, Users, Mail, Tag,
-  Bed, Bath, Car, X,
+  Bed, Bath, Car, Landmark, X,
 } from 'lucide-react'
 import { Property } from '../../lib/api'
 import { getHeatInfo, daysUntilAuction } from '../../lib/heatScore'
@@ -105,7 +105,9 @@ export default memo(function PropertyRow({ property, isFavorite, onToggleFavorit
   const typeLabel = property.property_type ? (TYPE_LABELS[property.property_type] ?? property.property_type) : null
   const displayArea = property.useful_area_m2 ?? property.area_m2
   const pricePerM2 = displayArea && displayArea > 0 ? property.auction_price / displayArea : null
-  const effectiveArea = evaluation?.area_classification ?? property.area_classification
+  const effectiveArea = evaluation?.area_classification && evaluation.area_classification !== 'indefinido'
+    ? evaluation.area_classification
+    : property.area_classification
   const areaConf = effectiveArea && effectiveArea !== 'indefinido' ? AREA_CONFIG[effectiveArea] : null
 
   return (
@@ -176,6 +178,9 @@ export default memo(function PropertyRow({ property, isFavorite, onToggleFavorit
         <p className="text-xs text-slate-700 dark:text-slate-300 font-medium truncate">{property.title}</p>
         {/* Metrics inline */}
         <div className="flex items-center gap-2 mt-0.5">
+          <span className="flex items-center gap-0.5 text-[10px] font-semibold text-[#176B87]">
+            <Landmark size={9} />{property.leila_sources?.name ?? property.source_id}
+          </span>
           {property.bedrooms != null && (
             <span className="flex items-center gap-0.5 text-[10px] text-slate-400">
               <Bed size={9} />{property.bedrooms}

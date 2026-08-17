@@ -1,5 +1,11 @@
 import { Request, Response } from 'express'
 
+const FILTER_FIELDS = [
+  'price_min', 'price_max', 'states', 'cities', 'property_types', 'discount_min',
+  'modality_categories', 'area_classifications', 'days_until_auction_max',
+  'has_evaluation', 'area_min', 'area_max', 'source_ids',
+] as const
+
 export const getFilters = async (req: Request, res: Response) => {
   const userId = req.user!.id
 
@@ -20,12 +26,23 @@ export const getFilters = async (req: Request, res: Response) => {
     cities: [],
     property_types: [],
     discount_min: null,
+    modality_categories: [],
+    area_classifications: [],
+    days_until_auction_max: null,
+    has_evaluation: false,
+    area_min: null,
+    area_max: null,
+    source_ids: [],
   })
 }
 
 export const upsertFilters = async (req: Request, res: Response) => {
   const userId = req.user!.id
-  const body = req.body
+  const body = Object.fromEntries(
+    FILTER_FIELDS
+      .filter(field => Object.prototype.hasOwnProperty.call(req.body ?? {}, field))
+      .map(field => [field, req.body[field]])
+  )
 
   const { data, error } = await req.supabase!
     .from('leila_filters')

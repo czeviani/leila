@@ -12,6 +12,7 @@ Categorias:
   indefinido    → dados insuficientes para classificar
 """
 
+import unicodedata
 from typing import Optional
 
 # ── Cidades de alto valor (alçados thresholds de preço) ──────────────────────
@@ -70,24 +71,11 @@ COMUNIDADE_KEYWORDS = [
     # Termos genéricos (funcionam em qualquer cidade)
     'favela', 'morro do ', 'morro da ', 'comunidade do ', 'comunidade da ',
     'comunidade dos ', 'cohab ', 'conjunto habitacional coh',
-    'nucleo habitacional', 'núcleo habitacional',
+    'nucleo habitacional', 'núcleo habitacional', 'ocupação irregular',
     # São Paulo
     'paraisópolis', 'heliópolis', 'heliopolis',
-    'capão redondo', 'jardim ângela', 'jardim angela',
-    'brasilândia', 'cidade tiradentes', 'cidade ademar',
-    'jardim são luís', 'jardim são luis',
-    'grajaú', 'lajeado', 'guaianazes', 'itaquera',
-    'vila canindé', 'vila nova cachoeirinha',
-    'jardim keralux', 'jardim helena',
     # Rio de Janeiro
     'rocinha', 'complexo do alemão', 'complexo do alemao',
-    'vigário geral', 'vigario geral', 'jacarezinho',
-    'manguinhos', 'maré', 'mare', 'cidade de deus',
-    'acari', 'anchieta', 'cavalcanti', 'costa barros',
-    # Outras capitais
-    'estrutural', 'sol nascente', 'ceilândia', 'ceilandia',
-    'itapuã', 'itapua', 'pau da lima', 'subúrbio ferroviário',
-    'suburbio ferroviario',
 ]
 
 # ── Thresholds de preço/m² por tier de cidade ────────────────────────────────
@@ -104,13 +92,26 @@ THRESHOLDS = {
 }
 
 
+def _normalize_text(value: str) -> str:
+    return "".join(
+        char for char in unicodedata.normalize("NFKD", value.lower().strip())
+        if not unicodedata.combining(char)
+    )
+
+
+HIGH_VALUE_CITIES_NORMALIZED = {_normalize_text(city) for city in HIGH_VALUE_CITIES}
+MID_VALUE_CITIES_NORMALIZED = {_normalize_text(city) for city in MID_VALUE_CITIES}
+NOBRE_KEYWORDS_NORMALIZED = {_normalize_text(keyword) for keyword in NOBRE_KEYWORDS}
+COMUNIDADE_KEYWORDS_NORMALIZED = {_normalize_text(keyword) for keyword in COMUNIDADE_KEYWORDS}
+
+
 def _city_tier(city: Optional[str]) -> str:
     if not city:
         return 'low'
-    c = city.lower().strip()
-    if c in HIGH_VALUE_CITIES:
+    c = _normalize_text(city)
+    if c in HIGH_VALUE_CITIES_NORMALIZED:
         return 'high'
-    if c in MID_VALUE_CITIES:
+    if c in MID_VALUE_CITIES_NORMALIZED:
         return 'mid'
     return 'low'
 
@@ -123,7 +124,9 @@ def _price_based(ptam_m2: float, tier: str) -> str:
         return 'intermediário'
     if ptam_m2 >= pop_min:
         return 'popular'
-    return 'comunidade'
+    # Preço baixo isoladamente não prova que o endereço está em comunidade.
+    # Essa categoria exige um sinal explícito no endereço.
+    return 'popular'
 
 
 def classify_area(
@@ -137,15 +140,15 @@ def classify_area(
     Retorna a classificação heurística de área.
     Pode ser sobrescrita pela avaliação IA posteriormente.
     """
-    text = f"{address or ''} {city or ''}".lower()
+    text = _normalize_text(f"{address or ''} {city or ''}")
 
     # 1. Keywords de comunidade têm prioridade máxima — são muito específicas
-    for kw in COMUNIDADE_KEYWORDS:
+    for kw in COMUNIDADE_KEYWORDS_NORMALIZED:
         if kw in text:
             return 'comunidade'
 
     # 2. Keywords de área nobre
-    for kw in NOBRE_KEYWORDS:
+    for kw in NOBRE_KEYWORDS_NORMALIZED:
         if kw in text:
             return 'nobre'
 
