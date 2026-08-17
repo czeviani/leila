@@ -1,9 +1,9 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { ArrowRight, Check, Heart, MapPin, Scale, X } from 'lucide-react'
+import { ArrowRight, Check, Heart, MapPin, Scale, Sparkles, X } from 'lucide-react'
 import { Property } from '../../lib/api'
 import {
   confidenceLabel, effectiveArea, effectivePricePerM2, neighborhoodInsight,
-  neighborhoodName, opportunityScore,
+  neighborhoodName, opportunityFactors, opportunityScore,
 } from '../../lib/opportunityTable'
 
 const money = (value: number | null | undefined) => value == null ? '—' : value.toLocaleString('pt-BR', {
@@ -25,6 +25,19 @@ interface Props {
 
 export default function ComparisonTray({ properties, favoriteIds, onRemove, onClear, onOpenProperty, onToggleFavorite }: Props) {
   if (!properties.length) return null
+
+  const metric = (values: Array<number | null>, direction: 'min' | 'max') => {
+    const valid = values.filter((value): value is number => value != null && Number.isFinite(value))
+    return valid.length ? (direction === 'min' ? Math.min(...valid) : Math.max(...valid)) : null
+  }
+  const best = {
+    score: metric(properties.map(opportunityScore), 'max'),
+    price: metric(properties.map(property => property.auction_price), 'min'),
+    area: metric(properties.map(effectiveArea), 'max'),
+    sqm: metric(properties.map(effectivePricePerM2), 'min'),
+    discount: metric(properties.map(property => property.discount_pct), 'max'),
+    neighborhood: metric(properties.map(property => neighborhoodInsight(property).score), 'max'),
+  }
 
   return (
     <Dialog.Root>
@@ -53,17 +66,17 @@ export default function ComparisonTray({ properties, favoriteIds, onRemove, onCl
               <CompareLabel label="Imóvel" />
               {properties.map(property => <div key={`${property.id}-head`} className="rounded-2xl border border-[#d5e2e2] bg-white p-4"><p className="text-xs font-bold uppercase tracking-wider text-[#176B87]">{property.leila_sources?.name ?? property.source_id}</p><h3 className="mt-1 line-clamp-2 font-bold text-[#163447]">{property.title}</h3><p className="mt-2 flex items-center gap-1 text-xs text-slate-500"><MapPin size={12} />{neighborhoodName(property) ?? property.city ?? 'Localização pendente'}</p></div>)}
               <CompareLabel label="Oportunidade" />
-              {properties.map(property => <CompareValue key={`${property.id}-score`} emphasis>{opportunityScore(property)} <small>/ 100</small></CompareValue>)}
+              {properties.map(property => { const score = opportunityScore(property); return <CompareValue key={`${property.id}-score`} emphasis best={score === best.score}><span>{score} <small>/ 100</small></span><span className="mt-1 block font-sans text-[10px] font-semibold text-slate-500">{opportunityFactors(property).join(' · ')}</span></CompareValue> })}
               <CompareLabel label="Lance" />
-              {properties.map(property => <CompareValue key={`${property.id}-price`} emphasis>{money(property.auction_price)}</CompareValue>)}
+              {properties.map(property => <CompareValue key={`${property.id}-price`} emphasis best={property.auction_price === best.price}>{money(property.auction_price)}</CompareValue>)}
               <CompareLabel label="Área" />
-              {properties.map(property => <CompareValue key={`${property.id}-area`}>{effectiveArea(property) ? `${Math.round(effectiveArea(property)!)} m²` : '—'}</CompareValue>)}
+              {properties.map(property => { const area = effectiveArea(property); return <CompareValue key={`${property.id}-area`} best={area != null && area === best.area}>{area ? `${Math.round(area)} m²` : '—'}</CompareValue> })}
               <CompareLabel label="Preço por m²" />
-              {properties.map(property => <CompareValue key={`${property.id}-sqm`}>{money(effectivePricePerM2(property))}</CompareValue>)}
+              {properties.map(property => { const sqm = effectivePricePerM2(property); return <CompareValue key={`${property.id}-sqm`} best={sqm != null && sqm === best.sqm}>{money(sqm)}</CompareValue> })}
               <CompareLabel label="Desconto" />
-              {properties.map(property => <CompareValue key={`${property.id}-discount`} positive={(property.discount_pct ?? 0) >= 30}>{property.discount_pct != null ? `${property.discount_pct.toFixed(0)}%` : '—'}</CompareValue>)}
+              {properties.map(property => <CompareValue key={`${property.id}-discount`} best={property.discount_pct != null && property.discount_pct === best.discount}>{property.discount_pct != null ? `${property.discount_pct.toFixed(0)}%` : '—'}</CompareValue>)}
               <CompareLabel label="Bairro" />
-              {properties.map(property => { const data = neighborhoodInsight(property); return <CompareValue key={`${property.id}-neighborhood`}>{data.score != null ? <span className="inline-flex items-center gap-2"><Scale size={14} />{data.score.toFixed(1)} · {confidenceLabel(data.confidence)}</span> : 'Dados insuficientes'}</CompareValue> })}
+              {properties.map(property => { const data = neighborhoodInsight(property); return <CompareValue key={`${property.id}-neighborhood`} best={data.score != null && data.score === best.neighborhood}>{data.score != null ? <span className="inline-flex items-center gap-2"><Scale size={14} />{data.score.toFixed(1)} · {confidenceLabel(data.confidence)}</span> : 'Dados insuficientes'}</CompareValue> })}
               <CompareLabel label="Ocupação" />
               {properties.map(property => <CompareValue key={`${property.id}-occupied`}>{property.is_occupied == null ? 'Não informada' : property.is_occupied ? 'Ocupado' : <span className="inline-flex items-center gap-1 text-[#167261]"><Check size={14} />Desocupado</span>}</CompareValue>)}
               <CompareLabel label="FGTS" />
@@ -88,6 +101,6 @@ function CompareLabel({ label }: { label: string }) {
   return <div className="flex items-center rounded-xl bg-[#e3eeee] px-4 py-3 text-[10px] font-extrabold uppercase tracking-[.13em] text-[#53717b]">{label}</div>
 }
 
-function CompareValue({ children, emphasis, positive }: { children: React.ReactNode; emphasis?: boolean; positive?: boolean }) {
-  return <div className={`rounded-xl border border-[#dce6e6] bg-white px-4 py-3 ${emphasis ? 'num text-lg font-bold text-[#163447]' : 'text-sm font-semibold text-slate-600'} ${positive ? '!border-[#bcded5] !bg-[#edf8f5] !text-[#167261]' : ''}`}>{children}</div>
+function CompareValue({ children, emphasis, best }: { children: React.ReactNode; emphasis?: boolean; best?: boolean }) {
+  return <div className={`relative rounded-xl border px-4 py-3 ${emphasis ? 'num text-lg font-bold text-[#163447]' : 'text-sm font-semibold text-slate-600'} ${best ? 'border-[#79bdb4] bg-[#edf8f5] text-[#126553]' : 'border-[#dce6e6] bg-white'}`}>{best && <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-[#d7efe9] px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wider text-[#126553]"><Sparkles size={8} /> melhor</span>}{children}</div>
 }

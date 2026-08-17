@@ -15,7 +15,7 @@ export type OpportunityColumn =
 export type TableDensity = 'compact' | 'comfortable'
 
 export interface OpportunityTablePreferences {
-  version: 2
+  version: 3
   columns: OpportunityColumn[]
   density: TableDensity
 }
@@ -35,19 +35,19 @@ export const COLUMN_LABELS: Record<OpportunityColumn, string> = {
 
 export const DEFAULT_COLUMNS: OpportunityColumn[] = [
   'opportunity', 'location', 'property', 'area', 'price', 'pricePerM2',
-  'discount', 'neighborhood', 'status', 'deadline',
+  'discount', 'neighborhood',
 ]
 
-export const TABLE_PREFERENCES_KEY = 'leila_opportunity_table_v2'
+export const TABLE_PREFERENCES_KEY = 'leila_opportunity_table_v3'
 
 export function readTablePreferences(): OpportunityTablePreferences {
-  const fallback: OpportunityTablePreferences = { version: 2, columns: DEFAULT_COLUMNS, density: 'compact' }
+  const fallback: OpportunityTablePreferences = { version: 3, columns: DEFAULT_COLUMNS, density: 'compact' }
   try {
     const parsed = JSON.parse(localStorage.getItem(TABLE_PREFERENCES_KEY) || 'null') as Partial<OpportunityTablePreferences> | null
-    if (!parsed || parsed.version !== 2 || !Array.isArray(parsed.columns)) return fallback
+    if (!parsed || parsed.version !== 3 || !Array.isArray(parsed.columns)) return fallback
     const validColumns = parsed.columns.filter((column): column is OpportunityColumn => column in COLUMN_LABELS)
     return {
-      version: 2,
+      version: 3,
       columns: validColumns.length ? validColumns : DEFAULT_COLUMNS,
       density: parsed.density === 'comfortable' ? 'comfortable' : 'compact',
     }

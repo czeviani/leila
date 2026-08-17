@@ -4,6 +4,8 @@ const SORT_FIELDS: Record<string, string> = {
   opportunity_score: 'opportunity_score',
   heat_score: 'opportunity_score',
   neighborhood_score: 'neighborhood_score',
+  neighborhood: 'neighborhood',
+  property_type: 'property_type',
   price_per_m2: 'price_per_m2',
   discount_pct: 'discount_pct',
   auction_price: 'auction_price',
