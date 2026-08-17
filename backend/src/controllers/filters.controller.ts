@@ -4,6 +4,8 @@ const FILTER_FIELDS = [
   'price_min', 'price_max', 'states', 'cities', 'property_types', 'discount_min',
   'modality_categories', 'area_classifications', 'days_until_auction_max',
   'has_evaluation', 'area_min', 'area_max', 'source_ids',
+  'neighborhoods', 'price_per_m2_min', 'price_per_m2_max',
+  'opportunity_score_min', 'neighborhood_score_min',
 ] as const
 
 export const getFilters = async (req: Request, res: Response) => {
@@ -33,6 +35,11 @@ export const getFilters = async (req: Request, res: Response) => {
     area_min: null,
     area_max: null,
     source_ids: [],
+    neighborhoods: [],
+    price_per_m2_min: null,
+    price_per_m2_max: null,
+    opportunity_score_min: null,
+    neighborhood_score_min: null,
   })
 }
 

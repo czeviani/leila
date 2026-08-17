@@ -58,9 +58,10 @@ _USEFUL_AREA_PATTERNS = [
     r"(\d+[.,]\d+)\s*m[²2]?\s*(?:útil|privativa?|construída?)",
     r"(?:área\s*útil|área\s*privativa?|área\s*construída?)\s*(?:de\s*)?(\d+[.,]\d+)\s*m[²2]?",
     r"(\d+[.,]\d+)\s*m[²2]?\s*de\s*área\s*(?:útil|privativa?)",
-    # Formato Caixa: "47.20 de área privativa" (sem m²)
-    r"(\d+[.,]\d+)\s*de\s*área\s*(?:útil|privativa?|total|construída?)",
-    r"(?:área\s*útil|área\s*privativa?|área\s*total|área\s*construída?)[,\s]+(\d+[.,]\d+)",
+    # Formato Caixa: "47.20 de área privativa" (sem m²). Área total não é
+    # área útil: misturar as duas distorce R$/m² e o ranking de oportunidade.
+    r"(\d+[.,]\d+)\s*de\s*área\s*(?:útil|privativa?|construída?)",
+    r"(?:área\s*útil|área\s*privativa?|área\s*construída?)[,\s]+(\d+[.,]\d+)",
 ]
 
 # ---------------------------------------------------------------------------

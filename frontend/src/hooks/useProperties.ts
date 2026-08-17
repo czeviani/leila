@@ -7,12 +7,49 @@ export const useProperties = (params: Record<string, string | number | undefined
     queryFn: () => api.properties.list(params),
   })
 
+export const useDiscardedProperties = () =>
+  useQuery({
+    queryKey: ['discarded-properties'],
+    queryFn: api.properties.discarded,
+  })
+
+export const useDiscardProperty = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ propertyId, reason }: { propertyId: string; reason?: string }) =>
+      api.properties.discard(propertyId, reason),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['properties'] })
+      qc.invalidateQueries({ queryKey: ['discarded-properties'] })
+    },
+  })
+}
+
+export const useRestoreDiscardedProperty = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (propertyId: string) => api.properties.restore(propertyId),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['properties'] })
+      qc.invalidateQueries({ queryKey: ['discarded-properties'] })
+    },
+  })
+}
+
 export const useCities = (search: string, states: string[]) =>
   useQuery({
     queryKey: ['cities', search, states],
     queryFn: () => api.properties.cities(search, states),
     enabled: states.length > 0 || search.trim().length >= 2,
     staleTime: 1000 * 60 * 10,
+  })
+
+export const useNeighborhoods = (search: string, state?: string, city?: string) =>
+  useQuery({
+    queryKey: ['neighborhoods', search, state, city],
+    queryFn: () => api.properties.neighborhoods(search, state, city),
+    enabled: Boolean(state && city),
+    staleTime: 1000 * 60 * 15,
   })
 
 export const useProperty = (id: string) =>

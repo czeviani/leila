@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { SlidersHorizontal, X, Search, MapPin, ShoppingCart, Gavel, Users, Mail, Tag, Sparkles, Clock, ShieldCheck, CircleDot } from 'lucide-react'
 import { PropertyFilters } from '../../lib/api'
-import { useFilters, useSaveFilters, useCities, useSources } from '../../hooks/useProperties'
+import { useFilters, useSaveFilters, useCities, useNeighborhoods, useSources } from '../../hooks/useProperties'
 
 const PROPERTY_TYPES = ['apartamento', 'casa', 'terreno', 'loja', 'galpão', 'sala', 'sobrado']
 const UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
@@ -56,6 +56,11 @@ function filtersToParams(filters: PropertyFilters): Record<string, string | numb
   if (filters.area_min != null) params.area_min = filters.area_min
   if (filters.area_max != null) params.area_max = filters.area_max
   if (filters.source_ids?.length) params.source = filters.source_ids.join(',')
+  if (filters.neighborhoods?.length) params.neighborhood = filters.neighborhoods.join(',')
+  if (filters.price_per_m2_min != null) params.price_per_m2_min = filters.price_per_m2_min
+  if (filters.price_per_m2_max != null) params.price_per_m2_max = filters.price_per_m2_max
+  if (filters.opportunity_score_min != null) params.opportunity_score_min = filters.opportunity_score_min
+  if (filters.neighborhood_score_min != null) params.neighborhood_score_min = filters.neighborhood_score_min
   return params
 }
 
@@ -80,6 +85,11 @@ export default function FilterPanel({ onFilterChange }: Props) {
   const [areaMin, setAreaMin] = useState('')
   const [areaMax, setAreaMax] = useState('')
   const [selectedSources, setSelectedSources] = useState<string[]>([])
+  const [selectedNeighborhoods, setSelectedNeighborhoods] = useState<string[]>([])
+  const [pricePerM2Min, setPricePerM2Min] = useState('')
+  const [pricePerM2Max, setPricePerM2Max] = useState('')
+  const [opportunityScoreMin, setOpportunityScoreMin] = useState('')
+  const [neighborhoodScoreMin, setNeighborhoodScoreMin] = useState('')
   const [daysUntilAuction, setDaysUntilAuction] = useState<number | null>(null)
   const [hasEvaluation, setHasEvaluation] = useState(false)
   const [verifiedOnly, setVerifiedOnly] = useState(false)
@@ -88,7 +98,14 @@ export default function FilterPanel({ onFilterChange }: Props) {
 
   const [citySearch, setCitySearch] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [neighborhoodSearch, setNeighborhoodSearch] = useState('')
+  const [showNeighborhoodSuggestions, setShowNeighborhoodSuggestions] = useState(false)
   const { data: citySuggestions = [], isFetching: citiesLoading } = useCities(citySearch, selectedStates)
+  const { data: neighborhoodSuggestions = [], isFetching: neighborhoodsLoading } = useNeighborhoods(
+    neighborhoodSearch,
+    selectedStates.length === 1 ? selectedStates[0] : undefined,
+    selectedCities.length === 1 ? selectedCities[0] : undefined,
+  )
   const { data: sources = [] } = useSources()
 
   useEffect(() => {
@@ -107,6 +124,11 @@ export default function FilterPanel({ onFilterChange }: Props) {
     if (savedFilters.area_min != null) setAreaMin(String(savedFilters.area_min))
     if (savedFilters.area_max != null) setAreaMax(String(savedFilters.area_max))
     if (savedFilters.source_ids?.length) setSelectedSources(savedFilters.source_ids)
+    if (savedFilters.neighborhoods?.length) setSelectedNeighborhoods(savedFilters.neighborhoods)
+    if (savedFilters.price_per_m2_min != null) setPricePerM2Min(String(savedFilters.price_per_m2_min))
+    if (savedFilters.price_per_m2_max != null) setPricePerM2Max(String(savedFilters.price_per_m2_max))
+    if (savedFilters.opportunity_score_min != null) setOpportunityScoreMin(String(savedFilters.opportunity_score_min))
+    if (savedFilters.neighborhood_score_min != null) setNeighborhoodScoreMin(String(savedFilters.neighborhood_score_min))
 
     const params = filtersToParams(savedFilters)
     if (Object.keys(params).length > 0) onFilterChange(params)
@@ -140,18 +162,32 @@ export default function FilterPanel({ onFilterChange }: Props) {
     if (!selectedCities.includes(city)) setSelectedCities(prev => [...prev, city])
     setCitySearch('')
     setShowSuggestions(false)
+    setSelectedNeighborhoods([])
+    setNeighborhoodSearch('')
     cityInputRef.current?.focus()
   }
-  const removeCity = (city: string) => setSelectedCities(prev => prev.filter(c => c !== city))
+  const removeCity = (city: string) => {
+    setSelectedCities(prev => prev.filter(c => c !== city))
+    setSelectedNeighborhoods([])
+    setNeighborhoodSearch('')
+  }
   const toggleState = (uf: string) => {
     setSelectedStates(prev => prev.includes(uf) ? prev.filter(s => s !== uf) : [...prev, uf])
     setSelectedCities([])
     setCitySearch('')
+    setSelectedNeighborhoods([])
+    setNeighborhoodSearch('')
   }
   const toggleType = (t: string) => setSelectedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
   const toggleModality = (m: string) => setSelectedModalities(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m])
   const toggleAreaClassification = (value: string) => setSelectedAreaClassifications(prev => prev.includes(value) ? prev.filter(item => item !== value) : [...prev, value])
   const toggleSource = (value: string) => setSelectedSources(prev => prev.includes(value) ? prev.filter(item => item !== value) : [...prev, value])
+  const addNeighborhood = (value: string) => {
+    if (!selectedNeighborhoods.includes(value)) setSelectedNeighborhoods(prev => [...prev, value])
+    setNeighborhoodSearch('')
+    setShowNeighborhoodSuggestions(false)
+  }
+  const removeNeighborhood = (value: string) => setSelectedNeighborhoods(prev => prev.filter(item => item !== value))
 
   const applyRegion = (regionKey: string) => {
     const region = REGIONS[regionKey]
@@ -164,6 +200,8 @@ export default function FilterPanel({ onFilterChange }: Props) {
     }
     setSelectedCities([])
     setCitySearch('')
+    setSelectedNeighborhoods([])
+    setNeighborhoodSearch('')
   }
 
   const isRegionActive = (regionKey: string) => {
@@ -186,6 +224,11 @@ export default function FilterPanel({ onFilterChange }: Props) {
       area_min: areaMin ? Number(areaMin) : null,
       area_max: areaMax ? Number(areaMax) : null,
       source_ids: selectedSources,
+      neighborhoods: selectedNeighborhoods,
+      price_per_m2_min: pricePerM2Min ? Number(pricePerM2Min) : null,
+      price_per_m2_max: pricePerM2Max ? Number(pricePerM2Max) : null,
+      opportunity_score_min: opportunityScoreMin ? Number(opportunityScoreMin) : null,
+      neighborhood_score_min: neighborhoodScoreMin ? Number(neighborhoodScoreMin) : null,
     }
     saveFilters.mutate(filters)
     onFilterChange({
@@ -203,12 +246,17 @@ export default function FilterPanel({ onFilterChange }: Props) {
     setCitySearch(''); setSelectedModalities([])
     setSelectedAreaClassifications([]); setDaysUntilAuction(null); setHasEvaluation(false)
     setAreaMin(''); setAreaMax(''); setSelectedSources([])
+    setSelectedNeighborhoods([]); setNeighborhoodSearch('')
+    setPricePerM2Min(''); setPricePerM2Max('')
+    setOpportunityScoreMin(''); setNeighborhoodScoreMin('')
     setVerifiedOnly(false); setQualityOnly(false); setOccupancy('')
     const empty: PropertyFilters = {
       price_min: null, price_max: null, states: [], cities: [], property_types: [],
       discount_min: null, modality_categories: [], area_classifications: [],
       days_until_auction_max: null, has_evaluation: false,
       area_min: null, area_max: null, source_ids: [],
+      neighborhoods: [], price_per_m2_min: null, price_per_m2_max: null,
+      opportunity_score_min: null, neighborhood_score_min: null,
     }
     saveFilters.mutate(empty)
     onFilterChange({})
@@ -220,7 +268,10 @@ export default function FilterPanel({ onFilterChange }: Props) {
     (priceMin ? 1 : 0) + (priceMax ? 1 : 0) + (discountMin ? 1 : 0) +
     selectedModalities.length +
     selectedAreaClassifications.length + selectedSources.length +
+    selectedNeighborhoods.length +
     (areaMin ? 1 : 0) + (areaMax ? 1 : 0) +
+    (pricePerM2Min ? 1 : 0) + (pricePerM2Max ? 1 : 0) +
+    (opportunityScoreMin ? 1 : 0) + (neighborhoodScoreMin ? 1 : 0) +
     (daysUntilAuction ? 1 : 0) + (hasEvaluation ? 1 : 0) +
     (verifiedOnly ? 1 : 0) + (qualityOnly ? 1 : 0) + (occupancy ? 1 : 0)
 
@@ -478,6 +529,19 @@ export default function FilterPanel({ onFilterChange }: Props) {
             <p className="mt-2 text-[11px] text-slate-400">Usa área útil quando disponível; caso contrário, a área total.</p>
           </div>
 
+          <div className="rounded-xl border border-[#cfe0e1] bg-[#f6faf9] p-3.5">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wider text-[#176B87]">Indicadores de decisão</p>
+            <div className="grid grid-cols-2 gap-2">
+              <label><span className="mb-1 block text-[10px] font-semibold text-slate-500">R$/m² mínimo</span><input type="number" min="0" value={pricePerM2Min} onChange={event => setPricePerM2Min(event.target.value)} placeholder="Ex.: 1500" className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#176B87]" /></label>
+              <label><span className="mb-1 block text-[10px] font-semibold text-slate-500">R$/m² máximo</span><input type="number" min="0" value={pricePerM2Max} onChange={event => setPricePerM2Max(event.target.value)} placeholder="Ex.: 5000" className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#176B87]" /></label>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <label><span className="mb-1 block text-[10px] font-semibold text-slate-500">Oportunidade mínima</span><select value={opportunityScoreMin} onChange={event => setOpportunityScoreMin(event.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#176B87]"><option value="">Qualquer nota</option><option value="50">50+</option><option value="65">65+</option><option value="80">80+</option></select></label>
+              <label><span className="mb-1 block text-[10px] font-semibold text-slate-500">Sinal do bairro</span><select value={neighborhoodScoreMin} onChange={event => setNeighborhoodScoreMin(event.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#176B87]"><option value="">Qualquer sinal</option><option value="50">50+</option><option value="65">65+</option><option value="80">80+</option></select></label>
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-400">Scores baseados nos anúncios ativos da Leila; não substituem pesquisa de mercado.</p>
+          </div>
+
           {/* ── Estados ────────────────────────────────────── */}
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Estados</p>
@@ -552,6 +616,26 @@ export default function FilterPanel({ onFilterChange }: Props) {
               )}
             </div>
             {selectedStates.length > 0 && <p className="mt-2 text-[11px] text-slate-400">A lista considera somente imóveis ativos nos estados selecionados.</p>}
+          </div>
+
+          <div>
+            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500">Bairros</p>
+            {selectedNeighborhoods.length > 0 && <div className="mb-2.5 flex flex-wrap gap-1.5">{selectedNeighborhoods.map(value => <span key={value} className="flex items-center gap-1 rounded-lg bg-[#176B87] px-2.5 py-1 text-xs font-semibold text-white">{value}<button type="button" onClick={() => removeNeighborhood(value)} aria-label={`Remover ${value}`}><X size={10} /></button></span>)}</div>}
+            <div className="relative">
+              <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                value={neighborhoodSearch}
+                disabled={selectedStates.length !== 1 || selectedCities.length !== 1}
+                onChange={event => { setNeighborhoodSearch(event.target.value); setShowNeighborhoodSuggestions(true) }}
+                onFocus={() => setShowNeighborhoodSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowNeighborhoodSuggestions(false), 150)}
+                placeholder={selectedStates.length === 1 && selectedCities.length === 1 ? 'Buscar bairros disponíveis...' : 'Selecione um estado e uma cidade'}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 pl-8 pr-3 text-sm outline-none transition focus:border-[#176B87] focus:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+              />
+              {showNeighborhoodSuggestions && neighborhoodSuggestions.filter(item => !selectedNeighborhoods.includes(item.neighborhood)).length > 0 && <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-44 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">{neighborhoodSuggestions.filter(item => !selectedNeighborhoods.includes(item.neighborhood)).map(item => <button type="button" key={item.id} onMouseDown={() => addNeighborhood(item.neighborhood)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"><MapPin size={11} className="text-slate-400" /><span className="min-w-0 flex-1 truncate">{item.neighborhood}</span><span className="num text-[10px] text-slate-400">{item.property_count}</span></button>)}</div>}
+              {showNeighborhoodSuggestions && neighborhoodsLoading && <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-400 shadow-lg">Carregando bairros…</div>}
+            </div>
+            <p className="mt-2 text-[11px] text-slate-400">Bairros homônimos permanecem vinculados à cidade selecionada.</p>
           </div>
 
           {/* ── Tipo de Imóvel ─────────────────────────────── */}

@@ -129,6 +129,12 @@ def _normalize_type(raw: str) -> str:
     return raw.lower().strip()
 
 
+def _normalize_neighborhood(raw: str) -> Optional[str]:
+    """Limpa o rótulo do bairro sem inventar informação ausente na fonte."""
+    value = re.sub(r"\s+", " ", (raw or "").strip(" ,-"))
+    return value.title() if value else None
+
+
 class CaixaSource(BaseSource):
     source_id = SOURCE_ID
 
@@ -247,9 +253,10 @@ class CaixaSource(BaseSource):
             ""
         ).strip().title()
 
+        neighborhood = _normalize_neighborhood(normalized.get("bairro") or "")
         address_parts = [
             normalized.get("endereço") or normalized.get("endereco") or "",
-            normalized.get("bairro") or "",
+            neighborhood or "",
         ]
         address = ", ".join(p for p in address_parts if p).strip()
 
@@ -311,6 +318,7 @@ class CaixaSource(BaseSource):
             external_id=f"{uf}-{external_id}",
             title=title,
             address=address or None,
+            neighborhood=neighborhood,
             city=city or None,
             state=uf,
             zip_code=normalized.get("cep") or None,

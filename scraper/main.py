@@ -60,6 +60,7 @@ async def _upsert_properties(properties: list[ScrapedProperty], scrape_start: da
             "external_id": prop.external_id,
             "title": prop.title,
             "address": prop.address,
+            "neighborhood": prop.neighborhood,
             "city": prop.city,
             "state": prop.state,
             "zip_code": prop.zip_code,
@@ -127,6 +128,21 @@ async def _reconcile_missing(source_id: str, verified_states: list[str], scrape_
     unavailable_count = int(summary.get("unavailable_count") or 0)
     if suspect_count or unavailable_count:
         print(f"[Scraper] {source_id}: {suspect_count} suspeitos, {unavailable_count} indisponíveis")
+
+
+def _refresh_neighborhood_profiles(verified_states: list[str]):
+    """Recalcula uma vez por rodada apenas os mercados realmente verificados."""
+    if not verified_states:
+        return
+    try:
+        response = _get_supabase().rpc("leila_refresh_neighborhood_profiles", {
+            "p_states": sorted(set(verified_states)),
+        }).execute()
+        summary = response.data or {}
+        print(f"[Scraper] Perfis de bairro atualizados: {summary}")
+    except Exception as e:
+        # O perfil analítico não pode invalidar uma coleta que já foi persistida.
+        print(f"[Scraper] Não foi possível atualizar perfis de bairro: {e}")
 
 
 def _start_run(source_id: str) -> str | None:
@@ -199,6 +215,8 @@ async def scrape_all():
             # ausente daquele que foi visto mas não persistido. Não reconcilia.
             if verified and result.errors == 0:
                 await _reconcile_missing(source_id, verified, scrape_start)
+            if verified:
+                _refresh_neighborhood_profiles(verified)
             run_status = "failed" if not verified else ("partial" if failed or result.errors else "success")
             if run_status == "success":
                 await _update_source_timestamp(source_id)
@@ -243,6 +261,8 @@ async def scrape_source(source_id: str, background_tasks: BackgroundTasks):
         failed = list(getattr(source, "failed_regions", []))
         if verified and result.errors == 0:
             await _reconcile_missing(source_id, verified, scrape_start)
+        if verified:
+            _refresh_neighborhood_profiles(verified)
         run_status = "failed" if not verified else ("partial" if failed or result.errors else "success")
         if run_status == "success":
             await _update_source_timestamp(source_id)

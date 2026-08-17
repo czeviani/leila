@@ -1,11 +1,16 @@
 import { Request, Response } from 'express'
-import { supabaseAdmin } from '../config/supabase'
 
 const SORT_FIELDS: Record<string, string> = {
-  heat_score:   'heat_score',
+  opportunity_score: 'opportunity_score',
+  heat_score: 'opportunity_score',
+  neighborhood_score: 'neighborhood_score',
+  neighborhood: 'neighborhood',
+  property_type: 'property_type',
+  price_per_m2: 'price_per_m2',
   discount_pct: 'discount_pct',
   auction_price: 'auction_price',
-  area_m2: 'area_m2',
+  area_m2: 'filter_area_m2',
+  filter_area_m2: 'filter_area_m2',
   scraped_at: 'scraped_at',
   auction_date: 'auction_date',
   data_quality_score: 'data_quality_score',
@@ -74,19 +79,25 @@ const summarizePageTrust = (properties: TrustProperty[], freshnessHours: number)
 
 export const getProperties = async (req: Request, res: Response) => {
   const {
-    state, city, type, source, price_min, price_max, discount_min, modality,
-    area_min, area_max,
+    state, city, neighborhood, type, source, price_min, price_max, discount_min, modality,
+    area_min, area_max, price_per_m2_min, price_per_m2_max,
+    opportunity_score_min, neighborhood_score_min,
     search, has_evaluation, area_classification, days_until_auction_max,
     availability_status, availability, status, verified_within_hours, quality_min, occupied,
+    discarded = 'false',
     page = 1, limit = 50,
-    sort_by = 'heat_score', sort_order = 'desc',
+    sort_by = 'opportunity_score', sort_order = 'desc',
   } = req.query
   const offset = (Number(page) - 1) * Number(limit)
 
-  const sortField = SORT_FIELDS[String(sort_by)] ?? 'heat_score'
+  const sortField = SORT_FIELDS[String(sort_by)] ?? 'opportunity_score'
   const ascending = String(sort_order) === 'asc'
   const areaMinimum = parseBoundedNumber(area_min, 0, 1_000_000)
   const areaMaximum = parseBoundedNumber(area_max, 0, 1_000_000)
+  const pricePerM2Minimum = parseBoundedNumber(price_per_m2_min, 0, 10_000_000)
+  const pricePerM2Maximum = parseBoundedNumber(price_per_m2_max, 0, 10_000_000)
+  const opportunityMinimum = parseBoundedNumber(opportunity_score_min, 0, 100)
+  const neighborhoodMinimum = parseBoundedNumber(neighborhood_score_min, 0, 100)
 
   if (area_min !== undefined && areaMinimum === null) {
     return res.status(400).json({ error: 'area_min deve ser um número entre 0 e 1.000.000' })
@@ -96,6 +107,21 @@ export const getProperties = async (req: Request, res: Response) => {
   }
   if (areaMinimum !== null && areaMaximum !== null && areaMinimum > areaMaximum) {
     return res.status(400).json({ error: 'A área mínima não pode ser maior que a área máxima' })
+  }
+  if (price_per_m2_min !== undefined && pricePerM2Minimum === null) {
+    return res.status(400).json({ error: 'price_per_m2_min deve ser um número válido' })
+  }
+  if (price_per_m2_max !== undefined && pricePerM2Maximum === null) {
+    return res.status(400).json({ error: 'price_per_m2_max deve ser um número válido' })
+  }
+  if (pricePerM2Minimum !== null && pricePerM2Maximum !== null && pricePerM2Minimum > pricePerM2Maximum) {
+    return res.status(400).json({ error: 'O preço por m² mínimo não pode superar o máximo' })
+  }
+  if (opportunity_score_min !== undefined && opportunityMinimum === null) {
+    return res.status(400).json({ error: 'opportunity_score_min deve estar entre 0 e 100' })
+  }
+  if (neighborhood_score_min !== undefined && neighborhoodMinimum === null) {
+    return res.status(400).json({ error: 'neighborhood_score_min deve estar entre 0 e 100' })
   }
 
   const requestedAvailability = availability_status ?? availability ?? status
@@ -115,12 +141,19 @@ export const getProperties = async (req: Request, res: Response) => {
   if (quality_min !== undefined && qualityMinimum === null) {
     return res.status(400).json({ error: 'quality_min deve ser um número entre 0 e 100' })
   }
+  if (!['false', 'true', 'all'].includes(String(discarded))) {
+    return res.status(400).json({ error: 'discarded deve ser false, true ou all' })
+  }
 
   let query = req.supabase!
     .from('leila_properties')
-    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(status, tags, analysis, analyzed_at)', { count: 'exact' })
+    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(status, tags, analysis, analyzed_at), leila_discarded_properties(id)', { count: 'exact' })
     .order(sortField, { ascending, nullsFirst: false })
     .range(offset, offset + Number(limit) - 1)
+
+  // Descartes são pessoais (RLS) e, por padrão, não ocupam espaço na paginação.
+  if (discarded === 'false') query = query.is('leila_discarded_properties', null)
+  if (discarded === 'true') query = query.not('leila_discarded_properties', 'is', null)
 
   if (availabilityStatuses.length > 0) {
     query = availabilityStatuses.length === 1
@@ -158,6 +191,12 @@ export const getProperties = async (req: Request, res: Response) => {
     const cities = String(city).split(',').map(c => c.trim()).filter(Boolean)
     query = cities.length === 1 ? query.eq('city', cities[0]) : query.in('city', cities)
   }
+  if (neighborhood) {
+    const neighborhoods = String(neighborhood).split(',').map(value => value.trim()).filter(Boolean)
+    query = neighborhoods.length === 1
+      ? query.eq('neighborhood', neighborhoods[0])
+      : query.in('neighborhood', neighborhoods)
+  }
   if (type) {
     const types = String(type).split(',').map(t => t.trim()).filter(Boolean)
     query = types.length === 1 ? query.eq('property_type', types[0]) : query.in('property_type', types)
@@ -167,6 +206,10 @@ export const getProperties = async (req: Request, res: Response) => {
   if (discount_min) query = query.gte('discount_pct', Number(discount_min))
   if (areaMinimum !== null) query = query.gte('filter_area_m2', areaMinimum)
   if (areaMaximum !== null) query = query.lte('filter_area_m2', areaMaximum)
+  if (pricePerM2Minimum !== null) query = query.gte('price_per_m2', pricePerM2Minimum)
+  if (pricePerM2Maximum !== null) query = query.lte('price_per_m2', pricePerM2Maximum)
+  if (opportunityMinimum !== null) query = query.gte('opportunity_score', opportunityMinimum)
+  if (neighborhoodMinimum !== null) query = query.gte('neighborhood_score', neighborhoodMinimum)
   if (source) {
     const sources = String(source).split(',').map(value => value.trim()).filter(Boolean)
     query = sources.length === 1 ? query.eq('source_id', sources[0]) : query.in('source_id', sources)
@@ -179,7 +222,7 @@ export const getProperties = async (req: Request, res: Response) => {
   // Busca textual no servidor (não mais client-side)
   if (search && String(search).trim().length >= 2) {
     const s = String(search).trim()
-    query = query.or(`title.ilike.%${s}%,city.ilike.%${s}%,address.ilike.%${s}%`)
+    query = query.or(`title.ilike.%${s}%,city.ilike.%${s}%,neighborhood.ilike.%${s}%,address.ilike.%${s}%`)
   }
 
   // Apenas imóveis com avaliação IA concluída
@@ -243,12 +286,61 @@ export const getPropertyCities = async (req: Request, res: Response) => {
 export const getPropertyById = async (req: Request, res: Response) => {
   const { id } = req.params
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await req.supabase!
     .from('leila_properties')
-    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(*)')
+    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(*), leila_discarded_properties(id)')
     .eq('id', id)
     .single()
 
   if (error) return res.status(404).json({ error: 'Property not found' })
   return res.json(data)
 }
+
+export const getNeighborhoodProfiles = async (req: Request, res: Response) => {
+  const { state, city, search, limit = 100 } = req.query
+  const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 500)
+
+  let query = req.supabase!
+    .from('leila_neighborhood_profiles')
+    .select('*')
+    .order('property_count', { ascending: false })
+    .limit(safeLimit)
+
+  if (state) query = query.eq('state', String(state).trim().toUpperCase())
+  if (city) query = query.eq('city', String(city).trim())
+  if (search && String(search).trim()) {
+    query = query.ilike('neighborhood', `%${String(search).trim()}%`)
+  }
+
+  const { data, error } = await query
+  if (error) return res.status(500).json({ error: error.message })
+  return res.json(data ?? [])
+}
+
+export const compareProperties = async (req: Request, res: Response) => {
+  const propertyIds: string[] = Array.isArray(req.body?.property_ids)
+    ? [...new Set<string>((req.body.property_ids as unknown[]).map(value => String(value)))]
+    : []
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+  if (propertyIds.length < 2 || propertyIds.length > 4 || propertyIds.some(id => !uuidPattern.test(id))) {
+    return res.status(400).json({ error: 'Envie de 2 a 4 IDs de imóveis válidos' })
+  }
+
+  const { data, error } = await req.supabase!
+    .from('leila_properties')
+    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(status, tags, analysis, analyzed_at), leila_discarded_properties(id)')
+    .in('id', propertyIds)
+
+  if (error) return res.status(500).json({ error: error.message })
+  const byId = new Map((data ?? []).map(property => [property.id, property]))
+  return res.json(propertyIds.map(id => byId.get(id)).filter(Boolean))
+}
+
+export const getOpportunityPresets = (_req: Request, res: Response) => res.json([
+  { id: 'best_opportunities', label: 'Melhores oportunidades', sort_by: 'opportunity_score', sort_order: 'desc' },
+  { id: 'lowest_price_m2', label: 'Menor preço por m²', sort_by: 'price_per_m2', sort_order: 'asc' },
+  { id: 'largest_area', label: 'Maior área', sort_by: 'filter_area_m2', sort_order: 'desc' },
+  { id: 'largest_discount', label: 'Maior desconto', sort_by: 'discount_pct', sort_order: 'desc' },
+  { id: 'best_neighborhood_signal', label: 'Melhor sinal do bairro', sort_by: 'neighborhood_score', sort_order: 'desc' },
+])

@@ -36,6 +36,7 @@ class ScrapedProperty:
     auction_price: float
 
     address: Optional[str] = None
+    neighborhood: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
     zip_code: Optional[str] = None
@@ -72,7 +73,8 @@ class ScrapeResult:
 def calculate_data_quality(prop: ScrapedProperty) -> int:
     """Score explicável de completude (0-100), sem inferir veracidade."""
     score = 35  # identificador, fonte, título e preço são obrigatórios
-    score += 10 if prop.address else 0
+    score += 5 if prop.address else 0
+    score += 5 if prop.neighborhood else 0
     score += 10 if prop.city and prop.state else 0
     score += 10 if prop.area_m2 or prop.useful_area_m2 else 0
     score += 10 if prop.appraised_value and prop.discount_pct is not None else 0

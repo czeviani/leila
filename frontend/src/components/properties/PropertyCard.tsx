@@ -1,9 +1,10 @@
 import {
-  AlertTriangle, ArrowUpRight, Bath, Bed, CalendarDays, Car, Check,
-  CircleDot, Landmark, MapPin, Ruler, Sparkles, TrendingDown,
+  AlertTriangle, ArrowUpRight, Bath, Bed, CalendarDays, Car, Heart,
+  CircleDot, Landmark, MapPin, Ruler, TrendingDown,
 } from 'lucide-react'
 import { Property } from '../../lib/api'
 import { daysUntilAuction } from '../../lib/heatScore'
+import { neighborhoodName } from '../../lib/opportunityTable'
 
 interface Props {
   property: Property
@@ -108,7 +109,7 @@ export default function PropertyCard({ property, isFavorite, onToggleFavorite, o
 
           <p className="mb-4 flex items-center gap-1.5 text-sm text-slate-600">
             <MapPin size={14} className="shrink-0 text-slate-400" />
-            <span className="truncate">{[property.city, property.state].filter(Boolean).join(' · ') || 'Localização não informada'}</span>
+            <span className="truncate"><strong className="text-[#163447]">{neighborhoodName(property) ?? 'Bairro não informado'}</strong> · {[property.city, property.state].filter(Boolean).join(' · ') || 'localização pendente'}</span>
           </p>
 
           <div className="mb-4 flex min-h-9 flex-wrap items-center gap-x-4 gap-y-2 border-y border-[#e8eeee] py-2.5 text-xs text-slate-600">
@@ -160,8 +161,8 @@ export default function PropertyCard({ property, isFavorite, onToggleFavorite, o
             : 'border-[#e4ecec] bg-white text-[#176B87] hover:bg-[#f3f8f8]'
         }`}
       >
-        {isFavorite ? <Check size={15} /> : <Sparkles size={15} />}
-        {isFavorite ? 'Na lista de análise' : 'Adicionar à análise'}
+        <Heart size={15} fill={isFavorite ? 'currentColor' : 'none'} />
+        {isFavorite ? 'Favoritado' : 'Favoritar imóvel'}
       </button>
     </article>
   )
