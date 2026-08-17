@@ -50,7 +50,7 @@ export const useFavorites = () =>
 
 export const useToggleFavorite = () => {
   const qc = useQueryClient()
-  return useMutation({
+  return useMutation<unknown, Error, { property_id: string; isFav: boolean }>({
     mutationFn: ({ property_id, isFav }: { property_id: string; isFav: boolean }) =>
       isFav ? api.favorites.remove(property_id) : api.favorites.add(property_id),
     onSuccess: () => {
@@ -169,7 +169,7 @@ export const useToggleSource = () => {
 
 export const useRunScraper = () => {
   const qc = useQueryClient()
-  return useMutation({
+  return useMutation<unknown, Error, string | undefined>({
     mutationFn: (source_id?: string) =>
       source_id ? api.scraper.runSource(source_id) : api.scraper.runAll(),
     onSuccess: () => {

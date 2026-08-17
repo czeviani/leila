@@ -11,6 +11,9 @@ export interface ScrapeResult {
   inserted: number
   updated: number
   errors: number
+  status?: 'success' | 'partial' | 'failed'
+  verified_regions?: string[]
+  failed_regions?: string[]
 }
 
 export const triggerScrape = async (sourceId: string): Promise<ScrapeResult> => {

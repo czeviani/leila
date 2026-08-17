@@ -5,7 +5,6 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  Home,
   Scale,
   ShieldAlert,
   Users,
@@ -224,10 +223,6 @@ export default function InvestmentDashboard({ analysis }: Props) {
     const order = { 'CRÍTICO': 0, IMPORTANTE: 1, RECOMENDADO: 2 }
     return (order[a.prioridade] ?? 3) - (order[b.prioridade] ?? 3)
   })
-
-  const roiVsCdi = reforma?.roi_bruto_pct != null
-    ? Math.min(100, (reforma.roi_bruto_pct / (CDI * 2)) * 100)
-    : 0
 
   const yieldColor = (aluguel?.yield_bruto_anual_pct ?? 0) > CDI ? 'text-emerald-400' : 'text-red-400'
   const yieldBg = (aluguel?.yield_bruto_anual_pct ?? 0) > CDI
