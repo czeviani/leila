@@ -16,7 +16,7 @@ const SORT_FIELDS: Partial<Record<OpportunityColumn, string>> = {
 }
 
 const WIDTHS: Record<OpportunityColumn, string> = {
-  opportunity: 'min-w-[180px]', location: 'min-w-[190px]', property: 'min-w-[230px]',
+  opportunity: 'min-w-[140px]', location: 'min-w-[190px]', property: 'min-w-[230px]',
   area: 'min-w-[90px]', price: 'min-w-[145px]', pricePerM2: 'min-w-[115px]',
   discount: 'min-w-[100px]', neighborhood: 'min-w-[145px]', status: 'min-w-[165px]',
   deadline: 'min-w-[100px]',
@@ -31,14 +31,14 @@ interface Props {
   favoriteIds: Set<string>
   onSort: (sort: string) => void
   onToggleSelection: (property: Property) => void
-  onToggleFavorite: (property: Property) => void
-  onDismiss: (property: Property) => void
+  onApprove: (property: Property) => void
+  onReject: (property: Property) => void
   onOpen: (property: Property) => void
 }
 
 export default function OpportunityTable({
   properties, columns, density, sort, selectedIds, favoriteIds,
-  onSort, onToggleSelection, onToggleFavorite, onDismiss, onOpen,
+  onSort, onToggleSelection, onApprove, onReject, onOpen,
 }: Props) {
   const [activeSort, activeOrder] = sort.split(':')
 
@@ -78,7 +78,7 @@ export default function OpportunityTable({
                 </th>
               )
             })}
-            <th scope="col" className="sticky right-0 z-40 min-w-[138px] bg-[#163447] px-3 py-3 text-right text-[10px] font-extrabold uppercase tracking-[.13em] text-[#dceced]">Ações</th>
+            <th scope="col" className="sticky right-0 z-40 min-w-[176px] bg-[#163447] px-3 py-3 text-right text-[10px] font-extrabold uppercase tracking-[.13em] text-[#dceced]">Ações rápidas</th>
           </tr>
         </thead>
         <tbody>
@@ -92,8 +92,8 @@ export default function OpportunityTable({
               selectionDisabled={selectedIds.size >= 4}
               isFavorite={favoriteIds.has(property.id)}
               onToggleSelection={() => onToggleSelection(property)}
-              onToggleFavorite={() => onToggleFavorite(property)}
-              onDismiss={() => onDismiss(property)}
+              onApprove={() => onApprove(property)}
+              onReject={() => onReject(property)}
               onClick={() => onOpen(property)}
             />
           ))}

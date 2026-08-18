@@ -1,12 +1,12 @@
 import { memo, MouseEvent } from 'react'
 import {
   AlertTriangle, BedDouble, Building2, CalendarClock, Car, Check,
-  ExternalLink, Eye, Heart, MapPin, RotateCcw, Scale, ShieldCheck, X,
+  ExternalLink, Eye, MapPinned, MapPin, Scale, ShieldCheck, ThumbsDown, ThumbsUp,
 } from 'lucide-react'
 import { Property } from '../../lib/api'
 import {
   confidenceLabel, effectiveArea, effectivePricePerM2, neighborhoodInsight,
-  neighborhoodName, opportunityFactors, opportunityScore, OpportunityColumn,
+  googleAddressSearchUrl, neighborhoodName, opportunityFactors, opportunityScore, OpportunityColumn,
   TableDensity,
 } from '../../lib/opportunityTable'
 import { daysUntilAuction } from '../../lib/heatScore'
@@ -37,14 +37,14 @@ interface Props {
   selectionDisabled: boolean
   isFavorite: boolean
   onToggleSelection: () => void
-  onToggleFavorite: () => void
-  onDismiss: () => void
+  onApprove: () => void
+  onReject: () => void
   onClick: () => void
 }
 
 export default memo(function PropertyRow({
   property, columns, density, selected, selectionDisabled, isFavorite,
-  onToggleSelection, onToggleFavorite, onDismiss, onClick,
+  onToggleSelection, onApprove, onReject, onClick,
 }: Props) {
   const score = opportunityScore(property)
   const factors = opportunityFactors(property)
@@ -81,19 +81,17 @@ export default memo(function PropertyRow({
       </td>
 
       {columns.includes('opportunity') && (
-        <td className={`min-w-[180px] px-3 ${yPadding}`}>
-          <div className="flex items-baseline gap-2">
-            <strong className="num text-lg text-[#163447]">{score}</strong>
-            <span className="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">/ 100</span>
+        <td className={`min-w-[140px] px-3 ${yPadding}`} title={`Evidências: ${factors.join(', ')} · ${confidenceLabel(property.opportunity_confidence ?? null)}`}>
+          <div className="flex items-center gap-2">
+            <strong className="num text-base text-[#163447]">{score}</strong>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#dfeaea]">
+              <span
+                className={`block h-full rounded-full ${score >= 75 ? 'bg-[#167261]' : score >= 50 ? 'bg-[#176B87]' : score >= 30 ? 'bg-[#C68A2D]' : 'bg-[#B33A48]'}`}
+                style={{ width: `${Math.max(4, Math.min(100, score))}%` }}
+              />
+            </div>
           </div>
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[#dfeaea]" title={`Evidências: ${factors.join(', ')}`}>
-            <span
-              className={`block h-full rounded-full ${score >= 75 ? 'bg-[#167261]' : score >= 50 ? 'bg-[#176B87]' : score >= 30 ? 'bg-[#C68A2D]' : 'bg-[#B33A48]'}`}
-              style={{ width: `${Math.max(4, Math.min(100, score))}%` }}
-            />
-          </div>
-          <p className="mt-1 max-w-[170px] truncate text-[10px] text-slate-500">{factors.join(' · ')}</p>
-          {property.opportunity_confidence && <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-400">{confidenceLabel(property.opportunity_confidence)}</p>}
+          <p className="mt-1 max-w-[130px] truncate text-[10px] text-slate-500">{factors[0]}</p>
         </td>
       )}
 
@@ -182,9 +180,10 @@ export default memo(function PropertyRow({
       <td className={`sticky right-0 z-10 whitespace-nowrap bg-inherit px-2 ${yPadding}`}>
         <div className="flex items-center justify-end gap-0.5">
           <button type="button" onClick={event => action(event, onClick)} aria-label="Abrir imóvel" title="Abrir imóvel" className="rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-[#176B87]"><Eye size={15} /></button>
-          <button type="button" onClick={event => action(event, onToggleFavorite)} aria-label={isFavorite ? 'Remover dos favoritos' : 'Favoritar'} title={isFavorite ? 'Remover dos favoritos' : 'Favoritar'} className={`rounded-lg p-2 transition hover:bg-white ${isFavorite ? 'text-[#B33A48]' : 'text-slate-400 hover:text-[#B33A48]'}`}><Heart size={15} fill={isFavorite ? 'currentColor' : 'none'} /></button>
+          <a href={googleAddressSearchUrl(property)} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()} aria-label="Pesquisar endereço no Google" title="Pesquisar rua e número no Google" className="inline-block rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-[#176B87]"><MapPinned size={15} /></a>
           {property.edital_url && <a href={property.edital_url} target="_blank" rel="noopener noreferrer" onClick={event => event.stopPropagation()} aria-label="Abrir documento oficial" title="Abrir documento oficial" className="inline-block rounded-lg p-2 text-slate-400 transition hover:bg-white hover:text-[#176B87]"><ExternalLink size={15} /></a>}
-          <button type="button" onClick={event => action(event, onDismiss)} aria-label={isDiscarded ? 'Restaurar imóvel' : 'Descartar imóvel'} title={isDiscarded ? 'Restaurar imóvel' : 'Descartar imóvel'} className={`rounded-lg p-2 transition ${isDiscarded ? 'text-[#167261] hover:bg-[#edf8f5]' : 'text-slate-300 hover:bg-[#fff0f1] hover:text-[#B33A48]'}`}>{isDiscarded ? <RotateCcw size={15} /> : <X size={15} />}</button>
+          <button type="button" onClick={event => action(event, onApprove)} aria-label={isFavorite ? 'Remover aprovação' : 'Aprovar imóvel'} title={isFavorite ? 'Remover aprovação' : 'Aprovar imóvel'} className={`rounded-lg p-2 transition ${isFavorite ? 'bg-[#e4f4ef] text-[#167261]' : 'text-slate-400 hover:bg-[#edf8f5] hover:text-[#167261]'}`}><ThumbsUp size={15} fill={isFavorite ? 'currentColor' : 'none'} /></button>
+          <button type="button" onClick={event => action(event, onReject)} aria-label={isDiscarded ? 'Remover reprovação' : 'Reprovar imóvel'} title={isDiscarded ? 'Remover reprovação' : 'Reprovar imóvel'} className={`rounded-lg p-2 transition ${isDiscarded ? 'bg-[#fff0f1] text-[#B33A48]' : 'text-slate-400 hover:bg-[#fff0f1] hover:text-[#B33A48]'}`}><ThumbsDown size={15} fill={isDiscarded ? 'currentColor' : 'none'} /></button>
         </div>
       </td>
     </tr>

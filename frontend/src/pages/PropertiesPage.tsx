@@ -30,13 +30,15 @@ const SORT_OPTIONS = [
 ]
 
 const DISCOVERY_PRESETS = [
+  { key: 'approved', label: 'Aprovados', sort: 'last_seen_at:desc', params: { decision: 'approved' } },
+  { key: 'unreviewed', label: 'Não avaliados', sort: 'opportunity_score:desc', params: { decision: 'unreviewed' } },
+  { key: 'rejected', label: 'Reprovados', sort: 'last_seen_at:desc', params: { decision: 'rejected' } },
   { key: 'opportunity', label: 'Melhores oportunidades', sort: 'opportunity_score:desc', params: {} },
   { key: 'sqm', label: 'Menor R$/m²', sort: 'price_per_m2:asc', params: {} },
   { key: 'area', label: 'Maior área', sort: 'filter_area_m2:desc', params: {} },
   { key: 'discount', label: 'Maior desconto', sort: 'discount_pct:desc', params: { discount_min: 20 } },
   { key: 'neighborhood', label: 'Melhor sinal do bairro', sort: 'neighborhood_score:desc', params: {} },
   { key: 'trusted', label: 'Dados mais confiáveis', sort: 'data_quality_score:desc', params: { availability: 'available', quality_min: 80 } },
-  { key: 'discarded', label: 'Descartados', sort: 'last_seen_at:desc', params: { discarded: 'true' } },
 ] as const
 
 const FILTER_LABELS: Record<string, string> = {
@@ -47,7 +49,7 @@ const FILTER_LABELS: Record<string, string> = {
   verified_within_hours: 'Verificação', quality_min: 'Qualidade', occupied: 'Ocupação',
   neighborhood: 'Bairro', price_per_m2_min: 'R$/m² mín.', price_per_m2_max: 'R$/m² máx.',
   opportunity_score_min: 'Oportunidade mín.', neighborhood_score_min: 'Sinal do bairro mín.',
-  discarded: 'Descartados',
+  discarded: 'Descartados', decision: 'Triagem',
 }
 
 const DESK_STATE_KEY = 'leila_opportunity_desk_state_v1'
@@ -111,6 +113,7 @@ function filterValue(key: string, value: string | number) {
   if (key === 'occupied') return value === 'false' ? 'desocupado' : value === 'true' ? 'ocupado' : 'não informado'
   if (key === 'availability') return value === 'available' ? 'disponível' : String(value)
   if (key === 'has_evaluation') return 'sim'
+  if (key === 'decision') return value === 'approved' ? 'aprovados' : value === 'rejected' ? 'reprovados' : 'não avaliados'
   if (key === 'price_per_m2_min' || key === 'price_per_m2_max') return `R$ ${Number(value).toLocaleString('pt-BR')}/m²`
   if (key === 'price_min' || key === 'price_max') return `R$ ${Number(value).toLocaleString('pt-BR')}`
   if (key === 'area_min' || key === 'area_max') return `${value} m²`
@@ -178,8 +181,7 @@ export default function PropertiesPage() {
   const favoriteIds = useMemo(() => new Set(favorites?.map(favorite => favorite.property_id) ?? []), [favorites])
   const dismissedIds = useMemo(() => new Set(optimisticallyDismissed), [optimisticallyDismissed])
   const selectedIds = useMemo(() => new Set(selected.map(property => property.id)), [selected])
-  const isDiscardedView = filters.discarded === 'true'
-  const properties = (data?.data ?? []).filter(property => isDiscardedView || !dismissedIds.has(property.id))
+  const properties = (data?.data ?? []).filter(property => !dismissedIds.has(property.id))
   const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE))
   const activeSources = sources?.filter(source => source.active && source.implemented !== false) ?? []
   const coverageTimestamp = activeSources.map(source => source.last_scraped_at).filter(Boolean).sort().at(0)
@@ -204,23 +206,33 @@ export default function PropertiesPage() {
   const applyPreset = (preset: typeof DISCOVERY_PRESETS[number]) => {
     setActivePreset(preset.key)
     setFilters(current => {
-      if (preset.key === 'discarded') return { discarded: 'true' }
       const next: Record<string, string | number | undefined> = { ...current, ...preset.params }
       delete next.discarded
+      if (!('decision' in preset.params)) delete next.decision
       return next
     })
     setSort(preset.sort)
     setPage(1)
   }
 
-  const dismiss = (property: Property) => {
+  const reject = async (property: Property) => {
     setOptimisticallyDismissed(current => [...new Set([...current, property.id])])
     setSelected(current => current.filter(item => item.id !== property.id))
     const isDiscarded = Boolean(property.leila_discarded_properties?.length)
     const clearOptimistic = () => setOptimisticallyDismissed(current => current.filter(id => id !== property.id))
-    const settle = async () => { await refetch(); clearOptimistic() }
-    if (isDiscarded) restoreDiscardedProperty.mutate(property.id, { onError: clearOptimistic, onSuccess: settle })
-    else discardProperty.mutate({ propertyId: property.id }, { onError: clearOptimistic, onSuccess: settle })
+    try {
+      if (isDiscarded) {
+        await restoreDiscardedProperty.mutateAsync(property.id)
+      } else {
+        if (favoriteIds.has(property.id)) {
+          await toggleFavorite.mutateAsync({ property_id: property.id, isFav: true })
+        }
+        await discardProperty.mutateAsync({ propertyId: property.id })
+      }
+      await refetch()
+    } finally {
+      clearOptimistic()
+    }
   }
 
   const toggleSelection = (property: Property) => {
@@ -229,10 +241,14 @@ export default function PropertiesPage() {
       : current.length < 4 ? [...current, property] : current)
   }
 
-  const toggleFavoriteFor = (property: Property) => toggleFavorite.mutate({
-    property_id: property.id,
-    isFav: favoriteIds.has(property.id),
-  })
+  const approve = async (property: Property) => {
+    const isFavorite = favoriteIds.has(property.id)
+    if (!isFavorite && property.leila_discarded_properties?.length) {
+      await restoreDiscardedProperty.mutateAsync(property.id)
+    }
+    await toggleFavorite.mutateAsync({ property_id: property.id, isFav: isFavorite })
+    await refetch()
+  }
 
   const updateSort = (next: string) => { setSort(next); setActivePreset(null); setPage(1) }
   const openProperty = (id: string) => {
@@ -295,16 +311,16 @@ export default function PropertiesPage() {
         {!isLoading && properties.length > 0 && (
           <>
             <div className={`${viewMode === 'grid' ? 'xl:grid' : 'xl:hidden'} grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4`}>
-              {properties.map(property => <PropertyCard key={property.id} property={property} isFavorite={favoriteIds.has(property.id)} onToggleFavorite={() => toggleFavoriteFor(property)} onClick={() => openProperty(property.id)} />)}
+              {properties.map(property => <PropertyCard key={property.id} property={property} isFavorite={favoriteIds.has(property.id)} isRejected={Boolean(property.leila_discarded_properties?.length)} onApprove={() => approve(property)} onReject={() => reject(property)} onClick={() => openProperty(property.id)} />)}
             </div>
-            {viewMode === 'list' && <OpportunityTable properties={properties} columns={tablePreferences.columns} density={tablePreferences.density} sort={sort} selectedIds={selectedIds} favoriteIds={favoriteIds} onSort={updateSort} onToggleSelection={toggleSelection} onToggleFavorite={toggleFavoriteFor} onDismiss={dismiss} onOpen={property => openProperty(property.id)} />}
+            {viewMode === 'list' && <OpportunityTable properties={properties} columns={tablePreferences.columns} density={tablePreferences.density} sort={sort} selectedIds={selectedIds} favoriteIds={favoriteIds} onSort={updateSort} onToggleSelection={toggleSelection} onApprove={approve} onReject={reject} onOpen={property => openProperty(property.id)} />}
           </>
         )}
 
         {data && data.total > PAGE_SIZE && <nav className="mt-7 flex items-center justify-center gap-3" aria-label="Paginação"><button type="button" disabled={page === 1} onClick={() => setPage(value => Math.max(1, value - 1))} className="min-h-11 rounded-xl border border-[#cad9da] bg-white px-4 text-sm font-semibold disabled:opacity-40">Anterior</button><span className="num text-sm text-slate-600">{page} / {totalPages}</span><button type="button" disabled={page >= totalPages} onClick={() => setPage(value => value + 1)} className="min-h-11 rounded-xl border border-[#cad9da] bg-white px-4 text-sm font-semibold disabled:opacity-40">Próxima</button></nav>}
       </main>
 
-      <ComparisonTray properties={selected} favoriteIds={favoriteIds} onRemove={id => setSelected(current => current.filter(property => property.id !== id))} onClear={() => setSelected([])} onOpenProperty={openProperty} onToggleFavorite={toggleFavoriteFor} />
+      <ComparisonTray properties={selected} favoriteIds={favoriteIds} onRemove={id => setSelected(current => current.filter(property => property.id !== id))} onClear={() => setSelected([])} onOpenProperty={openProperty} onToggleFavorite={approve} />
     </div>
   )
 }

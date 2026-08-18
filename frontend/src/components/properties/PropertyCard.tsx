@@ -1,15 +1,17 @@
 import {
-  AlertTriangle, ArrowUpRight, Bath, Bed, CalendarDays, Car, Heart,
-  CircleDot, Landmark, MapPin, Ruler, TrendingDown,
+  AlertTriangle, ArrowUpRight, Bath, Bed, CalendarDays, Car,
+  CircleDot, Landmark, MapPinned, MapPin, Ruler, ThumbsDown, ThumbsUp, TrendingDown,
 } from 'lucide-react'
 import { Property } from '../../lib/api'
 import { daysUntilAuction } from '../../lib/heatScore'
-import { neighborhoodName } from '../../lib/opportunityTable'
+import { googleAddressSearchUrl, neighborhoodName } from '../../lib/opportunityTable'
 
 interface Props {
   property: Property
   isFavorite: boolean
-  onToggleFavorite: () => void
+  isRejected: boolean
+  onApprove: () => void
+  onReject: () => void
   onClick: () => void
 }
 
@@ -64,7 +66,7 @@ function TrustStatus({ property }: { property: Property }) {
   )
 }
 
-export default function PropertyCard({ property, isFavorite, onToggleFavorite, onClick }: Props) {
+export default function PropertyCard({ property, isFavorite, isRejected, onApprove, onReject, onClick }: Props) {
   const area = property.useful_area_m2 ?? property.area_m2
   const days = daysUntilAuction(property.auction_date)
   const type = property.property_type ? (TYPE_LABELS[property.property_type] ?? property.property_type) : 'Imóvel'
@@ -152,18 +154,11 @@ export default function PropertyCard({ property, isFavorite, onToggleFavorite, o
         </div>
       </button>
 
-      <button
-        type="button"
-        onClick={onToggleFavorite}
-        className={`flex min-h-11 items-center justify-center gap-2 border-t px-4 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#176B87] ${
-          isFavorite
-            ? 'border-[#b9dcd5] bg-[#edf8f5] text-[#126252]'
-            : 'border-[#e4ecec] bg-white text-[#176B87] hover:bg-[#f3f8f8]'
-        }`}
-      >
-        <Heart size={15} fill={isFavorite ? 'currentColor' : 'none'} />
-        {isFavorite ? 'Favoritado' : 'Favoritar imóvel'}
-      </button>
+      <div className="grid grid-cols-3 border-t border-[#e4ecec] bg-white p-1.5">
+        <a href={googleAddressSearchUrl(property)} target="_blank" rel="noopener noreferrer" className="flex min-h-10 items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-[#176B87] transition hover:bg-[#eef6f6]" aria-label="Pesquisar endereço no Google"><MapPinned size={15} />Google</a>
+        <button type="button" onClick={onApprove} className={`flex min-h-10 items-center justify-center gap-1.5 rounded-lg text-xs font-semibold transition ${isFavorite ? 'bg-[#e4f4ef] text-[#126252]' : 'text-slate-500 hover:bg-[#edf8f5] hover:text-[#126252]'}`}><ThumbsUp size={15} fill={isFavorite ? 'currentColor' : 'none'} />{isFavorite ? 'Aprovado' : 'Aprovar'}</button>
+        <button type="button" onClick={onReject} className={`flex min-h-10 items-center justify-center gap-1.5 rounded-lg text-xs font-semibold transition ${isRejected ? 'bg-[#fff0f1] text-[#B33A48]' : 'text-slate-500 hover:bg-[#fff0f1] hover:text-[#B33A48]'}`}><ThumbsDown size={15} fill={isRejected ? 'currentColor' : 'none'} />{isRejected ? 'Reprovado' : 'Reprovar'}</button>
+      </div>
     </article>
   )
 }
