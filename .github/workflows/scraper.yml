@@ -2,15 +2,20 @@ name: Leila Scraper
 
 on:
   schedule:
-    # Todos os dias às 07h e 19h BRT. Freshness importa para disponibilidade.
-    - cron: '0 10,22 * * *'
+    # Uma rodada diária às 06h BRT (09h UTC). O catálogo registra a saúde
+    # de cada fonte; não duplicar a rodada para compensar falhas parciais.
+    - cron: '0 9 * * *'
   workflow_dispatch:
     # Disparo manual via GitHub UI ou API
+
+concurrency:
+  group: leila-scraper-daily
+  cancel-in-progress: false
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
 
     steps:
       - uses: actions/checkout@v4
@@ -31,5 +36,8 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.LEILA_SUPABASE_SERVICE_KEY }}
           PROXY_ROTATION: 'true'
           PROXY_LIST: ${{ secrets.LEILA_PROXY_LIST }}
-          SCRAPER_UFS: ${{ vars.LEILA_SCRAPER_UFS || 'AC,AL,AM,AP,BA,CE,DF,ES,GO,MA,MG,MS,MT,PA,PB,PE,PI,PR,RJ,RN,RO,RR,RS,SC,SE,SP,TO' }}
+          SCRAPER_UFS: 'SP'
+          SCRAPER_TARGET_STATE: 'SP'
+          SCRAPER_TARGET_CITY: 'São Paulo'
+          ZUK_READER_BASE_URL: ${{ vars.LEILA_ZUK_READER_BASE_URL || 'https://r.jina.ai' }}
         run: python run.py

@@ -79,7 +79,8 @@ export default function SettingsPage() {
     )
   }
 
-  const activeSources = sources?.filter(s => s.active && s.implemented !== false).length ?? 0
+  const activeSources = sources?.filter(s => s.active && s.coverage_mode === 'direct' && s.implementation_status === 'ready').length ?? 0
+  const indirectSources = sources?.filter(s => s.operational_status === 'covered_indirectly').length ?? 0
   const pendingSources = sources?.filter(s => s.implemented === false).length ?? 0
   const activeModalities: string[] = savedFilters?.modality_categories ?? []
 
@@ -287,7 +288,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-slate-400 mt-0.5">
                   {sourcesLoading
                     ? 'Carregando...'
-                    : `${activeSources} operante${activeSources !== 1 ? 's' : ''}${pendingSources ? ` · ${pendingSources} em integração` : ''}`}
+                    : `${activeSources} coletor${activeSources !== 1 ? 'es' : ''} ativo${activeSources !== 1 ? 's' : ''} · ${indirectSources} cobertura${indirectSources !== 1 ? 's' : ''} indireta${indirectSources !== 1 ? 's' : ''}${pendingSources ? ` · ${pendingSources} pendente${pendingSources !== 1 ? 's' : ''}` : ''}`}
                 </p>
               </div>
             </div>
@@ -321,31 +322,47 @@ export default function SettingsPage() {
                 className="flex items-center justify-between px-5 py-4 hover:bg-slate-50/50 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${source.active && source.implemented !== false ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${source.operational_status === 'collecting' ? 'bg-emerald-500' : source.operational_status === 'covered_indirectly' ? 'bg-sky-500' : 'bg-slate-300'}`} />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800">{source.name}</p>
                     <p className="text-xs text-slate-400 mt-0.5 truncate">
                       {source.implemented === false
                         ? 'Em integração — ainda não participa da cobertura'
+                        : source.coverage_mode === 'indirect'
+                        ? `${source.property_count ?? 0} imóvel(is) identificado(s) por parceiros`
                         : source.last_scraped_at
-                        ? `Última busca: ${new Date(source.last_scraped_at).toLocaleString('pt-BR')}`
+                        ? `${source.property_count ?? 0} imóvel(is) · Última busca: ${new Date(source.last_scraped_at).toLocaleString('pt-BR')}`
                         : 'Nunca executado'}
                     </p>
+                    <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                      Status: {source.coverage_mode === 'indirect' ? 'Cobertura indireta' : source.implementation_status ?? 'não informado'}
+                      {' · '}Última tentativa: {source.last_attempted_at
+                        ? new Date(source.last_attempted_at).toLocaleString('pt-BR')
+                        : 'Nunca tentada'}
+                    </p>
+                    {source.coverage_mode === 'indirect' && source.coverages && source.coverages.length > 0 && (
+                      <p className="text-[11px] text-sky-600 mt-1 leading-relaxed">
+                        Coberta por: {source.coverages.map(coverage => coverage.collector_source_id).join(', ')}
+                      </p>
+                    )}
+                    {source.last_error && (
+                      <p className="text-[11px] text-rose-600 mt-1 line-clamp-2">Diagnóstico: {source.last_error}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                  {source.active && source.implemented !== false
+                  {source.active && source.implementation_status === 'ready'
                     ? <CheckCircle2 size={15} className="text-emerald-500" />
                     : <XCircle size={15} className="text-slate-300" />
                   }
                   <button
                     onClick={() => toggleSource.mutate({ id: source.id, active: !source.active })}
-                    disabled={source.implemented === false}
+                    disabled={!source.can_activate}
                     aria-label={source.implemented === false ? `${source.name} ainda não disponível` : `${source.active ? 'Desativar' : 'Ativar'} ${source.name}`}
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none ${
                       source.active ? 'bg-slate-900' : 'bg-slate-200'
-                    } ${source.implemented === false ? 'cursor-not-allowed opacity-40' : ''
+                    } ${!source.can_activate ? 'cursor-not-allowed opacity-40' : ''
                     }`}
                     title={source.implemented === false ? 'Integração ainda não disponível' : source.active ? 'Desativar fonte' : 'Ativar fonte'}
                   >

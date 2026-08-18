@@ -40,10 +40,11 @@ ALL_UFS = [
     "RO","RR","RS","SC","SE","SP","TO"
 ]
 
-# UFs padrão: principais mercados de leilão do Brasil
-# Pode ser sobrescrito via env: SCRAPER_UFS=SP,RJ,MG
+# O produto está deliberadamente restrito à capital paulista. Mesmo que uma
+# configuração antiga ainda liste outras UFs, o coletor não sai desse limite.
 _env_ufs = os.getenv("SCRAPER_UFS", "").strip()
-DEFAULT_UFS = [u.strip().upper() for u in _env_ufs.split(",") if u.strip()] if _env_ufs else ALL_UFS
+_configured_ufs = [u.strip().upper() for u in _env_ufs.split(",") if u.strip()]
+DEFAULT_UFS = [uf for uf in (_configured_ufs or ["SP"]) if uf == "SP"] or ["SP"]
 
 PROPERTY_TYPE_MAP = {
     "AP": "apartamento",
@@ -137,12 +138,17 @@ def _normalize_neighborhood(raw: str) -> Optional[str]:
 
 class CaixaSource(BaseSource):
     source_id = SOURCE_ID
+    collector_version = "caixa-1.1.0"
+    supports_regions = True
+    supports_details = False
+    supports_documents = False
+    supports_photos = False
+    supports_reconciliation = True
 
     def __init__(self, ufs: Optional[list[str]] = None):
         self.ufs = ufs or DEFAULT_UFS
         self.successful_regions: list[str] = []
         self.failed_regions: list[str] = []
-        self.proxy = get_proxy()
 
     async def _scrape_uf(self, session: AsyncSession, uf: str) -> list[ScrapedProperty]:
         url = CSV_URL.format(uf=uf)
@@ -150,7 +156,9 @@ class CaixaSource(BaseSource):
 
         try:
             await asyncio.sleep(random.uniform(1.0, 3.0))
-            response = await session.get(url, timeout=30, proxy=self.proxy)
+            # Escolhe um proxy por UF/tentativa. Um único IP bloqueado não deve
+            # condenar a rodada inteira.
+            response = await session.get(url, timeout=30, proxy=get_proxy())
             response.raise_for_status()
         except Exception as e:
             print(f"[Caixa] Erro ao baixar CSV para {uf}: {e}")
@@ -350,7 +358,7 @@ class CaixaSource(BaseSource):
                 await session.get(
                     "https://venda-imoveis.caixa.gov.br/sistema/login-site.asp",
                     timeout=15,
-                    proxy=self.proxy,
+                    proxy=get_proxy(),
                 )
                 await asyncio.sleep(2)
             except Exception:

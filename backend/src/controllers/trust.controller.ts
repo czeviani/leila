@@ -1,9 +1,9 @@
 import { Request, Response } from 'express'
 
-const RUN_STATUSES = new Set(['running', 'success', 'partial', 'failed'])
+const RUN_STATUSES = new Set(['running', 'success', 'partial', 'failed', 'stale', 'cancelled', 'skipped'])
 
 const countProperties = async (req: Request, configure: (query: any) => any) => {
-  const base = req.supabase!.from('leila_properties').select('id', { count: 'exact', head: true })
+  const base = req.supabase!.from('leila_properties').select('id', { count: 'exact', head: true }).eq('in_scope', true)
   const { count, error } = await configure(base)
   if (error) throw error
   return count ?? 0
@@ -15,7 +15,7 @@ export const getIngestionRuns = async (req: Request, res: Response) => {
   const requestedLimit = Number(req.query.limit ?? 20)
 
   if (status && !RUN_STATUSES.has(status)) {
-    return res.status(400).json({ error: 'status deve ser running, success, partial ou failed' })
+    return res.status(400).json({ error: 'status inválido' })
   }
   if (!Number.isInteger(requestedLimit) || requestedLimit < 1 || requestedLimit > 100) {
     return res.status(400).json({ error: 'limit deve ser um inteiro entre 1 e 100' })
@@ -46,7 +46,7 @@ export const getDataHealth = async (req: Request, res: Response) => {
       countProperties(req, query => query.eq('is_active', true).neq('availability_status', 'unavailable').gte('data_quality_score', 70)),
       req.supabase!
         .from('leila_ingestion_runs')
-        .select('id,source_id,status,started_at,finished_at,found_count,written_count,error_count,verified_regions,failed_regions')
+        .select('id,source_id,status,trigger_type,collector_version,started_at,finished_at,heartbeat_at,found_count,written_count,unchanged_count,rejected_count,error_count,duration_ms,verified_regions,failed_regions')
         .order('started_at', { ascending: false })
         .limit(25),
     ])
@@ -67,7 +67,8 @@ export const getDataHealth = async (req: Request, res: Response) => {
     const latestRunUnhealthy = latestBySource.some(run =>
       run.status === 'failed'
       || run.status === 'partial'
-      || (run.status === 'running' && now - new Date(run.started_at).getTime() > 60 * 60 * 1000)
+      || run.status === 'stale'
+      || (run.status === 'running' && now - new Date(run.heartbeat_at ?? run.started_at).getTime() > 60 * 60 * 1000)
       || now - new Date(run.started_at).getTime() > 30 * 60 * 60 * 1000
     )
     const healthStatus = live === 0 || freshnessPct < 50 || latestBySource.length === 0 || latestRunUnhealthy

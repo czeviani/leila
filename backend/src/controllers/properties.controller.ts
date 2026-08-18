@@ -151,6 +151,7 @@ export const getProperties = async (req: Request, res: Response) => {
   let query = req.supabase!
     .from('leila_properties')
     .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(status, tags, analysis, analyzed_at), leila_favorites(id), leila_discarded_properties(id)', { count: 'exact' })
+    .eq('in_scope', true)
     .order(sortField, { ascending, nullsFirst: false })
     .range(offset, offset + Number(limit) - 1)
 
@@ -273,25 +274,19 @@ export const getProperties = async (req: Request, res: Response) => {
 }
 
 export const getPropertyCities = async (req: Request, res: Response) => {
-  const { search, state } = req.query
-  const states = state
-    ? String(state).split(',').map(value => value.trim().toUpperCase()).filter(Boolean)
-    : []
-  const normalizedSearch = search ? String(search).trim() : ''
+  const search = String(req.query.search ?? '').trim().toLocaleLowerCase('pt-BR')
+  const states = String(req.query.state ?? 'SP').split(',').map(value => value.trim().toUpperCase())
+  if (!states.includes('SP') || (search && !'são paulo'.includes(search))) return res.json([])
 
-  if (states.length === 0 && normalizedSearch.length < 2) return res.json([])
-
-  const { data, error } = await req.supabase!.rpc('leila_filter_cities', {
-    p_states: states,
-    p_search: normalizedSearch || null,
-  })
+  const { count, error } = await req.supabase!
+    .from('leila_properties')
+    .select('id', { count: 'exact', head: true })
+    .eq('in_scope', true)
+    .eq('is_active', true)
+    .neq('availability_status', 'unavailable')
 
   if (error) return res.status(500).json({ error: error.message })
-
-  return res.json((data ?? []).map((row: { name: string; property_count: number | string }) => ({
-    name: row.name,
-    count: Number(row.property_count),
-  })))
+  return res.json([{ name: 'São Paulo', count: count ?? 0 }])
 }
 
 export const getPropertyById = async (req: Request, res: Response) => {
@@ -301,6 +296,7 @@ export const getPropertyById = async (req: Request, res: Response) => {
     .from('leila_properties')
     .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(*), leila_discarded_properties(id)')
     .eq('id', id)
+    .eq('in_scope', true)
     .single()
 
   if (error) return res.status(404).json({ error: 'Property not found' })
@@ -316,6 +312,8 @@ export const getNeighborhoodProfiles = async (req: Request, res: Response) => {
     .select('*')
     .order('property_count', { ascending: false })
     .limit(safeLimit)
+
+  query = query.eq('state', 'SP').eq('city', 'São Paulo')
 
   if (state) query = query.eq('state', String(state).trim().toUpperCase())
   if (city) query = query.eq('city', String(city).trim())
@@ -342,6 +340,7 @@ export const compareProperties = async (req: Request, res: Response) => {
     .from('leila_properties')
     .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(status, tags, analysis, analyzed_at), leila_discarded_properties(id)')
     .in('id', propertyIds)
+    .eq('in_scope', true)
 
   if (error) return res.status(500).json({ error: error.message })
   const byId = new Map((data ?? []).map(property => [property.id, property]))

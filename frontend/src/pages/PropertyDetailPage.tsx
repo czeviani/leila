@@ -47,6 +47,15 @@ const SOURCE_URLS: Record<string, string> = {
   santander: 'https://www.santander.com.br/leiloes',
 }
 
+const SELLER_LABELS: Record<string, string> = {
+  caixa: 'Caixa Econômica Federal',
+  bb: 'Banco do Brasil',
+  santander: 'Santander',
+  itau: 'Itaú',
+  bradesco: 'Bradesco',
+  mega_leiloes: 'Mega Leilões',
+}
+
 function availabilityOf(property: Property) {
   if (property.availability_status) return property.availability_status
   return property.is_active === false ? 'unavailable' : 'available'
@@ -410,6 +419,12 @@ export default function PropertyDetailPage() {
                   <dt className="text-xs text-slate-400">Fonte</dt>
                   <dd className="mt-0.5 font-semibold text-slate-700">{property.leila_sources?.name ?? property.source_id}</dd>
                 </div>
+                {property.seller_id && (
+                  <div>
+                    <dt className="text-xs text-slate-400">Vendedor/originador</dt>
+                    <dd className="mt-0.5 font-semibold text-slate-700">{SELLER_LABELS[property.seller_id] ?? property.seller_id}</dd>
+                  </div>
+                )}
                 <div>
                   <dt className="text-xs text-slate-400">Identificador oficial</dt>
                   <dd className="mt-0.5 break-all font-mono text-xs text-slate-700">{property.external_id}</dd>

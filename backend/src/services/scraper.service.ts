@@ -10,6 +10,8 @@ export interface ScrapeResult {
   total: number
   inserted: number
   updated: number
+  unchanged?: number
+  rejected?: number
   errors: number
   status?: 'success' | 'partial' | 'failed'
   verified_regions?: string[]

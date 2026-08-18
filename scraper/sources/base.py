@@ -34,6 +34,7 @@ class ScrapedProperty:
     external_id: str
     title: str
     auction_price: float
+    seller_id: Optional[str] = None
 
     address: Optional[str] = None
     neighborhood: Optional[str] = None
@@ -67,7 +68,10 @@ class ScrapeResult:
     total: int = 0
     inserted: int = 0
     updated: int = 0
+    unchanged: int = 0
+    rejected: int = 0
     errors: int = 0
+    run_id: Optional[str] = None
 
 
 def calculate_data_quality(prop: ScrapedProperty) -> int:
@@ -87,6 +91,14 @@ def calculate_data_quality(prop: ScrapedProperty) -> int:
 
 class BaseSource(ABC):
     source_id: str
+    collector_version: str = "1.0.0"
+    supports_regions: bool = True
+    supports_details: bool = False
+    supports_documents: bool = False
+    supports_photos: bool = False
+    # Only full, stable catalogs may expire records that disappear. Search
+    # pages and rotating marketplaces must never infer absence from one run.
+    supports_reconciliation: bool = False
 
     def _build_client(self) -> httpx.AsyncClient:
         proxy = get_proxy()

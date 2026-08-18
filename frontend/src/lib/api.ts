@@ -32,13 +32,42 @@ export interface Source {
   active: boolean
   scraper_key: string
   last_scraped_at: string | null
+  implementation_status?: 'planned' | 'testing' | 'ready' | 'blocked' | 'deprecated' | string
+  source_kind?: 'official' | 'auctioneer' | 'aggregator' | 'coverage_target' | string
+  coverage_mode?: 'direct' | 'indirect' | 'none' | string
+  covered_by_source_id?: string | null
+  requires_external_service?: boolean
+  last_attempted_at?: string | null
+  last_successful_at?: string | null
+  last_status?: string | null
+  last_error?: string | null
+  last_found_count?: number
+  last_written_count?: number
+  last_duration_ms?: number | null
+  consecutive_failures?: number
+  coverage_notes?: string | null
+  collector_version?: string | null
+  target_state?: string
+  target_city?: string
+  property_count?: number
+  operational_status?: 'collecting' | 'paused' | 'covered_indirectly' | string
+  coverages?: Array<{
+    collector_source_id: string
+    covered_source_id: string
+    observed_count: number
+    last_observed_at: string | null
+    strategy: string
+    evidence_notes: string | null
+  }>
   implemented?: boolean
+  can_activate?: boolean
 }
 
 export interface Property {
   id: string
   source_id: string
   external_id: string
+  seller_id: string | null
   title: string
   address: string | null
   city: string | null
@@ -313,7 +342,10 @@ export interface ScrapeResult {
   total: number
   inserted: number
   updated: number
+  unchanged?: number
+  rejected?: number
   errors: number
+  run_id?: string | null
 }
 
 // ── LLM Settings ──────────────────────────────────────────────────────────────
@@ -432,7 +464,7 @@ export const api = {
 
   // ── Scraper ──────────────────────────────────────────────────────────────
   scraper: {
-    status: () => apiFetch<{ service: string; proxy_count: number }>('/api/scraper/status'),
+    status: () => apiFetch<{ service: string; proxy_count: number; available_sources: Record<string, unknown> }>('/api/scraper/status'),
     runAll: () => apiFetch<Record<string, ScrapeResult>>('/api/scraper/run/all', { method: 'POST' }),
     runSource: (source_id: string) =>
       apiFetch<ScrapeResult>(`/api/scraper/run/${source_id}`, { method: 'POST' }),

@@ -35,7 +35,7 @@ _ROTATION_ENABLED = os.getenv("PROXY_ROTATION", "false").lower() == "true"
 
 
 def get_proxy() -> Optional[str]:
-    """Retorna URL de um proxy aleatório, ou None se rotação desativada."""
+    """Retorna URL de um proxy aleatório a cada chamada."""
     if not _ROTATION_ENABLED or not _PROXIES:
         return None
     return random.choice(_PROXIES)
