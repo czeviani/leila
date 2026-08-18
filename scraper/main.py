@@ -241,26 +241,31 @@ async def _upsert_properties(
     return result
 
 
-async def _reconcile_missing(source_id: str, verified_states: list[str], scrape_start: datetime):
+async def _reconcile_missing(source_id: str, verified_states: list[str], scrape_start: datetime) -> bool:
     """Reconcilia ausências apenas em regiões cuja coleta foi comprovadamente válida.
 
     Primeira ausência = suspect (continua visível com alerta). Segunda ausência
     consecutiva = unavailable. Assim uma oscilação do CSV não apaga oportunidades.
     """
     if not verified_states:
-        return
+        return True
 
-    response = _get_supabase().rpc("leila_reconcile_missing_scope", {
-        "p_source_id": source_id,
-        "p_verified_states": verified_states,
-        "p_scrape_start": scrape_start.isoformat(),
-        "p_scope_city": TARGET_CITY,
-    }).execute()
-    summary = (response.data or [{}])[0]
-    suspect_count = int(summary.get("suspect_count") or 0)
-    unavailable_count = int(summary.get("unavailable_count") or 0)
-    if suspect_count or unavailable_count:
-        print(f"[Scraper] {source_id}: {suspect_count} suspeitos, {unavailable_count} indisponíveis")
+    try:
+        response = _get_supabase().rpc("leila_reconcile_missing_scope", {
+            "p_source_id": source_id,
+            "p_verified_states": verified_states,
+            "p_scrape_start": scrape_start.isoformat(),
+            "p_scope_city": TARGET_CITY,
+        }).execute()
+        summary = (response.data or [{}])[0]
+        suspect_count = int(summary.get("suspect_count") or 0)
+        unavailable_count = int(summary.get("unavailable_count") or 0)
+        if suspect_count or unavailable_count:
+            print(f"[Scraper] {source_id}: {suspect_count} suspeitos, {unavailable_count} indisponíveis")
+        return True
+    except Exception as error:
+        print(f"[Scraper] Reconciliação adiada para {source_id}: {error}")
+        return False
 
 
 def _refresh_neighborhood_profiles(verified_states: list[str]):
@@ -479,14 +484,15 @@ async def scrape_all():
             failed = list(getattr(source, "failed_regions", []))
             # Se qualquer escrita falhou, não há como distinguir o anúncio
             # ausente daquele que foi visto mas não persistido. Não reconcilia.
+            reconciliation_ok = True
             if verified and result.errors == 0 and getattr(source, "supports_reconciliation", False):
-                await _reconcile_missing(source_id, verified, scrape_start)
+                reconciliation_ok = await _reconcile_missing(source_id, verified, scrape_start)
             if verified and result.errors == 0:
                 scoped_properties, _ = partition_scope(properties)
                 _update_coverage_observations(source_id, scoped_properties, datetime.now(timezone.utc))
             if verified:
                 _refresh_neighborhood_profiles(verified)
-            run_status = "failed" if not verified else ("partial" if failed or result.errors else "success")
+            run_status = "failed" if not verified else ("partial" if failed or result.errors or not reconciliation_ok else "success")
             _finish_run(run_id, run_status, result, verified, failed)
             all_results[source_id] = {
                 **result.__dict__,
@@ -530,14 +536,15 @@ async def scrape_source(source_id: str, background_tasks: BackgroundTasks):
         successful_regions = getattr(source, "successful_regions", None)
         verified = list(successful_regions) if successful_regions is not None else list({p.state for p in properties if p.state})
         failed = list(getattr(source, "failed_regions", []))
+        reconciliation_ok = True
         if verified and result.errors == 0 and getattr(source, "supports_reconciliation", False):
-            await _reconcile_missing(source_id, verified, scrape_start)
+            reconciliation_ok = await _reconcile_missing(source_id, verified, scrape_start)
         if verified and result.errors == 0:
             scoped_properties, _ = partition_scope(properties)
             _update_coverage_observations(source_id, scoped_properties, datetime.now(timezone.utc))
         if verified:
             _refresh_neighborhood_profiles(verified)
-        run_status = "failed" if not verified else ("partial" if failed or result.errors else "success")
+        run_status = "failed" if not verified else ("partial" if failed or result.errors or not reconciliation_ok else "success")
         _finish_run(run_id, run_status, result, verified, failed)
         if run_status == "failed":
             raise HTTPException(status_code=502, detail="Nenhuma região produziu uma coleta válida")
