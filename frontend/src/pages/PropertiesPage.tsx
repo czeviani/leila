@@ -70,31 +70,32 @@ interface DeskState {
 function readDeskState(): DeskState {
   const fallback: DeskState = { search: '', filters: {}, sort: 'opportunity_score:desc', page: 1 }
   try {
+    const stored = JSON.parse(localStorage.getItem(DESK_STATE_KEY) || 'null') as Partial<DeskState> | null
+    const cached: DeskState = stored ? {
+      search: typeof stored.search === 'string' ? stored.search : '',
+      filters: stored.filters && typeof stored.filters === 'object' ? stored.filters : {},
+      sort: SORT_OPTIONS.some(option => option.value === stored.sort) ? stored.sort! : fallback.sort,
+      page: Number.isInteger(stored.page) && Number(stored.page) > 0 ? Number(stored.page) : 1,
+    } : fallback
     const query = new URLSearchParams(window.location.search)
     const hasQueryState = query.has('q') || query.has('sort') || query.has('page')
       || Object.keys(FILTER_LABELS).some(key => query.has(key))
-    if (!hasQueryState) {
-      const stored = JSON.parse(localStorage.getItem(DESK_STATE_KEY) || 'null') as Partial<DeskState> | null
-      if (stored) return {
-        search: typeof stored.search === 'string' ? stored.search : '',
-        filters: stored.filters && typeof stored.filters === 'object' ? stored.filters : {},
-        sort: SORT_OPTIONS.some(option => option.value === stored.sort) ? stored.sort! : fallback.sort,
-        page: Number.isInteger(stored.page) && Number(stored.page) > 0 ? Number(stored.page) : 1,
-      }
-    }
+    if (!hasQueryState) return cached
 
-    const filters: Record<string, string | number | undefined> = {}
+    // A URL parcial complementa o cache em vez de apagar filtros que o usuário
+    // já havia escolhido. O estado só é zerado pelas ações explícitas de limpar.
+    const filters: Record<string, string | number | undefined> = { ...cached.filters }
     for (const key of Object.keys(FILTER_LABELS)) {
       const value = query.get(key)
       if (value == null || value === '') continue
       filters[key] = NUMERIC_FILTERS.has(key) && Number.isFinite(Number(value)) ? Number(value) : value
     }
-    const requestedSort = query.get('sort') ?? fallback.sort
+    const requestedSort = query.get('sort') ?? cached.sort
     return {
-      search: query.get('q') ?? '',
+      search: query.get('q') ?? cached.search,
       filters,
       sort: SORT_OPTIONS.some(option => option.value === requestedSort) ? requestedSort : fallback.sort,
-      page: Math.max(1, Number(query.get('page')) || 1),
+      page: query.has('page') ? Math.max(1, Number(query.get('page')) || 1) : cached.page,
     }
   } catch {
     return fallback
