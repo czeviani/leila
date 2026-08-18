@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { SlidersHorizontal, X, Search, MapPin, ShoppingCart, Gavel, Users, Mail, Tag, Sparkles, Clock, ShieldCheck, CircleDot } from 'lucide-react'
 import { PropertyFilters } from '../../lib/api'
-import { useFilters, useSaveFilters, useCities, useNeighborhoods, useSources } from '../../hooks/useProperties'
+import { useSaveFilters, useCities, useNeighborhoods, useSources } from '../../hooks/useProperties'
 
 const PROPERTY_TYPES = ['apartamento', 'casa', 'terreno', 'loja', 'galpão', 'sala', 'sobrado']
 const UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
@@ -38,6 +38,7 @@ const AREA_CLASSIFICATIONS = [
 ]
 
 interface Props {
+  activeParams: Record<string, string | number | undefined>
   onFilterChange: (params: Record<string, string | number | undefined>) => void
 }
 
@@ -64,14 +65,16 @@ function filtersToParams(filters: PropertyFilters): Record<string, string | numb
   return params
 }
 
-export default function FilterPanel({ onFilterChange }: Props) {
-  const { data: savedFilters } = useFilters()
+const splitParam = (value: string | number | undefined) => value == null || value === ''
+  ? []
+  : String(value).split(',').map(item => item.trim()).filter(Boolean)
+
+export default function FilterPanel({ activeParams, onFilterChange }: Props) {
   const saveFilters = useSaveFilters()
   const panelRef = useRef<HTMLDivElement>(null)
   const cityInputRef = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
-  const initialApplied = useRef(false)
 
   const [open, setOpen] = useState(false)
   const [priceMin, setPriceMin] = useState('')
@@ -109,30 +112,28 @@ export default function FilterPanel({ onFilterChange }: Props) {
   const { data: sources = [] } = useSources()
 
   useEffect(() => {
-    if (!savedFilters || initialApplied.current) return
-    initialApplied.current = true
-    if (savedFilters.price_min) setPriceMin(String(savedFilters.price_min))
-    if (savedFilters.price_max) setPriceMax(String(savedFilters.price_max))
-    if (savedFilters.states?.length) setSelectedStates(savedFilters.states)
-    if (savedFilters.cities?.length) setSelectedCities(savedFilters.cities)
-    if (savedFilters.property_types?.length) setSelectedTypes(savedFilters.property_types)
-    if (savedFilters.discount_min) setDiscountMin(String(savedFilters.discount_min))
-    if (savedFilters.modality_categories?.length) setSelectedModalities(savedFilters.modality_categories)
-    if (savedFilters.area_classifications?.length) setSelectedAreaClassifications(savedFilters.area_classifications)
-    if (savedFilters.days_until_auction_max) setDaysUntilAuction(savedFilters.days_until_auction_max)
-    if (savedFilters.has_evaluation) setHasEvaluation(savedFilters.has_evaluation)
-    if (savedFilters.area_min != null) setAreaMin(String(savedFilters.area_min))
-    if (savedFilters.area_max != null) setAreaMax(String(savedFilters.area_max))
-    if (savedFilters.source_ids?.length) setSelectedSources(savedFilters.source_ids)
-    if (savedFilters.neighborhoods?.length) setSelectedNeighborhoods(savedFilters.neighborhoods)
-    if (savedFilters.price_per_m2_min != null) setPricePerM2Min(String(savedFilters.price_per_m2_min))
-    if (savedFilters.price_per_m2_max != null) setPricePerM2Max(String(savedFilters.price_per_m2_max))
-    if (savedFilters.opportunity_score_min != null) setOpportunityScoreMin(String(savedFilters.opportunity_score_min))
-    if (savedFilters.neighborhood_score_min != null) setNeighborhoodScoreMin(String(savedFilters.neighborhood_score_min))
-
-    const params = filtersToParams(savedFilters)
-    if (Object.keys(params).length > 0) onFilterChange(params)
-  }, [savedFilters]) // eslint-disable-line react-hooks/exhaustive-deps
+    setPriceMin(activeParams.price_min == null ? '' : String(activeParams.price_min))
+    setPriceMax(activeParams.price_max == null ? '' : String(activeParams.price_max))
+    setSelectedStates(splitParam(activeParams.state))
+    setSelectedCities(splitParam(activeParams.city))
+    setSelectedTypes(splitParam(activeParams.type))
+    setDiscountMin(activeParams.discount_min == null ? '' : String(activeParams.discount_min))
+    setSelectedModalities(splitParam(activeParams.modality))
+    setSelectedAreaClassifications(splitParam(activeParams.area_classification))
+    setDaysUntilAuction(activeParams.days_until_auction_max == null ? null : Number(activeParams.days_until_auction_max))
+    setHasEvaluation(activeParams.has_evaluation === 'true')
+    setAreaMin(activeParams.area_min == null ? '' : String(activeParams.area_min))
+    setAreaMax(activeParams.area_max == null ? '' : String(activeParams.area_max))
+    setSelectedSources(splitParam(activeParams.source))
+    setSelectedNeighborhoods(splitParam(activeParams.neighborhood))
+    setPricePerM2Min(activeParams.price_per_m2_min == null ? '' : String(activeParams.price_per_m2_min))
+    setPricePerM2Max(activeParams.price_per_m2_max == null ? '' : String(activeParams.price_per_m2_max))
+    setOpportunityScoreMin(activeParams.opportunity_score_min == null ? '' : String(activeParams.opportunity_score_min))
+    setNeighborhoodScoreMin(activeParams.neighborhood_score_min == null ? '' : String(activeParams.neighborhood_score_min))
+    setVerifiedOnly(activeParams.verified_within_hours != null)
+    setQualityOnly(Number(activeParams.quality_min ?? 0) >= 70)
+    setOccupancy(activeParams.occupied === 'true' || activeParams.occupied === 'false' || activeParams.occupied === 'unknown' ? activeParams.occupied : '')
+  }, [activeParams])
 
   useEffect(() => {
     if (!open) return

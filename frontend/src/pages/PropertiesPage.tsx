@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownUp, DatabaseZap, Grid2X2, List, RefreshCw, Search,
   ShieldCheck, SlidersHorizontal, Sparkles, X,
@@ -51,6 +50,55 @@ const FILTER_LABELS: Record<string, string> = {
   discarded: 'Descartados',
 }
 
+const DESK_STATE_KEY = 'leila_opportunity_desk_state_v1'
+const NUMERIC_FILTERS = new Set([
+  'price_min', 'price_max', 'discount_min', 'area_min', 'area_max',
+  'days_until_auction_max', 'verified_within_hours', 'quality_min',
+  'price_per_m2_min', 'price_per_m2_max', 'opportunity_score_min',
+  'neighborhood_score_min',
+])
+
+interface DeskState {
+  search: string
+  filters: Record<string, string | number | undefined>
+  sort: string
+  page: number
+}
+
+function readDeskState(): DeskState {
+  const fallback: DeskState = { search: '', filters: {}, sort: 'opportunity_score:desc', page: 1 }
+  try {
+    const query = new URLSearchParams(window.location.search)
+    const hasQueryState = query.has('q') || query.has('sort') || query.has('page')
+      || Object.keys(FILTER_LABELS).some(key => query.has(key))
+    if (!hasQueryState) {
+      const stored = JSON.parse(localStorage.getItem(DESK_STATE_KEY) || 'null') as Partial<DeskState> | null
+      if (stored) return {
+        search: typeof stored.search === 'string' ? stored.search : '',
+        filters: stored.filters && typeof stored.filters === 'object' ? stored.filters : {},
+        sort: SORT_OPTIONS.some(option => option.value === stored.sort) ? stored.sort! : fallback.sort,
+        page: Number.isInteger(stored.page) && Number(stored.page) > 0 ? Number(stored.page) : 1,
+      }
+    }
+
+    const filters: Record<string, string | number | undefined> = {}
+    for (const key of Object.keys(FILTER_LABELS)) {
+      const value = query.get(key)
+      if (value == null || value === '') continue
+      filters[key] = NUMERIC_FILTERS.has(key) && Number.isFinite(Number(value)) ? Number(value) : value
+    }
+    const requestedSort = query.get('sort') ?? fallback.sort
+    return {
+      search: query.get('q') ?? '',
+      filters,
+      sort: SORT_OPTIONS.some(option => option.value === requestedSort) ? requestedSort : fallback.sort,
+      page: Math.max(1, Number(query.get('page')) || 1),
+    }
+  } catch {
+    return fallback
+  }
+}
+
 function relativeTime(date: string | null | undefined) {
   if (!date) return 'sem coleta confirmada'
   const hours = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 3_600_000))
@@ -71,26 +119,47 @@ function filterValue(key: string, value: string | number) {
 }
 
 export default function PropertiesPage() {
-  const navigate = useNavigate()
-  const [search, setSearch] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [filters, setFilters] = useState<Record<string, string | number | undefined>>({})
+  const [initialDeskState] = useState<DeskState>(readDeskState)
+  const [search, setSearch] = useState(initialDeskState.search)
+  const [debouncedSearch, setDebouncedSearch] = useState(initialDeskState.search.trim())
+  const [filters, setFilters] = useState<Record<string, string | number | undefined>>(initialDeskState.filters)
   const [activePreset, setActivePreset] = useState<string | null>(null)
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(initialDeskState.page)
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     try { return (localStorage.getItem('leila_desktop_view_v2') as ViewMode) || 'list' } catch { return 'list' }
   })
-  const [sort, setSort] = useState('opportunity_score:desc')
+  const [sort, setSort] = useState(initialDeskState.sort)
   const [tablePreferences, setTablePreferences] = useState<OpportunityTablePreferences>(readTablePreferences)
   const [selected, setSelected] = useState<Property[]>([])
   const [optimisticallyDismissed, setOptimisticallyDismissed] = useState<string[]>([])
   const timer = useRef<ReturnType<typeof setTimeout>>()
+  const firstSearchEffect = useRef(true)
 
   useEffect(() => {
+    if (firstSearchEffect.current) {
+      firstSearchEffect.current = false
+      return
+    }
     clearTimeout(timer.current)
     timer.current = setTimeout(() => { setDebouncedSearch(search.trim()); setPage(1) }, 300)
     return () => clearTimeout(timer.current)
   }, [search])
+
+  useEffect(() => {
+    const state: DeskState = { search, filters, sort, page }
+    try {
+      localStorage.setItem(DESK_STATE_KEY, JSON.stringify(state))
+      const query = new URLSearchParams()
+      if (search.trim()) query.set('q', search.trim())
+      for (const [key, value] of Object.entries(filters)) {
+        if (value !== undefined && value !== '') query.set(key, String(value))
+      }
+      if (sort !== 'opportunity_score:desc') query.set('sort', sort)
+      if (page > 1) query.set('page', String(page))
+      const suffix = query.toString()
+      window.history.replaceState(window.history.state, '', `${window.location.pathname}${suffix ? `?${suffix}` : ''}`)
+    } catch {}
+  }, [filters, page, search, sort])
 
   const [sortBy, sortOrder] = sort.split(':')
   const params = {
@@ -166,6 +235,9 @@ export default function PropertiesPage() {
   })
 
   const updateSort = (next: string) => { setSort(next); setActivePreset(null); setPage(1) }
+  const openProperty = (id: string) => {
+    window.open(`/properties/${id}`, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <div className="min-h-full bg-[#f3f7f7] text-[#163447]">
@@ -186,7 +258,7 @@ export default function PropertiesPage() {
 
           <div className="mt-5 flex flex-col gap-3 lg:flex-row">
             <label className="relative flex-1"><span className="sr-only">Buscar imóveis</span><Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" /><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Título, bairro, cidade ou endereço" className="h-12 w-full rounded-xl border border-[#cddcdd] bg-[#f8fbfb] pl-11 pr-11 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#176B87] focus:bg-white focus:ring-4 focus:ring-[#176B87]/10" />{search && <button type="button" onClick={() => setSearch('')} aria-label="Limpar busca" className="absolute right-3 top-1/2 min-h-9 min-w-9 -translate-y-1/2 rounded-lg text-slate-400 hover:bg-slate-100"><X size={16} className="mx-auto" /></button>}</label>
-            <FilterPanel onFilterChange={next => { setFilters(next); setActivePreset(null); setPage(1) }} />
+            <FilterPanel activeParams={filters} onFilterChange={next => { setFilters(next); setActivePreset(null); setPage(1) }} />
             <button type="button" onClick={() => runScraper.mutate(undefined)} disabled={runScraper.isPending} className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#163447] px-5 text-sm font-bold text-white transition hover:bg-[#0f293a] disabled:opacity-60"><RefreshCw size={16} className={runScraper.isPending ? 'animate-spin' : ''} />{runScraper.isPending ? 'Solicitando coleta' : 'Atualizar fontes'}</button>
           </div>
 
@@ -223,16 +295,16 @@ export default function PropertiesPage() {
         {!isLoading && properties.length > 0 && (
           <>
             <div className={`${viewMode === 'grid' ? 'xl:grid' : 'xl:hidden'} grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4`}>
-              {properties.map(property => <PropertyCard key={property.id} property={property} isFavorite={favoriteIds.has(property.id)} onToggleFavorite={() => toggleFavoriteFor(property)} onClick={() => navigate(`/properties/${property.id}`)} />)}
+              {properties.map(property => <PropertyCard key={property.id} property={property} isFavorite={favoriteIds.has(property.id)} onToggleFavorite={() => toggleFavoriteFor(property)} onClick={() => openProperty(property.id)} />)}
             </div>
-            {viewMode === 'list' && <OpportunityTable properties={properties} columns={tablePreferences.columns} density={tablePreferences.density} sort={sort} selectedIds={selectedIds} favoriteIds={favoriteIds} onSort={updateSort} onToggleSelection={toggleSelection} onToggleFavorite={toggleFavoriteFor} onDismiss={dismiss} onOpen={property => navigate(`/properties/${property.id}`)} />}
+            {viewMode === 'list' && <OpportunityTable properties={properties} columns={tablePreferences.columns} density={tablePreferences.density} sort={sort} selectedIds={selectedIds} favoriteIds={favoriteIds} onSort={updateSort} onToggleSelection={toggleSelection} onToggleFavorite={toggleFavoriteFor} onDismiss={dismiss} onOpen={property => openProperty(property.id)} />}
           </>
         )}
 
         {data && data.total > PAGE_SIZE && <nav className="mt-7 flex items-center justify-center gap-3" aria-label="Paginação"><button type="button" disabled={page === 1} onClick={() => setPage(value => Math.max(1, value - 1))} className="min-h-11 rounded-xl border border-[#cad9da] bg-white px-4 text-sm font-semibold disabled:opacity-40">Anterior</button><span className="num text-sm text-slate-600">{page} / {totalPages}</span><button type="button" disabled={page >= totalPages} onClick={() => setPage(value => value + 1)} className="min-h-11 rounded-xl border border-[#cad9da] bg-white px-4 text-sm font-semibold disabled:opacity-40">Próxima</button></nav>}
       </main>
 
-      <ComparisonTray properties={selected} favoriteIds={favoriteIds} onRemove={id => setSelected(current => current.filter(property => property.id !== id))} onClear={() => setSelected([])} onOpenProperty={id => navigate(`/properties/${id}`)} onToggleFavorite={toggleFavoriteFor} />
+      <ComparisonTray properties={selected} favoriteIds={favoriteIds} onRemove={id => setSelected(current => current.filter(property => property.id !== id))} onClear={() => setSelected([])} onOpenProperty={openProperty} onToggleFavorite={toggleFavoriteFor} />
     </div>
   )
 }
