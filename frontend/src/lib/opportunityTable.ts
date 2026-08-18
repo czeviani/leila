@@ -128,6 +128,13 @@ export function neighborhoodName(property: Property) {
   return null
 }
 
+export function googleAddressSearchUrl(property: Property) {
+  const query = [property.address || property.title, property.city, property.state]
+    .filter(Boolean)
+    .join(', ')
+  return `https://www.google.com/search?q=${encodeURIComponent(query)}`
+}
+
 export function neighborhoodInsight(property: Property) {
   const score = property.neighborhood_profile?.score ?? property.neighborhood_score
   const confidence = property.neighborhood_profile?.confidence ?? property.neighborhood_confidence

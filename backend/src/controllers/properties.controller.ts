@@ -84,7 +84,7 @@ export const getProperties = async (req: Request, res: Response) => {
     opportunity_score_min, neighborhood_score_min,
     search, has_evaluation, area_classification, days_until_auction_max,
     availability_status, availability, status, verified_within_hours, quality_min, occupied,
-    discarded = 'false',
+    discarded = 'false', decision,
     page = 1, limit = 50,
     sort_by = 'opportunity_score', sort_order = 'desc',
   } = req.query
@@ -144,16 +144,27 @@ export const getProperties = async (req: Request, res: Response) => {
   if (!['false', 'true', 'all'].includes(String(discarded))) {
     return res.status(400).json({ error: 'discarded deve ser false, true ou all' })
   }
+  if (decision !== undefined && !['approved', 'rejected', 'unreviewed'].includes(String(decision))) {
+    return res.status(400).json({ error: 'decision deve ser approved, rejected ou unreviewed' })
+  }
 
   let query = req.supabase!
     .from('leila_properties')
-    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(status, tags, analysis, analyzed_at), leila_discarded_properties(id)', { count: 'exact' })
+    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(status, tags, analysis, analyzed_at), leila_favorites(id), leila_discarded_properties(id)', { count: 'exact' })
     .order(sortField, { ascending, nullsFirst: false })
     .range(offset, offset + Number(limit) - 1)
 
   // Descartes são pessoais (RLS) e, por padrão, não ocupam espaço na paginação.
-  if (discarded === 'false') query = query.is('leila_discarded_properties', null)
-  if (discarded === 'true') query = query.not('leila_discarded_properties', 'is', null)
+  if (decision === 'approved') {
+    query = query.not('leila_favorites', 'is', null).is('leila_discarded_properties', null)
+  } else if (decision === 'rejected') {
+    query = query.not('leila_discarded_properties', 'is', null)
+  } else if (decision === 'unreviewed') {
+    query = query.is('leila_favorites', null).is('leila_discarded_properties', null)
+  } else {
+    if (discarded === 'false') query = query.is('leila_discarded_properties', null)
+    if (discarded === 'true') query = query.not('leila_discarded_properties', 'is', null)
+  }
 
   if (availabilityStatuses.length > 0) {
     query = availabilityStatuses.length === 1

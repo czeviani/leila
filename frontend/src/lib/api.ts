@@ -103,6 +103,7 @@ export interface Property {
   leila_sources?: Pick<Source, 'name' | 'icon_url' | 'url'>
   leila_evaluations?: Evaluation | null
   leila_document_analyses?: DocumentAnalysisRecord | null
+  leila_favorites?: Array<{ id: string }>
   leila_discarded_properties?: Array<{ id: string }>
 }
 
