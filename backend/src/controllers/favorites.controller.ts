@@ -5,7 +5,7 @@ export const getFavorites = async (req: Request, res: Response) => {
 
   const { data, error } = await req.supabase!
     .from('leila_favorites')
-    .select('*, leila_properties(*, leila_sources(name, icon_url), leila_evaluations(*))')
+    .select('*, leila_properties(*, leila_sources:leila_sources!leila_properties_source_id_fkey(name, icon_url), leila_evaluations(*))')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 

@@ -14,6 +14,10 @@ import settingsRouter from './routes/settings'
 const app = express()
 const PORT = process.env.PORT || 3001
 
+// Easypanel terminates HTTPS one hop before the container. Trust exactly that
+// hop so rate limiting uses the real client IP instead of rejecting XFF.
+app.set('trust proxy', 1)
+
 const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
   : []

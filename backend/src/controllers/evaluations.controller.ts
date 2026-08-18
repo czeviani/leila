@@ -40,7 +40,7 @@ export const requestEvaluation = async (req: Request, res: Response) => {
   // Get property details
   const { data: property, error: propError } = await req.supabase!
     .from('leila_properties')
-    .select('*, leila_sources(name)')
+    .select('*, leila_sources:leila_sources!leila_properties_source_id_fkey(name)')
     .eq('id', property_id)
     .single()
 

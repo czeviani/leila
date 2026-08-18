@@ -150,7 +150,7 @@ export const getProperties = async (req: Request, res: Response) => {
 
   let query = req.supabase!
     .from('leila_properties')
-    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(status, tags, analysis, analyzed_at), leila_favorites(id), leila_discarded_properties(id)', { count: 'exact' })
+    .select('*, leila_sources:leila_sources!leila_properties_source_id_fkey(name, icon_url, url), leila_evaluations(*), leila_document_analyses(status, tags, analysis, analyzed_at), leila_favorites(id), leila_discarded_properties(id)', { count: 'exact' })
     .eq('in_scope', true)
     .order(sortField, { ascending, nullsFirst: false })
     .range(offset, offset + Number(limit) - 1)
@@ -294,7 +294,7 @@ export const getPropertyById = async (req: Request, res: Response) => {
 
   const { data, error } = await req.supabase!
     .from('leila_properties')
-    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(*), leila_discarded_properties(id)')
+    .select('*, leila_sources:leila_sources!leila_properties_source_id_fkey(name, icon_url, url), leila_evaluations(*), leila_document_analyses(*), leila_discarded_properties(id)')
     .eq('id', id)
     .eq('in_scope', true)
     .single()
@@ -338,7 +338,7 @@ export const compareProperties = async (req: Request, res: Response) => {
 
   const { data, error } = await req.supabase!
     .from('leila_properties')
-    .select('*, leila_sources(name, icon_url, url), leila_evaluations(*), leila_document_analyses(status, tags, analysis, analyzed_at), leila_discarded_properties(id)')
+    .select('*, leila_sources:leila_sources!leila_properties_source_id_fkey(name, icon_url, url), leila_evaluations(*), leila_document_analyses(status, tags, analysis, analyzed_at), leila_discarded_properties(id)')
     .in('id', propertyIds)
     .eq('in_scope', true)
 

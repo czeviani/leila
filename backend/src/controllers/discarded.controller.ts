@@ -3,7 +3,7 @@ import { Request, Response } from 'express'
 export const getDiscardedProperties = async (req: Request, res: Response) => {
   const { data, error } = await req.supabase!
     .from('leila_discarded_properties')
-    .select('*, leila_properties(*, leila_sources(name, icon_url))')
+    .select('*, leila_properties(*, leila_sources:leila_sources!leila_properties_source_id_fkey(name, icon_url))')
     .eq('user_id', req.user!.id)
     .order('created_at', { ascending: false })
 
