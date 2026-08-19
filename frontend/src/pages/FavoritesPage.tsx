@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useFavorites, useToggleFavorite, useRequestEvaluation, useBulkEvaluate } from '../hooks/useProperties'
 import { Evaluation, EvaluationFinancialData, Property } from '../lib/api'
+import SourceBadge from '../components/properties/SourceBadge'
 
 function formatBRL(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
@@ -260,9 +261,7 @@ function EvaluationCard({
                 </span>
               )}
               {property.leila_sources && (
-                <span className="text-[10px] font-medium px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md">
-                  {property.leila_sources.name}
-                </span>
+                <SourceBadge sourceId={property.source_id} sourceName={property.leila_sources.name} compact />
               )}
               {property.discount_pct != null && property.discount_pct > 0 && (
                 <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 bg-emerald-500 text-white rounded-md">

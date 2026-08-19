@@ -5,6 +5,7 @@ import {
   confidenceLabel, effectiveArea, effectivePricePerM2, neighborhoodInsight,
   neighborhoodName, opportunityFactors, opportunityScore,
 } from '../../lib/opportunityTable'
+import SourceBadge from './SourceBadge'
 
 const money = (value: number | null | undefined) => value == null ? '—' : value.toLocaleString('pt-BR', {
   style: 'currency', currency: 'BRL', maximumFractionDigits: 0,
@@ -64,7 +65,7 @@ export default function ComparisonTray({ properties, favoriteIds, onRemove, onCl
           <div className="h-[calc(100%-89px)] overflow-auto p-5">
             <div className={`grid min-w-[900px] gap-3`} style={{ gridTemplateColumns: `150px repeat(${properties.length}, minmax(230px, 1fr))` }}>
               <CompareLabel label="Imóvel" />
-              {properties.map(property => <div key={`${property.id}-head`} className="rounded-2xl border border-[#d5e2e2] bg-white p-4"><p className="text-xs font-bold uppercase tracking-wider text-[#176B87]">{property.leila_sources?.name ?? property.source_id}</p><h3 className="mt-1 line-clamp-2 font-bold text-[#163447]">{property.title}</h3><p className="mt-2 flex items-center gap-1 text-xs text-slate-500"><MapPin size={12} />{neighborhoodName(property) ?? property.city ?? 'Localização pendente'}</p></div>)}
+              {properties.map(property => <div key={`${property.id}-head`} className="rounded-2xl border border-[#d5e2e2] bg-white p-4"><SourceBadge sourceId={property.source_id} sourceName={property.leila_sources?.name} compact /><h3 className="mt-2 line-clamp-2 font-bold text-[#163447]">{property.title}</h3><p className="mt-2 flex items-center gap-1 text-xs text-slate-500"><MapPin size={12} />{neighborhoodName(property) ?? property.city ?? 'Localização pendente'}</p></div>)}
               <CompareLabel label="Oportunidade" />
               {properties.map(property => { const score = opportunityScore(property); return <CompareValue key={`${property.id}-score`} emphasis best={score === best.score}><span>{score} <small>/ 100</small></span><span className="mt-1 block font-sans text-[10px] font-semibold text-slate-500">{opportunityFactors(property).join(' · ')}</span></CompareValue> })}
               <CompareLabel label="Lance" />
