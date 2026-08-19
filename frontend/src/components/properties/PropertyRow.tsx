@@ -125,7 +125,9 @@ export default memo(function PropertyRow({
       {columns.includes('price') && (
         <td className={`whitespace-nowrap px-3 text-right ${yPadding}`}>
           <p className="num text-sm font-bold text-[#163447]">{money(property.auction_price)}</p>
-          <p className="text-[10px] text-slate-400">lance inicial</p>
+          <p className="text-[10px] text-slate-400">
+            {property.auction_stage === 'first' ? 'mínimo · 1º leilão' : property.auction_stage === 'second' ? 'mínimo · 2º leilão' : 'lance inicial'}
+          </p>
         </td>
       )}
 

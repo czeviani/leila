@@ -86,6 +86,8 @@ export interface Property {
   auction_date: string | null
   auction_status: string
   auction_modality: string | null
+  auction_stage: 'first' | 'second' | 'single' | 'unknown' | null
+  auction_stages: Array<{ stage: 'first' | 'second'; price: number | null; event_at: string | null }>
   area_classification: string | null   // heurística do scraper; IA sobrescreve via leila_evaluations.area_classification
   bedrooms: number | null
   bathrooms: number | null

@@ -126,7 +126,9 @@ export default function PropertyCard({ property, isFavorite, isRejected, onAppro
 
           <div className="mt-auto flex items-end justify-between gap-3">
             <div>
-              <p className="mb-1 text-xs text-slate-500">{property.auction_modality === 'compra_direta' ? 'Preço anunciado' : 'Lance a partir de'}</p>
+              <p className="mb-1 text-xs text-slate-500">
+                {property.auction_modality === 'compra_direta' ? 'Preço anunciado' : property.auction_stage === 'first' ? 'Mínimo do 1º leilão' : property.auction_stage === 'second' ? 'Mínimo do 2º leilão' : 'Lance a partir de'}
+              </p>
               <p className="font-mono text-xl font-semibold tracking-tight text-[#163447]">{money(property.auction_price)}</p>
             </div>
             {property.discount_pct != null && property.discount_pct > 0 && (

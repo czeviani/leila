@@ -22,6 +22,16 @@ function formatDate(value: string | null, withTime = false) {
     : { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
+function formatAuctionEvent(value: string | null) {
+  if (!value) return 'Data não informada'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Data não informada'
+  return date.toLocaleString('pt-BR', {
+    timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+
 function relativeTime(value: string | null) {
   if (!value) return 'sem verificação registrada'
   const timestamp = new Date(value).getTime()
@@ -256,7 +266,9 @@ export default function PropertyDetailPage() {
           <h2 id="financial-heading" className="mb-3 text-base font-bold text-slate-900">Valores anunciados</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-400">Preço inicial</p>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-400">
+              {property.auction_stage === 'first' ? 'Mínimo vigente · 1º leilão' : property.auction_stage === 'second' ? 'Mínimo vigente · 2º leilão' : 'Preço inicial'}
+            </p>
             <p className="break-words text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{formatBRL(property.auction_price)}</p>
             <p className="mt-1 text-xs text-slate-400">Pode não representar o valor final da compra.</p>
           </div>
@@ -289,6 +301,28 @@ export default function PropertyDetailPage() {
           )}
           </div>
         </section>
+
+        {property.auction_stages && property.auction_stages.length > 0 && (
+          <section aria-labelledby="auction-stages-heading" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 id="auction-stages-heading" className="text-base font-bold text-slate-900">Etapas do leilão</h2>
+            <p className="mt-1 text-sm text-slate-500">Valores e datas obtidos diretamente na página oficial da Caixa.</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {property.auction_stages.map((stage) => {
+                const isCurrent = property.auction_stage === stage.stage
+                return (
+                  <div key={`${stage.stage}-${stage.event_at}`} className={`rounded-xl border p-4 ${isCurrent ? 'border-cyan-300 bg-cyan-50' : 'border-slate-200 bg-slate-50'}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-slate-800">{stage.stage === 'first' ? '1º leilão' : stage.stage === 'second' ? '2º leilão' : 'Etapa única'}</p>
+                      {isCurrent && <span className="rounded-full bg-cyan-700 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">Etapa atual</span>}
+                    </div>
+                    <p className="mt-2 text-lg font-bold text-slate-900">{stage.price != null ? formatBRL(stage.price) : 'Valor não informado'}</p>
+                    <p className="mt-1 text-xs text-slate-500">{formatAuctionEvent(stage.event_at)}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
 
         <section aria-labelledby="property-details-heading" className="rounded-2xl border border-slate-200 bg-white px-4 shadow-sm sm:px-5">
           <h2 id="property-details-heading" className="border-b border-slate-100 py-4 text-base font-bold text-slate-900">Detalhes para triagem</h2>

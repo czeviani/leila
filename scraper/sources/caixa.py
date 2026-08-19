@@ -21,7 +21,9 @@ import time
 import random
 from datetime import datetime
 from typing import Optional
+from zoneinfo import ZoneInfo
 
+from bs4 import BeautifulSoup
 from curl_cffi.requests import AsyncSession
 
 from .base import BaseSource, ScrapedProperty
@@ -102,6 +104,64 @@ def _normalize_modality(raw: str) -> Optional[str]:
     return None
 
 
+def _parse_detail_stages(html: str) -> list[dict]:
+    """Extract the two official SFI stages from a Caixa detail page."""
+    text = BeautifulSoup(html, "html.parser").get_text(" ", strip=True)
+    stages: list[dict] = []
+    for number, stage_name in ((1, "first"), (2, "second")):
+        price_match = re.search(
+            rf"Valor\s+m[ií]nimo\s+de\s+venda\s+{number}[ºo°]\s*Leil[aã]o\s*:\s*R\$\s*([\d.]+,\d{{2}})",
+            text,
+            re.IGNORECASE,
+        )
+        date_match = re.search(
+            rf"Data\s+do\s+{number}[ºo°]\s*Leil[aã]o\s*-\s*(\d{{2}}/\d{{2}}/\d{{4}})\s*-\s*(\d{{1,2}})h(\d{{2}})",
+            text,
+            re.IGNORECASE,
+        )
+        if not price_match and not date_match:
+            continue
+        event_at = None
+        if date_match:
+            parsed = datetime.strptime(
+                f"{date_match.group(1)} {date_match.group(2)}:{date_match.group(3)}",
+                "%d/%m/%Y %H:%M",
+            ).replace(tzinfo=ZoneInfo("America/Sao_Paulo"))
+            event_at = parsed.isoformat()
+        stages.append({
+            "stage": stage_name,
+            "price": _parse_brl(price_match.group(1)) if price_match else None,
+            "event_at": event_at,
+        })
+    return stages
+
+
+def _apply_detail_stages(prop: ScrapedProperty, stages: list[dict], now: Optional[datetime] = None) -> bool:
+    if not stages:
+        return False
+    now = now or datetime.now(ZoneInfo("America/Sao_Paulo"))
+    by_stage = {item["stage"]: item for item in stages}
+    first = by_stage.get("first")
+    second = by_stage.get("second")
+    first_at = datetime.fromisoformat(first["event_at"]) if first and first.get("event_at") else None
+    current = first if first and (not first_at or now <= first_at) else (second or first)
+    if not current:
+        return False
+
+    prop.auction_stage = current["stage"]
+    prop.auction_stages = stages
+    prop.auction_modality = "primeira_praca" if current["stage"] == "first" else "segunda_praca"
+    if current.get("price"):
+        prop.auction_price = current["price"]
+        if prop.appraised_value:
+            prop.discount_pct = round((1 - prop.auction_price / prop.appraised_value) * 100, 2)
+    if current.get("event_at"):
+        prop.auction_date = datetime.fromisoformat(current["event_at"]).date()
+    prop.raw_data["auction_stages"] = stages
+    prop.raw_data["auction_stage"] = prop.auction_stage
+    return True
+
+
 def _parse_brl(value: str) -> Optional[float]:
     """Converte 'R$ 1.234.567,89' ou '1234567.89' para float."""
     if not value:
@@ -138,9 +198,9 @@ def _normalize_neighborhood(raw: str) -> Optional[str]:
 
 class CaixaSource(BaseSource):
     source_id = SOURCE_ID
-    collector_version = "caixa-1.1.0"
+    collector_version = "caixa-1.2.0"
     supports_regions = True
-    supports_details = False
+    supports_details = True
     supports_documents = False
     supports_photos = False
     supports_reconciliation = True
@@ -289,7 +349,10 @@ class CaixaSource(BaseSource):
             normalized.get("tipo de venda") or
             ""
         )
-        auction_modality = _normalize_modality(raw_modality)
+        is_sfi_auction = "leilão sfi" in raw_modality.casefold()
+        # O CSV traz apenas um preço e não informa qual etapa está vigente.
+        # Para SFI, a etapa só é definida após ler a página oficial do imóvel.
+        auction_modality = None if is_sfi_auction else _normalize_modality(raw_modality)
 
         raw_area = normalized.get("área total") or normalized.get("area total") or ""
         area_m2 = _parse_area(raw_area)
@@ -338,6 +401,7 @@ class CaixaSource(BaseSource):
             description=description,
             edital_url=edital_url,
             auction_modality=auction_modality,
+            auction_stage="unknown" if is_sfi_auction else None,
             area_classification=area_classification,
             raw_data=dict(normalized),
             # Campos de enriquecimento heurístico
@@ -349,6 +413,30 @@ class CaixaSource(BaseSource):
             useful_area_m2=useful_area_m2,
             features=parsed.features,
         )
+
+    async def _enrich_sfi_details(self, session: AsyncSession, properties: list[ScrapedProperty]) -> None:
+        candidates = [
+            prop for prop in properties
+            if "leilão sfi" in str(prop.raw_data.get("modalidade de venda") or "").casefold()
+            and (prop.city or "").casefold() in {"são paulo", "sao paulo"}
+            and prop.edital_url
+        ][: int(os.getenv("CAIXA_DETAIL_MAX", "350"))]
+        semaphore = asyncio.Semaphore(int(os.getenv("CAIXA_DETAIL_CONCURRENCY", "3")))
+
+        async def enrich(prop: ScrapedProperty) -> bool:
+            async with semaphore:
+                try:
+                    await asyncio.sleep(random.uniform(0.15, 0.45))
+                    response = await session.get(prop.edital_url, timeout=25, proxy=get_proxy())
+                    response.raise_for_status()
+                    return _apply_detail_stages(prop, _parse_detail_stages(response.text))
+                except Exception as error:
+                    print(f"[Caixa] Detalhe {prop.external_id} não enriquecido: {error}")
+                    return False
+
+        if candidates:
+            enriched = sum(await asyncio.gather(*(enrich(prop) for prop in candidates)))
+            print(f"[Caixa] Etapas SFI enriquecidas: {enriched}/{len(candidates)}")
 
     async def scrape(self) -> list[ScrapedProperty]:
         # curl-cffi com fingerprint Chrome120 para bypassar Radware WAF
@@ -369,6 +457,8 @@ class CaixaSource(BaseSource):
             for uf in self.ufs:
                 batch = await self._scrape_uf(session, uf)
                 properties.extend(batch)
+
+            await self._enrich_sfi_details(session, properties)
 
         print(f"[Caixa] Total: {len(properties)} imóveis em {len(self.ufs)} UFs")
         return properties

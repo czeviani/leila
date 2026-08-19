@@ -1,5 +1,9 @@
 import unittest
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
+from sources.base import ScrapedProperty
+from sources.caixa import _apply_detail_stages, _parse_detail_stages
 from sources.mega_leiloes import MegaLeiloesSource
 
 
@@ -35,6 +39,55 @@ class MegaSourceTests(unittest.TestCase):
         self.assertEqual(prop.state, "SP")
         self.assertEqual(prop.auction_date.isoformat(), "2026-12-31")
         self.assertEqual(prop.raw_data["instances"][0]["price"], 250000.0)
+
+
+class CaixaStageTests(unittest.TestCase):
+    DETAIL_HTML = """
+      <div>Valor de avaliação: R$ 925.000,00</div>
+      <div>Valor mínimo de venda 1º Leilão: R$ 925.000,00</div>
+      <div>Valor mínimo de venda 2º Leilão: R$ 637.191,56</div>
+      <div>Data do 1º Leilão - 08/09/2026 - 10h00</div>
+      <div>Data do 2º Leilão - 14/09/2026 - 10h00</div>
+    """
+
+    @staticmethod
+    def _property():
+        return ScrapedProperty(
+            source_id="caixa",
+            external_id="SP-1444412267740",
+            title="Apartamento — São Paulo/SP",
+            auction_price=925000,
+            appraised_value=925000,
+            raw_data={},
+        )
+
+    def test_first_stage_is_selected_before_first_auction(self):
+        stages = _parse_detail_stages(self.DETAIL_HTML)
+        prop = self._property()
+        applied = _apply_detail_stages(
+            prop,
+            stages,
+            datetime(2026, 8, 19, 10, 0, tzinfo=ZoneInfo("America/Sao_Paulo")),
+        )
+        self.assertTrue(applied)
+        self.assertEqual(prop.auction_stage, "first")
+        self.assertEqual(prop.auction_price, 925000)
+        self.assertEqual(prop.auction_date.isoformat(), "2026-09-08")
+        self.assertEqual(prop.auction_modality, "primeira_praca")
+
+    def test_second_stage_is_selected_after_first_auction(self):
+        stages = _parse_detail_stages(self.DETAIL_HTML)
+        prop = self._property()
+        _apply_detail_stages(
+            prop,
+            stages,
+            datetime(2026, 9, 8, 11, 0, tzinfo=ZoneInfo("America/Sao_Paulo")),
+        )
+        self.assertEqual(prop.auction_stage, "second")
+        self.assertEqual(prop.auction_price, 637191.56)
+        self.assertEqual(prop.auction_date.isoformat(), "2026-09-14")
+        self.assertEqual(prop.auction_modality, "segunda_praca")
+        self.assertAlmostEqual(prop.discount_pct, 31.11, places=2)
 
 
 if __name__ == "__main__":

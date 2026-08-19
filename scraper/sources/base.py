@@ -50,6 +50,8 @@ class ScrapedProperty:
     photos: list[str] = field(default_factory=list)
     auction_date: Optional[date] = None
     auction_modality: Optional[str] = None
+    auction_stage: Optional[str] = None
+    auction_stages: list[dict] = field(default_factory=list)
     area_classification: Optional[str] = None  # nobre | intermediário | popular | comunidade | indefinido
     raw_data: dict = field(default_factory=dict)
 
