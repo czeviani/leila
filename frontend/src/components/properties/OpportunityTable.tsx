@@ -17,7 +17,7 @@ const SORT_FIELDS: Partial<Record<OpportunityColumn, string>> = {
 
 const WIDTHS: Record<OpportunityColumn, string> = {
   opportunity: 'min-w-[140px]', location: 'min-w-[190px]', property: 'min-w-[230px]',
-  area: 'min-w-[90px]', price: 'min-w-[145px]', pricePerM2: 'min-w-[115px]',
+  area: 'min-w-[90px]', price: 'min-w-[190px]', pricePerM2: 'min-w-[115px]',
   discount: 'min-w-[100px]', neighborhood: 'min-w-[145px]', status: 'min-w-[165px]',
   deadline: 'min-w-[100px]',
 }

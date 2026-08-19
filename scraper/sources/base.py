@@ -52,6 +52,10 @@ class ScrapedProperty:
     auction_modality: Optional[str] = None
     auction_stage: Optional[str] = None
     auction_stages: list[dict] = field(default_factory=list)
+    current_stage_price: Optional[float] = None
+    current_stage_date: Optional[date] = None
+    target_stage: Optional[str] = None
+    journey_confidence: str = "observed"
     area_classification: Optional[str] = None  # nobre | intermediário | popular | comunidade | indefinido
     raw_data: dict = field(default_factory=dict)
 

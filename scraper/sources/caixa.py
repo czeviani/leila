@@ -148,17 +148,49 @@ def _apply_detail_stages(prop: ScrapedProperty, stages: list[dict], now: Optiona
     if not current:
         return False
 
+    confirmed_prices = [item for item in stages if item.get("price")]
+    target = min(confirmed_prices, key=lambda item: item["price"], default=current)
+    enriched_stages = []
+    for sequence, item in enumerate(stages, start=1):
+        item_at = datetime.fromisoformat(item["event_at"]) if item.get("event_at") else None
+        status = "current" if item["stage"] == current["stage"] else ("completed" if item_at and item_at < now else "upcoming")
+        enriched_stages.append({
+            **item,
+            "label": "1º leilão" if item["stage"] == "first" else "2º leilão",
+            "sequence": sequence,
+            "status": status,
+            "certainty": "official",
+        })
+    # A Caixa pode recolocar um imóvel não vendido em outra modalidade, mas
+    # suas regras não garantem isso nem antecipam o preço. Registramos como
+    # possibilidade, nunca como promessa ou como base do ranking.
+    enriched_stages.append({
+        "stage": "possible_next",
+        "label": "Possível nova oferta",
+        "sequence": len(enriched_stages) + 1,
+        "price": None,
+        "event_at": None,
+        "status": "possible",
+        "certainty": "possible",
+    })
+
     prop.auction_stage = current["stage"]
-    prop.auction_stages = stages
+    prop.auction_stages = enriched_stages
     prop.auction_modality = "primeira_praca" if current["stage"] == "first" else "segunda_praca"
-    if current.get("price"):
-        prop.auction_price = current["price"]
+    prop.current_stage_price = current.get("price")
+    prop.current_stage_date = datetime.fromisoformat(current["event_at"]).date() if current.get("event_at") else None
+    prop.target_stage = target.get("stage")
+    prop.journey_confidence = "official"
+    if target.get("price"):
+        # Na mesa, lance = menor mínimo oficial já conhecido para a estratégia.
+        prop.auction_price = target["price"]
         if prop.appraised_value:
             prop.discount_pct = round((1 - prop.auction_price / prop.appraised_value) * 100, 2)
     if current.get("event_at"):
         prop.auction_date = datetime.fromisoformat(current["event_at"]).date()
-    prop.raw_data["auction_stages"] = stages
+    prop.raw_data["auction_stages"] = enriched_stages
     prop.raw_data["auction_stage"] = prop.auction_stage
+    prop.raw_data["target_stage"] = prop.target_stage
     return True
 
 

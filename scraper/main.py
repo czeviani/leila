@@ -59,6 +59,36 @@ def _get_supabase() -> Client:
     return _supabase
 
 
+def _ensure_auction_journey(prop: ScrapedProperty) -> None:
+    """Guarantee a truthful one-stage journey for sources without a sequence."""
+    if prop.auction_stages:
+        return
+    if prop.auction_stage == "unknown":
+        prop.current_stage_price = prop.auction_price
+        prop.target_stage = None
+        prop.journey_confidence = "partial"
+        return
+    stage = prop.auction_stage if prop.auction_stage not in (None, "unknown") else "single"
+    label_by_modality = {
+        "compra_direta": "Compra direta", "segunda_praca": "2ª praça",
+        "primeira_praca": "1ª praça", "leilao_online": "Leilão online",
+        "proposta_fechada": "Proposta fechada",
+    }
+    prop.auction_stage = stage
+    prop.target_stage = stage
+    prop.current_stage_price = prop.auction_price
+    prop.current_stage_date = prop.auction_date
+    prop.auction_stages = [{
+        "stage": stage,
+        "label": label_by_modality.get(prop.auction_modality or "", "Oferta atual"),
+        "sequence": 1,
+        "price": prop.auction_price,
+        "event_at": prop.auction_date.isoformat() if prop.auction_date else None,
+        "status": "current",
+        "certainty": "observed",
+    }]
+
+
 def _property_row(prop: ScrapedProperty, now: str, content_hash: str) -> dict:
     """Converte um item normalizado para o contrato persistido."""
     return {
@@ -84,6 +114,10 @@ def _property_row(prop: ScrapedProperty, now: str, content_hash: str) -> dict:
         "auction_modality": prop.auction_modality,
         "auction_stage": prop.auction_stage,
         "auction_stages": prop.auction_stages or [],
+        "current_stage_price": prop.current_stage_price,
+        "current_stage_date": prop.current_stage_date.isoformat() if prop.current_stage_date else None,
+        "target_stage": prop.target_stage,
+        "journey_confidence": prop.journey_confidence,
         "area_classification": prop.area_classification,
         "raw_data": prop.raw_data,
         "bedrooms": prop.bedrooms,
@@ -131,6 +165,10 @@ def _content_hash(prop: ScrapedProperty) -> str:
         "auction_modality": prop.auction_modality,
         "auction_stage": prop.auction_stage,
         "auction_stages": prop.auction_stages or [],
+        "current_stage_price": prop.current_stage_price,
+        "current_stage_date": prop.current_stage_date.isoformat() if prop.current_stage_date else None,
+        "target_stage": prop.target_stage,
+        "journey_confidence": prop.journey_confidence,
         "area_classification": prop.area_classification,
         "raw_data": prop.raw_data,
         "bedrooms": prop.bedrooms,
@@ -171,6 +209,7 @@ async def _upsert_properties(
         batch = properties[offset : offset + BATCH_SIZE]
         prepared = []
         for prop in batch:
+            _ensure_auction_journey(prop)
             digest = _content_hash(prop)
             prepared.append((prop, digest, _property_row(prop, now, digest)))
         source_id = batch[0].source_id if batch else None

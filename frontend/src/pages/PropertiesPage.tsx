@@ -22,7 +22,7 @@ const SORT_OPTIONS = [
   { label: 'Melhor oportunidade', value: 'opportunity_score:desc' },
   { label: 'Menor preço por m²', value: 'price_per_m2:asc' },
   { label: 'Maior desconto', value: 'discount_pct:desc' },
-  { label: 'Menor lance', value: 'auction_price:asc' },
+  { label: 'Menor valor conhecido', value: 'auction_price:asc' },
   { label: 'Maior área', value: 'filter_area_m2:desc' },
   { label: 'Melhor sinal do bairro', value: 'neighborhood_score:desc' },
   { label: 'Mais recentes', value: 'last_seen_at:desc' },

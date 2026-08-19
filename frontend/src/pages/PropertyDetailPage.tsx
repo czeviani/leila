@@ -266,11 +266,19 @@ export default function PropertyDetailPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-400">
-              {property.auction_stage === 'first' ? 'Mínimo vigente · 1º leilão' : property.auction_stage === 'second' ? 'Mínimo vigente · 2º leilão' : 'Preço inicial'}
+              {property.auction_stages?.length > 1 ? 'Melhor mínimo conhecido' : 'Preço anunciado'}
             </p>
             <p className="break-words text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{formatBRL(property.auction_price)}</p>
-            <p className="mt-1 text-xs text-slate-400">Pode não representar o valor final da compra.</p>
+            <p className="mt-1 text-xs text-slate-400">Base estratégica; não garante que a etapa futura ocorrerá ou que não haverá disputa.</p>
           </div>
+
+          {property.current_stage_price != null && property.current_stage_price !== property.auction_price && (
+            <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4 shadow-sm">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-cyan-700">Preço da etapa atual</p>
+              <p className="break-words text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{formatBRL(property.current_stage_price)}</p>
+              <p className="mt-1 text-xs text-cyan-800">A oportunidade ainda está nesta etapa.</p>
+            </div>
+          )}
 
           {property.appraised_value && (
             <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
@@ -308,14 +316,16 @@ export default function PropertyDetailPage() {
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {property.auction_stages.map((stage) => {
                 const isCurrent = property.auction_stage === stage.stage
+                const isPossible = stage.certainty === 'possible' || stage.status === 'possible'
                 return (
-                  <div key={`${stage.stage}-${stage.event_at}`} className={`rounded-xl border p-4 ${isCurrent ? 'border-cyan-300 bg-cyan-50' : 'border-slate-200 bg-slate-50'}`}>
+                  <div key={`${stage.stage}-${stage.event_at}`} className={`rounded-xl border p-4 ${isPossible ? 'border-dashed border-slate-300 bg-white' : isCurrent ? 'border-cyan-300 bg-cyan-50' : 'border-slate-200 bg-slate-50'}`}>
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-slate-800">{stage.stage === 'first' ? '1º leilão' : stage.stage === 'second' ? '2º leilão' : 'Etapa única'}</p>
+                      <p className="text-sm font-semibold text-slate-800">{stage.label ?? (stage.stage === 'first' ? '1º leilão' : stage.stage === 'second' ? '2º leilão' : 'Etapa única')}</p>
                       {isCurrent && <span className="rounded-full bg-cyan-700 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">Etapa atual</span>}
+                      {property.target_stage === stage.stage && !isCurrent && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-800">Melhor preço</span>}
                     </div>
                     <p className="mt-2 text-lg font-bold text-slate-900">{stage.price != null ? formatBRL(stage.price) : 'Valor não informado'}</p>
-                    <p className="mt-1 text-xs text-slate-500">{formatAuctionEvent(stage.event_at)}</p>
+                    <p className="mt-1 text-xs text-slate-500">{isPossible ? 'Possibilidade, não garantida pela fonte' : formatAuctionEvent(stage.event_at)}</p>
                   </div>
                 )
               })}

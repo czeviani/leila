@@ -11,6 +11,7 @@ import {
 } from '../../lib/opportunityTable'
 import { daysUntilAuction } from '../../lib/heatScore'
 import SourceBadge from './SourceBadge'
+import AuctionJourney from './AuctionJourney'
 
 const TYPE_LABELS: Record<string, string> = {
   apartamento: 'Apartamento', casa: 'Casa', terreno: 'Terreno', loja: 'Loja',
@@ -124,11 +125,15 @@ export default memo(function PropertyRow({
       )}
 
       {columns.includes('price') && (
-        <td className={`whitespace-nowrap px-3 text-right ${yPadding}`}>
+        <td className={`min-w-[190px] whitespace-nowrap px-3 text-right ${yPadding}`}>
           <p className="num text-sm font-bold text-[#163447]">{money(property.auction_price)}</p>
-          <p className="text-[10px] text-slate-400">
-            {property.auction_stage === 'first' ? 'mínimo · 1º leilão' : property.auction_stage === 'second' ? 'mínimo · 2º leilão' : 'lance inicial'}
-          </p>
+          <p className="text-[10px] font-semibold text-[#8a5a12]">melhor mínimo conhecido</p>
+          <div className="mt-1.5 flex items-center justify-end gap-2">
+            <AuctionJourney property={property} />
+            {property.current_stage_price != null && property.current_stage_price !== property.auction_price && (
+              <span className="text-[9px] text-slate-400">agora {money(property.current_stage_price)}</span>
+            )}
+          </div>
         </td>
       )}
 

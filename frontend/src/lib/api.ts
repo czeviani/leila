@@ -87,7 +87,19 @@ export interface Property {
   auction_status: string
   auction_modality: string | null
   auction_stage: 'first' | 'second' | 'single' | 'unknown' | null
-  auction_stages: Array<{ stage: 'first' | 'second'; price: number | null; event_at: string | null }>
+  auction_stages: Array<{
+    stage: string
+    label?: string
+    sequence?: number
+    price: number | null
+    event_at: string | null
+    status?: 'completed' | 'current' | 'upcoming' | 'possible' | string
+    certainty?: 'official' | 'observed' | 'possible' | string
+  }>
+  current_stage_price: number | null
+  current_stage_date: string | null
+  target_stage: string | null
+  journey_confidence: 'official' | 'observed' | 'partial' | 'unknown' | string
   area_classification: string | null   // heurística do scraper; IA sobrescreve via leila_evaluations.area_classification
   bedrooms: number | null
   bathrooms: number | null

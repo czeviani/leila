@@ -71,9 +71,12 @@ class CaixaStageTests(unittest.TestCase):
         )
         self.assertTrue(applied)
         self.assertEqual(prop.auction_stage, "first")
-        self.assertEqual(prop.auction_price, 925000)
+        self.assertEqual(prop.current_stage_price, 925000)
+        self.assertEqual(prop.auction_price, 637191.56)
+        self.assertEqual(prop.target_stage, "second")
         self.assertEqual(prop.auction_date.isoformat(), "2026-09-08")
         self.assertEqual(prop.auction_modality, "primeira_praca")
+        self.assertEqual([stage["status"] for stage in prop.auction_stages], ["current", "upcoming", "possible"])
 
     def test_second_stage_is_selected_after_first_auction(self):
         stages = _parse_detail_stages(self.DETAIL_HTML)
@@ -84,6 +87,7 @@ class CaixaStageTests(unittest.TestCase):
             datetime(2026, 9, 8, 11, 0, tzinfo=ZoneInfo("America/Sao_Paulo")),
         )
         self.assertEqual(prop.auction_stage, "second")
+        self.assertEqual(prop.current_stage_price, 637191.56)
         self.assertEqual(prop.auction_price, 637191.56)
         self.assertEqual(prop.auction_date.isoformat(), "2026-09-14")
         self.assertEqual(prop.auction_modality, "segunda_praca")

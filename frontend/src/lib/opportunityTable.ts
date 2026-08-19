@@ -25,7 +25,7 @@ export const COLUMN_LABELS: Record<OpportunityColumn, string> = {
   location: 'Localização',
   property: 'Imóvel',
   area: 'Área',
-  price: 'Lance',
+  price: 'Melhor lance',
   pricePerM2: 'R$/m²',
   discount: 'Desconto',
   neighborhood: 'Sinal do bairro',

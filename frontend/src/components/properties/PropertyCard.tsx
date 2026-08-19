@@ -6,6 +6,7 @@ import { Property } from '../../lib/api'
 import { daysUntilAuction } from '../../lib/heatScore'
 import { googleAddressSearchUrl, neighborhoodName } from '../../lib/opportunityTable'
 import SourceBadge from './SourceBadge'
+import AuctionJourney from './AuctionJourney'
 
 interface Props {
   property: Property
@@ -128,9 +129,13 @@ export default function PropertyCard({ property, isFavorite, isRejected, onAppro
           <div className="mt-auto flex items-end justify-between gap-3">
             <div>
               <p className="mb-1 text-xs text-slate-500">
-                {property.auction_modality === 'compra_direta' ? 'Preço anunciado' : property.auction_stage === 'first' ? 'Mínimo do 1º leilão' : property.auction_stage === 'second' ? 'Mínimo do 2º leilão' : 'Lance a partir de'}
+                {property.auction_stages?.length > 1 ? 'Melhor mínimo conhecido' : property.auction_modality === 'compra_direta' ? 'Preço anunciado' : 'Lance a partir de'}
               </p>
               <p className="font-mono text-xl font-semibold tracking-tight text-[#163447]">{money(property.auction_price)}</p>
+              <AuctionJourney property={property} className="mt-2" />
+              {property.current_stage_price != null && property.current_stage_price !== property.auction_price && (
+                <p className="mt-1 text-[11px] text-slate-500">Etapa atual: {money(property.current_stage_price)}</p>
+              )}
             </div>
             {property.discount_pct != null && property.discount_pct > 0 && (
               <div className="text-right">

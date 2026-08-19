@@ -289,6 +289,9 @@ export const evaluateProperty = async (
     state: string | null
     property_type: string | null
     auction_price: number
+    current_stage_price?: number | null
+    auction_stage?: string | null
+    target_stage?: string | null
     appraised_value: number | null
     discount_pct: number | null
     area_m2: number | null
@@ -321,6 +324,9 @@ export const evaluateProperty = async (
   const modalityLine = modality
     ? `- Modalidade: ${modality.label} — ${modality.nota}`
     : '- Modalidade: não informada'
+  const journeyLine = property.current_stage_price != null && property.current_stage_price !== property.auction_price
+    ? `- Etapa atual: ${property.auction_stage ?? 'não identificada'}, mínimo atual de R$ ${property.current_stage_price.toLocaleString('pt-BR')}\n- Etapa estratégica: ${property.target_stage ?? 'futura confirmada'}, melhor mínimo oficial conhecido de R$ ${property.auction_price.toLocaleString('pt-BR')}`
+    : `- Melhor mínimo oficial conhecido: R$ ${property.auction_price.toLocaleString('pt-BR')}`
 
   const caracteristicas = [
     property.bedrooms != null ? `${property.bedrooms} quarto(s)` : null,
@@ -347,7 +353,7 @@ DADOS DO IMÓVEL
 - Área para cálculo de reforma: ${area_m2_str}${area_detalhe}
 - Características: ${caracteristicas || 'não informadas'}
 - Estado atual: inferir com base na descrição (imóvel proveniente de leilão — provavelmente necessita reforma)
-- Preço pedido / lance mínimo: R$ ${property.auction_price.toLocaleString('pt-BR')}
+${journeyLine}
 ${modalityLine}
 - Objetivo do investidor: ambos (venda pós-reforma E locação)
 - Informações adicionais:

@@ -7,7 +7,7 @@ import { LLM_PROVIDERS, LlmProvider } from '../lib/api'
 const MODALITY_DETAILS: Record<string, { description: string; examples: string; tip?: string }> = {
   compra_direta: {
     description: 'Preço fixo anunciado. Você paga e o imóvel é seu — sem concorrência, sem lances.',
-    examples: 'Caixa: Venda Direta, Venda Online',
+    examples: 'Caixa: Compra Direta',
   },
   segunda_praca: {
     description: 'Segundo round ou mais do leilão judicial. Lance mínimo ≈ 60% da avaliação. Maiores descontos.',
@@ -191,6 +191,35 @@ export default function SettingsPage() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+
+        {/* Modality preferences card */}
+        <div className="overflow-hidden rounded-2xl border border-[#cfdede] bg-white shadow-sm">
+          <div className="border-b border-slate-100 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="grid h-8 w-8 place-items-center rounded-xl bg-[#176B87] text-white"><Info size={14} /></div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Como ler a jornada</h2>
+                <p className="mt-0.5 text-xs text-slate-500">A mesa separa a etapa atual do melhor preço oficial já conhecido.</p>
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-4 px-5 py-4 text-xs text-slate-600 md:grid-cols-2">
+            <div>
+              <p className="font-semibold text-slate-900">Quadrados da mesa</p>
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+                <span className="flex items-center gap-1.5"><i className="h-3.5 w-3.5 rounded-[3px] bg-[#176B87] ring-2 ring-[#bce3e1]" />Etapa atual</span>
+                <span className="flex items-center gap-1.5"><i className="h-3.5 w-3.5 rounded-[3px] border border-[#C68A2D] bg-[#fff4df]" />Melhor preço</span>
+                <span className="flex items-center gap-1.5"><i className="h-3.5 w-3.5 rounded-[3px] border border-dashed border-slate-400" />Possível</span>
+              </div>
+              <p className="mt-2 text-slate-500">Passe o mouse sobre cada etapa para ver valor, data e situação.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-slate-900">Regras por fonte</p>
+              <p className="mt-2"><strong>Caixa SFI:</strong> 1º e 2º leilões confirmados; nova oferta posterior é apenas possível.</p>
+              <p className="mt-1"><strong>Superbid, SOLD, Mega e Zuk:</strong> mostramos somente as praças e valores publicados no anúncio, sem inventar uma sequência.</p>
+            </div>
           </div>
         </div>
 
