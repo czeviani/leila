@@ -1,10 +1,11 @@
 import {
   AlertTriangle, ArrowUpRight, Bath, Bed, CalendarDays, Car,
-  CircleDot, Landmark, MapPinned, MapPin, Ruler, ThumbsDown, ThumbsUp, TrendingDown,
+  CircleDot, MapPinned, MapPin, Ruler, ThumbsDown, ThumbsUp, TrendingDown,
 } from 'lucide-react'
 import { Property } from '../../lib/api'
 import { daysUntilAuction } from '../../lib/heatScore'
 import { googleAddressSearchUrl, neighborhoodName } from '../../lib/opportunityTable'
+import SourceBadge from './SourceBadge'
 
 interface Props {
   property: Property
@@ -59,7 +60,7 @@ function TrustStatus({ property }: { property: Property }) {
     <div className="provenance-line" aria-label={`${config.label}, ${relativeDate(property.last_verified_at ?? property.last_seen_at ?? property.scraped_at)}`}>
       <span className={`h-2.5 w-2.5 rounded-full ring-4 ring-white ${config.dot}`} />
       <span className={`font-semibold ${config.text}`}>{config.label}</span>
-      <span className="hidden items-center gap-1 text-slate-500 sm:flex"><Landmark size={11} />{property.leila_sources?.name ?? property.source_id}</span>
+      <SourceBadge sourceId={property.source_id} sourceName={property.leila_sources?.name} compact icon className="hidden sm:inline-flex" />
       <span className="h-px flex-1 bg-slate-200" />
       <span className="font-mono text-slate-500">{relativeDate(property.last_verified_at ?? property.last_seen_at ?? property.scraped_at)}</span>
     </div>
@@ -99,7 +100,7 @@ export default function PropertyCard({ property, isFavorite, isRejected, onAppro
               <div className="mb-1.5 flex flex-wrap items-center gap-2 text-xs font-semibold text-[#176B87]">
                 <span>{type}</span>
                 {modality && <><span className="text-slate-300">/</span><span>{modality}</span></>}
-                <span className="rounded-full bg-[#eaf2f3] px-2 py-0.5 text-[10px] uppercase tracking-wide text-[#176B87]">{property.leila_sources?.name ?? property.source_id}</span>
+                <SourceBadge sourceId={property.source_id} sourceName={property.leila_sources?.name} compact />
                 {areaClassification && areaClassification !== 'indefinido' && (
                   <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-500">{AREA_LABELS[areaClassification] ?? areaClassification}</span>
                 )}

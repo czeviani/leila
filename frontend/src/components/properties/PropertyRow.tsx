@@ -1,6 +1,6 @@
 import { memo, MouseEvent } from 'react'
 import {
-  AlertTriangle, BedDouble, Building2, CalendarClock, Car, Check,
+  AlertTriangle, BedDouble, CalendarClock, Car, Check,
   ExternalLink, Eye, MapPinned, MapPin, Scale, ShieldCheck, ThumbsDown, ThumbsUp,
 } from 'lucide-react'
 import { Property } from '../../lib/api'
@@ -10,6 +10,7 @@ import {
   TableDensity,
 } from '../../lib/opportunityTable'
 import { daysUntilAuction } from '../../lib/heatScore'
+import SourceBadge from './SourceBadge'
 
 const TYPE_LABELS: Record<string, string> = {
   apartamento: 'Apartamento', casa: 'Casa', terreno: 'Terreno', loja: 'Loja',
@@ -109,7 +110,7 @@ export default memo(function PropertyRow({
           <p className="truncate text-sm font-bold text-[#163447]">{TYPE_LABELS[property.property_type ?? ''] ?? property.property_type ?? 'Imóvel'}</p>
           <p className="mt-0.5 truncate text-xs text-slate-500" title={property.title}>{property.title}</p>
           <div className="mt-1.5 flex items-center gap-2 text-[10px] font-semibold text-[#176B87]">
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#eaf4f5] px-2 py-0.5"><Building2 size={10} />{source}</span>
+            <SourceBadge sourceId={property.source_id} sourceName={source} compact icon />
             {property.bedrooms != null && <span className="inline-flex items-center gap-0.5 text-slate-500"><BedDouble size={10} />{property.bedrooms}</span>}
             {!!property.parking_spots && <span className="inline-flex items-center gap-0.5 text-slate-500"><Car size={10} />{property.parking_spots}</span>}
           </div>

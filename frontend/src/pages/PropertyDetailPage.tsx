@@ -7,6 +7,7 @@ import {
 import { useProperty, useFavorites, useToggleFavorite, useRequestEvaluation, useDocumentAnalysis, useRequestDocumentAnalysis } from '../hooks/useProperties'
 import InvestmentDashboard from '../components/evaluator/InvestmentDashboard'
 import DocumentAnalysisPanel from '../components/documents/DocumentAnalysisPanel'
+import SourceBadge from '../components/properties/SourceBadge'
 import type { Property } from '../lib/api'
 
 function formatBRL(v: number) {
@@ -213,9 +214,7 @@ export default function PropertyDetailPage() {
           </button>
           <div className="flex min-w-0 items-center gap-2">
             {property.leila_sources && (
-              <span className="hidden max-w-44 truncate rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500 sm:inline">
-                {property.leila_sources.name}
-              </span>
+              <SourceBadge sourceId={property.source_id} sourceName={property.leila_sources.name} compact className="hidden max-w-44 sm:inline-flex" />
             )}
             <button
               onClick={() => toggleFav.mutate({ property_id: property.id, isFav })}
@@ -451,7 +450,7 @@ export default function PropertyDetailPage() {
               <dl className="mt-4 space-y-3 text-sm">
                 <div>
                   <dt className="text-xs text-slate-400">Fonte</dt>
-                  <dd className="mt-0.5 font-semibold text-slate-700">{property.leila_sources?.name ?? property.source_id}</dd>
+                  <dd className="mt-1"><SourceBadge sourceId={property.source_id} sourceName={property.leila_sources?.name} /></dd>
                 </div>
                 {property.seller_id && (
                   <div>
