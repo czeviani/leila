@@ -2,7 +2,7 @@ import json
 import unittest
 
 from sources.superbid import SoldSource, SuperbidSource, _declared_stages, _float_value
-from sources.zuk import ZukSource
+from sources.zuk import ZukSource, _parse_detail_areas
 
 
 class SuperbidSourceTests(unittest.TestCase):
@@ -84,6 +84,11 @@ class SuperbidSourceTests(unittest.TestCase):
 
 
 class ZukSourceTests(unittest.TestCase):
+    def test_detail_areas_are_extracted(self):
+        built, private = _parse_detail_areas("Metragem construída 99,54m² Metragem privativa 60,57m²")
+        self.assertEqual(built, 99.54)
+        self.assertEqual(private, 60.57)
+
     def test_card_is_normalized_for_capital(self):
         markdown = '''
 [![Image 1: Apartamento](https://img.test/zuk.jpg)](https://www.portalzuk.com.br/imovel/apartamento-centro-123 "Apartamento | Itaú Unibanco S/A - Rua A, 10 - São Paulo/SP | Desocupado")

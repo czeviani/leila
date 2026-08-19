@@ -292,15 +292,15 @@ function EvaluationCard({
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            {property.edital_url && (
+            {(property.listing_url || property.edital_url) && (
               <a
-                href={property.edital_url}
+                href={property.listing_url || property.edital_url || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-all"
               >
                 <ExternalLink size={11} />
-                Edital
+                Fonte
               </a>
             )}
             <button

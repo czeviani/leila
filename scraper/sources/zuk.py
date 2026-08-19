@@ -37,9 +37,17 @@ def _normalize_modality(label: str) -> str:
     return "leilao_online"
 
 
+def _parse_detail_areas(text: str) -> tuple[Optional[float], Optional[float]]:
+    built_match = re.search(r"Metragem\s+constru[ií]da\s+([\d.]+(?:,[\d]+)?)\s*m²", text or "", re.I)
+    private_match = re.search(r"Metragem\s+privativa\s+([\d.]+(?:,[\d]+)?)\s*m²", text or "", re.I)
+    built = _parse_area(built_match.group(1)) if built_match else None
+    private = _parse_area(private_match.group(1)) if private_match else None
+    return built, private
+
+
 class ZukSource(BaseSource):
     source_id = SOURCE_ID
-    collector_version = "zuk-1.0.0"
+    collector_version = "zuk-1.1.0"
     supports_regions = True
     supports_details = True
     supports_documents = False
@@ -148,6 +156,32 @@ class ZukSource(BaseSource):
         source_url = CATALOG_URL if page == 1 else f"{CATALOG_URL}?pagina={page}"
         return f"{self.reader_base}/http://{source_url}"
 
+    async def _enrich_missing_areas(self, client, properties: list[ScrapedProperty]) -> None:
+        candidates = [prop for prop in properties if not prop.area_m2 and prop.edital_url]
+        semaphore = asyncio.Semaphore(int(os.getenv("ZUK_DETAIL_CONCURRENCY", "3")))
+
+        async def enrich(prop: ScrapedProperty) -> bool:
+            async with semaphore:
+                try:
+                    response = await self._get(
+                        client,
+                        f"{self.reader_base}/http://{prop.edital_url}",
+                        headers={"User-Agent": "LeilaBot/1.0", "Accept": "text/plain"},
+                    )
+                    built, private = _parse_detail_areas(response.text)
+                    prop.area_m2 = built or private
+                    prop.useful_area_m2 = private or built
+                    prop.raw_data["detail_area_built_m2"] = built
+                    prop.raw_data["detail_area_private_m2"] = private
+                    return bool(prop.area_m2)
+                except Exception as error:
+                    print(f"[Zuk] Área detalhada {prop.external_id} não enriquecida: {error}")
+                    return False
+
+        if candidates:
+            enriched = sum(await asyncio.gather(*(enrich(prop) for prop in candidates)))
+            print(f"[Zuk] Áreas detalhadas enriquecidas: {enriched}/{len(candidates)}")
+
     async def scrape(self) -> list[ScrapedProperty]:
         properties: list[ScrapedProperty] = []
         seen_ids: set[str] = set()
@@ -175,6 +209,8 @@ class ZukSource(BaseSource):
                 except Exception as error:
                     self.failed_regions.append(f"page:{page}")
                     print(f"[Zuk] Página {page} falhou: {error}")
+
+            await self._enrich_missing_areas(client, properties)
 
         if properties and not self.failed_regions:
             self.successful_regions = ["SP"]
