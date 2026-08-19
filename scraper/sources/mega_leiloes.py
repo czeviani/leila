@@ -15,7 +15,7 @@ from urllib.parse import urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 
-from .base import BaseSource, ScrapedProperty
+from .base import BaseSource, ScrapedProperty, apply_known_stages
 from .caixa import _parse_brl, _parse_area
 from .marketplace import detect_seller
 from scope import is_target_location
@@ -148,8 +148,7 @@ class MegaLeiloesSource(BaseSource):
             detail_url = _canonical_url(link.get("href", ""))
             event_link = card.select_one(".card-gavet-link")
             status_node = card.select_one(".card-status")
-            properties.append(
-                ScrapedProperty(
+            prop = ScrapedProperty(
                     source_id=SOURCE_ID,
                     external_id=external_id,
                     title=title,
@@ -173,7 +172,26 @@ class MegaLeiloesSource(BaseSource):
                         "instances": instances,
                     },
                 )
-            )
+            stages = []
+            for sequence, instance in enumerate(instances, start=1):
+                label = str(instance.get("label") or "")
+                if re.search(r"1ª\s*Praça", label, re.I):
+                    stage_key, stage_label = "first", "1ª praça"
+                elif re.search(r"2ª\s*Praça", label, re.I):
+                    stage_key, stage_label = "second", "2ª praça"
+                elif re.search(r"3ª\s*Praça", label, re.I):
+                    stage_key, stage_label = "third", "3ª praça"
+                else:
+                    stage_key, stage_label = "single", "Praça única"
+                stages.append({
+                    "stage": stage_key,
+                    "label": stage_label,
+                    "sequence": sequence,
+                    "price": instance.get("price"),
+                    "event_at": instance.get("date"),
+                })
+            apply_known_stages(prop, stages)
+            properties.append(prop)
 
         summary = soup.select_one(".summary")
         pages = 1

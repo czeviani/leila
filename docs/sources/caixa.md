@@ -17,6 +17,8 @@ Essas modalidades não formam obrigatoriamente uma sequência única de quatro p
 4. O menor mínimo confirmado vira o preço estratégico da mesa.
 5. O preço da etapa vigente é preservado separadamente.
 
+Venda Online, Licitação Aberta e Compra Direta são outros fluxos de venda. Elas não são acrescentadas depois do 2º leilão como se fossem etapas garantidas do mesmo imóvel. Quando o catálogo anuncia uma dessas modalidades, a jornada observada tem um quadrante próprio.
+
 ## Exemplo
 
 Para um imóvel com 1º leilão a R$ 925.000 e 2º leilão a R$ 637.191,56:
@@ -25,7 +27,7 @@ Para um imóvel com 1º leilão a R$ 925.000 e 2º leilão a R$ 637.191,56:
 - a coluna Lance mostra R$ 637.191,56 como melhor mínimo conhecido;
 - a trilha mostra R$ 925.000 na etapa atual e R$ 637.191,56 na próxima;
 - o desconto e o R$/m² estratégicos usam R$ 637.191,56;
-- uma eventual oferta posterior aparece sem preço e como possibilidade.
+- nenhuma venda posterior é desenhada, pois ela ainda não pertence ao fluxo publicado desse imóvel.
 
 Referências oficiais:
 

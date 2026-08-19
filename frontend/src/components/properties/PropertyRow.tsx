@@ -127,7 +127,6 @@ export default memo(function PropertyRow({
       {columns.includes('price') && (
         <td className={`min-w-[190px] whitespace-nowrap px-3 text-right ${yPadding}`}>
           <p className="num text-sm font-bold text-[#163447]">{money(property.auction_price)}</p>
-          <p className="text-[10px] font-semibold text-[#8a5a12]">melhor mínimo conhecido</p>
           <div className="mt-1.5 flex items-center justify-end">
             <AuctionJourney property={property} />
           </div>

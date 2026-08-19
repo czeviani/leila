@@ -11,7 +11,7 @@ import re
 from datetime import datetime
 from typing import Optional
 
-from .base import BaseSource, ScrapedProperty
+from .base import BaseSource, ScrapedProperty, apply_known_stages
 from .caixa import _parse_area, _parse_brl
 from .marketplace import detect_seller, property_type_from_text
 
@@ -99,7 +99,7 @@ class ZukSource(BaseSource):
             elif re.search(r"\bOcupado\b", f"{tooltip} {body}", re.IGNORECASE):
                 occupied = True
 
-            properties.append(ScrapedProperty(
+            prop = ScrapedProperty(
                 source_id=SOURCE_ID,
                 external_id=external_id,
                 title=tooltip.split(" | ", 1)[0].strip(),
@@ -124,7 +124,24 @@ class ZukSource(BaseSource):
                     "price_label": selected[0],
                     "catalog_excerpt": re.sub(r"\s+", " ", body).strip()[:1200],
                 },
-            ))
+            )
+            stages = []
+            for sequence, row in enumerate(price_rows, start=1):
+                label = row[0].strip()
+                stage_key = "first" if label.casefold().startswith("1º") else "second" if label.casefold().startswith("2º") else "single"
+                try:
+                    event_at = datetime.strptime(row[2], "%d/%m/%Y").date().isoformat()
+                except ValueError:
+                    event_at = None
+                stages.append({
+                    "stage": stage_key,
+                    "label": "1º leilão" if stage_key == "first" else "2º leilão" if stage_key == "second" else label,
+                    "sequence": sequence,
+                    "price": _parse_brl(row[1]),
+                    "event_at": event_at,
+                })
+            apply_known_stages(prop, stages)
+            properties.append(prop)
         return properties
 
     def _reader_url(self, page: int) -> str:

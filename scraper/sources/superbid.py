@@ -16,7 +16,7 @@ from urllib.parse import urlencode
 
 from bs4 import BeautifulSoup
 
-from .base import BaseSource, ScrapedProperty
+from .base import BaseSource, ScrapedProperty, apply_known_stages
 from .marketplace import detect_seller, is_non_property_offer, property_type_from_text
 
 
@@ -53,6 +53,36 @@ def _float_value(value: object) -> Optional[float]:
 def _date_value(value: str | None):
     if not value:
         return None
+
+
+def _declared_stages(text: str) -> list[dict[str, Any]]:
+    """Extract the number of praças and prices explicitly declared by a lot."""
+    stages = []
+    names = {"primeira": ("first", "1ª praça"), "segunda": ("second", "2ª praça"), "terceira": ("third", "3ª praça")}
+    pattern = re.compile(
+        r"(?:Lance\s+Inicial\s+(?:na|da)\s+)?(Primeira|Segunda|Terceira)\s+Pra[cç]a"
+        r".{0,160}?R\$\s*([\d.]+,\d{2})",
+        re.IGNORECASE | re.DOTALL,
+    )
+    for match in pattern.finditer(text or ""):
+        stage_key, label = names[match.group(1).casefold()]
+        if any(stage["stage"] == stage_key for stage in stages):
+            continue
+        stages.append({
+            "stage": stage_key,
+            "label": label,
+            "sequence": len(stages) + 1,
+            "price": _float_value(match.group(2)),
+            "event_at": None,
+        })
+    return stages
+
+
+def _declared_current_stage(text: str) -> Optional[str]:
+    match = re.search(r"\b([123])\s*[ªa]?\s*(?:pra[cç]a|leil[aã]o)\b", text or "", re.I)
+    if not match:
+        return None
+    return {"1": "first", "2": "second", "3": "third"}[match.group(1)]
     try:
         return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").date()
     except ValueError:
@@ -131,7 +161,7 @@ class _SuperbidMarketplaceSource(BaseSource):
         seller_id = detect_seller(title, description, auction.get("desc"), offer.get("store"))
         status = offer.get("offerStatus") or {}
 
-        return ScrapedProperty(
+        prop = ScrapedProperty(
             source_id=self.source_id,
             external_id=str(offer["id"]),
             title=title,
@@ -159,6 +189,15 @@ class _SuperbidMarketplaceSource(BaseSource):
                 "seller_evidence": seller_id,
             },
         )
+        stages = _declared_stages(description)
+        if stages:
+            current_stage = _declared_current_stage(modality_text) or stages[0]["stage"]
+            for stage in stages:
+                if stage["stage"] == current_stage and offer.get("endDate"):
+                    stage["event_at"] = _date_value(offer.get("endDate")).isoformat() if _date_value(offer.get("endDate")) else None
+            apply_known_stages(prop, stages, current_stage=current_stage)
+            prop.auction_modality = "primeira_praca" if current_stage == "first" else "segunda_praca" if current_stage == "second" else "leilao_online"
+        return prop
 
     async def scrape(self) -> list[ScrapedProperty]:
         properties: list[ScrapedProperty] = []

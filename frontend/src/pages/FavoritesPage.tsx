@@ -478,7 +478,7 @@ function EvaluationCard({
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Resumo do Investimento</p>
                 </div>
                 <div>
-                  <InfoRow label="Melhor mínimo conhecido" value={formatBRL(property.auction_price)} />
+                  <InfoRow label="Lance" value={formatBRL(property.auction_price)} />
                   {evaluation.financial_data.viabilidade_financeira?.custos_transacao?.total != null && (
                     <InfoRow label="Custos de transação" value={formatBRL(evaluation.financial_data.viabilidade_financeira.custos_transacao.total)} />
                   )}

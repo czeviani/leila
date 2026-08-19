@@ -211,14 +211,14 @@ export default function SettingsPage() {
               <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
                 <span className="flex items-center gap-1.5"><i className="h-3.5 w-3.5 rounded-[3px] bg-[#176B87] ring-2 ring-[#bce3e1]" />Etapa atual</span>
                 <span className="flex items-center gap-1.5"><i className="h-3.5 w-3.5 rounded-[3px] border border-[#C68A2D] bg-[#fff4df]" />Melhor preço</span>
-                <span className="flex items-center gap-1.5"><i className="h-3.5 w-3.5 rounded-[3px] border border-dashed border-slate-400" />Possível</span>
               </div>
               <p className="mt-2 text-slate-500">Passe o mouse sobre cada etapa para ver valor, data e situação.</p>
             </div>
             <div>
               <p className="font-semibold text-slate-900">Regras por fonte</p>
-              <p className="mt-2"><strong>Caixa SFI:</strong> 1º e 2º leilões confirmados; nova oferta posterior é apenas possível.</p>
-              <p className="mt-1"><strong>Superbid, SOLD, Mega e Zuk:</strong> mostramos somente as praças e valores publicados no anúncio, sem inventar uma sequência.</p>
+              <p className="mt-2"><strong>Caixa SFI:</strong> dois quadrantes — 1º e 2º leilões. Venda Online, Licitação e Compra Direta são modalidades independentes quando anunciadas.</p>
+              <p className="mt-1"><strong>Superbid/SOLD:</strong> um, dois ou três quadrantes, conforme as praças publicadas no lote.</p>
+              <p className="mt-1"><strong>Mega:</strong> praça única ou duas praças, conforme o cartão. <strong>Zuk:</strong> normalmente dois leilões; Venda Direta é uma modalidade de etapa única.</p>
             </div>
           </div>
         </div>

@@ -68,7 +68,7 @@ export default function ComparisonTray({ properties, favoriteIds, onRemove, onCl
               {properties.map(property => <div key={`${property.id}-head`} className="rounded-2xl border border-[#d5e2e2] bg-white p-4"><SourceBadge sourceId={property.source_id} sourceName={property.leila_sources?.name} compact /><h3 className="mt-2 line-clamp-2 font-bold text-[#163447]">{property.title}</h3><p className="mt-2 flex items-center gap-1 text-xs text-slate-500"><MapPin size={12} />{neighborhoodName(property) ?? property.city ?? 'Localização pendente'}</p></div>)}
               <CompareLabel label="Oportunidade" />
               {properties.map(property => { const score = opportunityScore(property); return <CompareValue key={`${property.id}-score`} emphasis best={score === best.score}><span>{score} <small>/ 100</small></span><span className="mt-1 block font-sans text-[10px] font-semibold text-slate-500">{opportunityFactors(property).join(' · ')}</span></CompareValue> })}
-              <CompareLabel label="Melhor mínimo" />
+              <CompareLabel label="Lance" />
               {properties.map(property => <CompareValue key={`${property.id}-price`} emphasis best={property.auction_price === best.price}>{money(property.auction_price)}</CompareValue>)}
               <CompareLabel label="Área" />
               {properties.map(property => { const area = effectiveArea(property); return <CompareValue key={`${property.id}-area`} best={area != null && area === best.area}>{area ? `${Math.round(area)} m²` : '—'}</CompareValue> })}

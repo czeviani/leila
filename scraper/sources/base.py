@@ -5,7 +5,7 @@ Base class para todos os scrapers de leilão.
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 import httpx
@@ -78,6 +78,64 @@ class ScrapeResult:
     rejected: int = 0
     errors: int = 0
     run_id: Optional[str] = None
+
+
+def apply_known_stages(
+    prop: ScrapedProperty,
+    stages: list[dict],
+    current_stage: Optional[str] = None,
+    today: Optional[date] = None,
+) -> bool:
+    """Apply only stages explicitly published for this lot or sale type."""
+    priced = [stage for stage in stages if stage.get("price")]
+    if not priced:
+        return False
+    today = today or date.today()
+    if current_stage:
+        current = next((stage for stage in stages if stage.get("stage") == current_stage), None)
+    else:
+        current = None
+    if current is None:
+        dated = []
+        for stage in stages:
+            raw_date = stage.get("event_at")
+            try:
+                stage_date = datetime.fromisoformat(raw_date).date() if raw_date else None
+            except ValueError:
+                stage_date = None
+            dated.append((stage, stage_date))
+        current = next((stage for stage, stage_date in dated if stage_date and stage_date >= today), None)
+        current = current or dated[-1][0]
+
+    target = min(priced, key=lambda item: item["price"])
+    normalized = []
+    reached_current = False
+    for sequence, stage in enumerate(stages, start=1):
+        is_current = stage.get("stage") == current.get("stage")
+        if is_current:
+            status = "current"
+            reached_current = True
+        else:
+            status = "upcoming" if reached_current else "completed"
+        normalized.append({
+            **stage,
+            "sequence": stage.get("sequence") or sequence,
+            "status": status,
+            "certainty": stage.get("certainty") or "official",
+        })
+
+    prop.auction_stages = normalized
+    prop.auction_stage = current.get("stage")
+    prop.current_stage_price = current.get("price")
+    if current.get("event_at"):
+        prop.current_stage_date = datetime.fromisoformat(current["event_at"]).date()
+        prop.auction_date = prop.current_stage_date
+    prop.target_stage = target.get("stage")
+    prop.auction_price = target["price"]
+    if prop.appraised_value:
+        prop.discount_pct = round((1 - prop.auction_price / prop.appraised_value) * 100, 2)
+    prop.journey_confidence = "official"
+    return True
 
 
 def calculate_data_quality(prop: ScrapedProperty) -> int:

@@ -39,6 +39,8 @@ class MegaSourceTests(unittest.TestCase):
         self.assertEqual(prop.state, "SP")
         self.assertEqual(prop.auction_date.isoformat(), "2026-12-31")
         self.assertEqual(prop.raw_data["instances"][0]["price"], 250000.0)
+        self.assertEqual(len(prop.auction_stages), 1)
+        self.assertEqual(prop.auction_stages[0]["label"], "1ª praça")
 
 
 class CaixaStageTests(unittest.TestCase):
@@ -76,7 +78,7 @@ class CaixaStageTests(unittest.TestCase):
         self.assertEqual(prop.target_stage, "second")
         self.assertEqual(prop.auction_date.isoformat(), "2026-09-08")
         self.assertEqual(prop.auction_modality, "primeira_praca")
-        self.assertEqual([stage["status"] for stage in prop.auction_stages], ["current", "upcoming", "possible"])
+        self.assertEqual([stage["status"] for stage in prop.auction_stages], ["current", "upcoming"])
 
     def test_second_stage_is_selected_after_first_auction(self):
         stages = _parse_detail_stages(self.DETAIL_HTML)

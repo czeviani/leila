@@ -266,7 +266,7 @@ export default function PropertyDetailPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
             <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-400">
-              {property.auction_stages?.length > 1 ? 'Melhor mínimo conhecido' : 'Preço anunciado'}
+              Lance de referência
             </p>
             <p className="break-words text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{formatBRL(property.auction_price)}</p>
             <p className="mt-1 text-xs text-slate-400">Base estratégica; não garante que a etapa futura ocorrerá ou que não haverá disputa.</p>

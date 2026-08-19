@@ -161,19 +161,6 @@ def _apply_detail_stages(prop: ScrapedProperty, stages: list[dict], now: Optiona
             "status": status,
             "certainty": "official",
         })
-    # A Caixa pode recolocar um imóvel não vendido em outra modalidade, mas
-    # suas regras não garantem isso nem antecipam o preço. Registramos como
-    # possibilidade, nunca como promessa ou como base do ranking.
-    enriched_stages.append({
-        "stage": "possible_next",
-        "label": "Possível nova oferta",
-        "sequence": len(enriched_stages) + 1,
-        "price": None,
-        "event_at": None,
-        "status": "possible",
-        "certainty": "possible",
-    })
-
     prop.auction_stage = current["stage"]
     prop.auction_stages = enriched_stages
     prop.auction_modality = "primeira_praca" if current["stage"] == "first" else "segunda_praca"

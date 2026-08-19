@@ -18,22 +18,22 @@ Cada item da sequência contém:
 - `sequence`: ordem visual;
 - `price`: mínimo oficial, quando publicado;
 - `event_at`: data e hora oficiais, quando publicadas;
-- `status`: `completed`, `current`, `upcoming` ou `possible`;
-- `certainty`: `official`, `observed` ou `possible`.
+- `status`: `completed`, `current` ou `upcoming`;
+- `certainty`: `official` ou `observed`.
 
-Etapas `possible` aparecem pontilhadas, não participam do menor preço e nunca devem ser anunciadas como garantidas.
+Só entram quadrantes pertencentes ao fluxo publicado para aquele lote. Uma modalidade que talvez ocorra depois não é uma etapa do imóvel e não aparece na trilha.
 
 ## Regra por fonte
 
 | Fonte | Jornada exibida | Preço estratégico | Limitação |
 |---|---|---|---|
-| Caixa — Leilão SFI | 1º leilão → 2º leilão → possível nova oferta | Menor mínimo publicado entre 1º e 2º leilões | Nova modalidade após o leilão é decisão da Caixa; não há preço antecipado |
+| Caixa — Leilão SFI | 1º leilão → 2º leilão | Menor mínimo publicado entre 1º e 2º leilões | Venda posterior não integra esta trilha porque não é garantida |
 | Caixa — Licitação Aberta | Uma disputa observada | Mínimo publicado | Não presumir venda direta posterior |
 | Caixa — Venda Online | Uma disputa com cronômetro | Mínimo publicado | Lances podem elevar o valor final |
 | Caixa — Compra Direta | Uma oferta corrente | Preço publicado | A primeira proposta válida pode vencer |
-| Superbid / SOLD | Um lote na disputa online | Lance mínimo ou atual informado | O marketplace agrega vendedores e regras; novas praças só entram se vierem no lote |
-| Mega Leilões | Praça/modalidade observada no anúncio | Mínimo da praça publicada | Não inferir uma praça ausente |
-| Zuk | Praça/modalidade observada no anúncio | Mínimo publicado | Não inferir sequência sem datas e valores explícitos |
+| Superbid / SOLD | Praça única, duas ou três praças, conforme descrição/edital do lote | Menor mínimo publicado nas praças do lote | A quantidade não é fixa no marketplace |
+| Mega Leilões | Praça única ou duas praças, conforme o cartão do imóvel | Menor mínimo publicado nas praças | Venda Direta é fluxo próprio de uma etapa |
+| Zuk | 1º → 2º leilão quando ambos são publicados; Venda Direta isolada | Menor mínimo publicado | Venda Direta não prova que aquele imóvel passou pelos dois leilões dentro da coleta |
 
 ## Semântica visual
 
@@ -41,13 +41,11 @@ Etapas `possible` aparecem pontilhadas, não participam do menor preço e nunca 
 - Quadrado âmbar: etapa futura com o melhor preço conhecido.
 - Quadrado cinza com marca: etapa concluída.
 - Quadrado branco: etapa futura confirmada.
-- Quadrado pontilhado com `?`: caminho possível, não garantido.
 
 Ao passar o mouse ou focar uma etapa, a interface informa nome, valor, data e situação. Na página do imóvel, a mesma informação aparece expandida.
 
 ## Regra de atualização
 
-A jornada é recalculada a cada coleta diária. Para leilões SFI da Caixa, a página oficial do imóvel é a fonte das datas e dos dois valores. Se o detalhe não puder ser lido, a etapa fica desconhecida; o sistema não escolhe automaticamente o primeiro leilão.
+A jornada é recalculada a cada coleta diária. Para leilões SFI da Caixa, a página oficial do imóvel é a fonte das datas e dos dois valores. Se o detalhe não puder ser lido, nenhum quadrante é mostrado; o sistema não cria uma etapa “desconhecida” nem escolhe automaticamente o primeiro leilão.
 
 O coletor muda a etapa atual após o horário oficial da primeira disputa. Se o imóvel desaparecer da fonte, a reconciliação normal de disponibilidade continua valendo e impede que um anúncio antigo seja tratado como disponível.
-

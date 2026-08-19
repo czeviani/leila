@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from sources.superbid import SoldSource, SuperbidSource, _float_value
+from sources.superbid import SoldSource, SuperbidSource, _declared_stages, _float_value
 from sources.zuk import ZukSource
 
 
@@ -10,6 +10,16 @@ class SuperbidSourceTests(unittest.TestCase):
         self.assertEqual(_float_value("1.234,56"), 1234.56)
         self.assertEqual(_float_value("105.17"), 105.17)
         self.assertEqual(_float_value(105.17), 105.17)
+
+    def test_three_declared_praças_are_preserved(self):
+        description = """
+        Lance Inicial na Primeira Praça (avaliação): R$ 900.000,00.
+        Lance Inicial na Segunda Praça (80%): R$ 720.000,00.
+        Lance Inicial na Terceira Praça (60%): R$ 540.000,00.
+        """
+        stages = _declared_stages(description)
+        self.assertEqual([stage["stage"] for stage in stages], ["first", "second", "third"])
+        self.assertEqual([stage["price"] for stage in stages], [900000.0, 720000.0, 540000.0])
 
     def test_next_payload_and_channels_are_separated(self):
         offers = [
@@ -81,6 +91,9 @@ class ZukSourceTests(unittest.TestCase):
         self.assertEqual(properties[0].auction_price, 300000.0)
         self.assertEqual(properties[0].seller_id, "itau")
         self.assertFalse(properties[0].is_occupied)
+        self.assertEqual([stage["stage"] for stage in properties[0].auction_stages], ["first", "second"])
+        self.assertEqual(properties[0].auction_stage, "first")
+        self.assertEqual(properties[0].target_stage, "second")
 
     def test_other_city_is_rejected(self):
         markdown = '''
