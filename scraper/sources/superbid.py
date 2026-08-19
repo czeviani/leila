@@ -156,6 +156,7 @@ class _SuperbidMarketplaceSource(BaseSource):
         edital_url = next((str(item.get("link")) for item in attachments if item.get("link") and item.get("contentType") == "application/pdf"), None)
 
         auction = offer.get("auction") or {}
+        event_pipeline = offer.get("eventPipeline") or auction.get("eventPipeline") or {}
         modality_text = str(auction.get("judicialPracaDescription") or auction.get("modalityDesc") or "")
         modality = "segunda_praca" if re.search(r"\b[23]\s*(?:praça|leilão)", modality_text, re.I) else "leilao_online"
         seller_id = detect_seller(title, description, auction.get("desc"), offer.get("store"))
@@ -185,15 +186,33 @@ class _SuperbidMarketplaceSource(BaseSource):
                 "store": offer.get("store"),
                 "auction_id": auction.get("id"),
                 "auction_description": auction.get("desc"),
+                "event_pipeline": event_pipeline,
                 "offer_status": status,
                 "seller_evidence": seller_id,
             },
         )
-        stages = _declared_stages(description)
+        pipeline_stages = event_pipeline.get("stages") or []
+        stages = []
+        for index, pipeline_stage in enumerate(pipeline_stages, start=1):
+            stage_key = {1: "first", 2: "second", 3: "third"}.get(index, f"stage_{index}")
+            stages.append({
+                "stage": stage_key,
+                "label": f"{index}ª praça",
+                "sequence": index,
+                "price": _float_value(pipeline_stage.get("initialBidValue")),
+                "event_at": pipeline_stage.get("endDate"),
+            })
+        if not stages:
+            stages = _declared_stages(description)
         if stages:
-            current_stage = _declared_current_stage(modality_text) or stages[0]["stage"]
+            pipeline_current = event_pipeline.get("currentStage")
+            current_stage = (
+                {1: "first", 2: "second", 3: "third"}.get(int(pipeline_current))
+                if str(pipeline_current or "").isdigit()
+                else None
+            ) or _declared_current_stage(modality_text) or stages[0]["stage"]
             for stage in stages:
-                if stage["stage"] == current_stage and offer.get("endDate"):
+                if stage["stage"] == current_stage and not stage.get("event_at") and offer.get("endDate"):
                     stage["event_at"] = _date_value(offer.get("endDate")).isoformat() if _date_value(offer.get("endDate")) else None
             apply_known_stages(prop, stages, current_stage=current_stage)
             prop.auction_modality = "primeira_praca" if current_stage == "first" else "segunda_praca" if current_stage == "second" else "leilao_online"

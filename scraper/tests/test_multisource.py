@@ -28,6 +28,11 @@ class SuperbidSourceTests(unittest.TestCase):
                 "price": 250000,
                 "endDate": "2026-09-01 12:00:00",
                 "store": {"name": "Superbid"},
+                "eventPipeline": {"currentStage": 1, "stages": [
+                    {"initialBidValue": 250000, "endDate": "2026-09-01 12:00:00"},
+                    {"initialBidValue": 180000, "endDate": "2026-09-08 12:00:00"},
+                    {"initialBidValue": 150000, "endDate": "2026-09-15 12:00:00"},
+                ]},
                 "product": {
                     "shortDesc": "Apartamento 55,5 m² - São Paulo/SP",
                     "location": {"city": "São Paulo - SP"},
@@ -61,6 +66,9 @@ class SuperbidSourceTests(unittest.TestCase):
         self.assertIsNotNone(prop)
         self.assertEqual(prop.area_m2, 55.5)
         self.assertEqual(prop.city, "São Paulo")
+        self.assertEqual(len(prop.auction_stages), 3)
+        self.assertEqual(prop.auction_stage, "first")
+        self.assertEqual(prop.auction_price, 150000)
 
     def test_consorcio_is_not_a_property(self):
         offer = {
