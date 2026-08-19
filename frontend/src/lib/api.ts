@@ -80,6 +80,7 @@ export interface Property {
   auction_price: number
   discount_pct: number | null
   description: string | null
+  listing_url: string | null
   edital_url: string | null
   photos: string[]
   auction_date: string | null

@@ -77,6 +77,7 @@ def _property_row(prop: ScrapedProperty, now: str, content_hash: str) -> dict:
         "auction_price": prop.auction_price,
         "discount_pct": prop.discount_pct,
         "description": prop.description,
+        "listing_url": (prop.raw_data or {}).get("source_url") or prop.edital_url,
         "edital_url": prop.edital_url,
         "photos": prop.photos,
         "auction_date": prop.auction_date.isoformat() if prop.auction_date else None,

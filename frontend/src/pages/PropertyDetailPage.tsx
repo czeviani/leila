@@ -184,8 +184,8 @@ export default function PropertyDetailPage() {
   const isFav = favorites?.some(f => f.property_id === property.id) ?? false
   const evaluation = property.leila_evaluations ?? undefined
   const availability = availabilityOf(property)
-  const officialUrl = property.edital_url ?? property.leila_sources?.url ?? SOURCE_URLS[property.source_id] ?? null
-  const isDirectPropertyUrl = Boolean(property.edital_url)
+  const officialUrl = property.listing_url ?? property.leila_sources?.url ?? SOURCE_URLS[property.source_id] ?? null
+  const isDirectPropertyUrl = Boolean(property.listing_url)
   const quality = qualityInfo(property.data_quality_score)
   const displayArea = property.useful_area_m2 ?? property.area_m2
   const address = [property.address, property.city, property.state].filter(Boolean).join(', ')
