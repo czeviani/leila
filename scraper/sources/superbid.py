@@ -202,8 +202,14 @@ class _SuperbidMarketplaceSource(BaseSource):
                 "price": _float_value(pipeline_stage.get("initialBidValue")),
                 "event_at": pipeline_stage.get("endDate"),
             })
+        # A plataforma rotula todo estágio "Nª praça", mas isso só é
+        # juridicamente confiável quando confirmado como praça judicial
+        # (campo dedicado) ou quando veio do regex que exige o texto
+        # "Primeira/Segunda/Terceira Praça" na descrição.
+        stages_are_judicial_pracas = bool(pipeline_stages) and bool(auction.get("judicialPracaDescription"))
         if not stages:
             stages = _declared_stages(description)
+            stages_are_judicial_pracas = bool(stages)
         if stages:
             pipeline_current = event_pipeline.get("currentStage")
             current_stage = (
@@ -214,6 +220,14 @@ class _SuperbidMarketplaceSource(BaseSource):
             for stage in stages:
                 if stage["stage"] == current_stage and not stage.get("event_at") and offer.get("endDate"):
                     stage["event_at"] = _date_value(offer.get("endDate")).isoformat() if _date_value(offer.get("endDate")) else None
+            if stages_are_judicial_pracas:
+                first_stage_price = next(
+                    (stage["price"] for stage in stages if stage["stage"] == "first" and stage.get("price")),
+                    None,
+                )
+                if first_stage_price:
+                    # 1ª praça judicial (CPC art. 891) equivale ao valor de avaliação.
+                    prop.appraised_value = first_stage_price
             apply_known_stages(prop, stages, current_stage=current_stage)
             prop.auction_modality = "primeira_praca" if current_stage == "first" else "segunda_praca" if current_stage == "second" else "leilao_online"
         return prop

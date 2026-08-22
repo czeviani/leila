@@ -148,6 +148,15 @@ class ZukSource(BaseSource):
                     "price": _parse_brl(row[1]),
                     "event_at": event_at,
                 })
+            first_stage_price = next(
+                (stage["price"] for stage in stages if stage["stage"] == "first" and stage.get("price")),
+                None,
+            )
+            if first_stage_price:
+                # 1º leilão/praça equivale ao valor de avaliação, seja no rito
+                # judicial (CPC art. 891) ou na alienação fiduciária (Lei
+                # 9.514/97 art. 27) — ambos regem os leilões do Zuk.
+                prop.appraised_value = first_stage_price
             apply_known_stages(prop, stages)
             properties.append(prop)
         return properties
