@@ -71,6 +71,31 @@ def _property_type(title: str) -> Optional[str]:
     return None
 
 
+_STREET_HINTS = re.compile(r"^(próx|proxima|próxima|prox\.|av\.|avenida|rua|alameda|estrada|rod\.|rodovia)", re.I)
+
+
+def _neighborhood(title: str, city: Optional[str], state: Optional[str]) -> Optional[str]:
+    """Extrai o bairro do padrão "<descrição> - <bairro> - <cidade> - <UF>".
+
+    Conservador: só retorna algo quando os dois últimos segmentos batem
+    exatamente com cidade/UF já extraídos da página (evidência confiável),
+    e descarta candidatos que parecem referência de rua, não bairro.
+    """
+    if not (city and state):
+        return None
+    parts = [part.strip() for part in title.split(" - ") if part.strip()]
+    if len(parts) < 3:
+        return None
+    if parts[-1].upper() != state:
+        return None
+    if parts[-2].strip().lower() != city.strip().lower():
+        return None
+    candidate = parts[-3]
+    if not candidate or re.search(r"\d", candidate) or _STREET_HINTS.search(candidate):
+        return None
+    return candidate
+
+
 def _seller_id(card) -> Optional[str]:
     image = card.select_one(".card-bank img")
     filename = (image.get("src") or "").rsplit("/", 1)[-1].lower() if image else ""
@@ -155,6 +180,7 @@ class MegaLeiloesSource(BaseSource):
                     auction_price=auction_price,
                     seller_id=_seller_id(card),
                     address=title,
+                    neighborhood=_neighborhood(title, city, state),
                     city=city,
                     state=state,
                     property_type=_property_type(title),
@@ -190,6 +216,14 @@ class MegaLeiloesSource(BaseSource):
                     "price": instance.get("price"),
                     "event_at": instance.get("date"),
                 })
+            first_stage_price = next(
+                (stage["price"] for stage in stages if stage["stage"] == "first" and stage.get("price")),
+                None,
+            )
+            if first_stage_price:
+                # Por lei (CPC art. 891), o lance mínimo da 1ª praça é o
+                # próprio valor de avaliação do bem em leilão judicial.
+                prop.appraised_value = first_stage_price
             apply_known_stages(prop, stages)
             properties.append(prop)
 
