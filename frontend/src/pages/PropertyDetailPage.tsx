@@ -355,14 +355,16 @@ export default function PropertyDetailPage() {
           </section>
         )}
 
-        <DocumentAnalysisPanel
-          record={documentAnalysis}
-          isLoading={documentAnalysisLoading}
-          isRequesting={requestDocumentAnalysis.isPending}
-          requestError={requestDocumentAnalysis.isError ? (requestDocumentAnalysis.error as Error).message : null}
-          canAnalyze={Boolean(property.edital_url) && availability !== 'unavailable'}
-          onAnalyze={force => requestDocumentAnalysis.mutate({ propertyId: property.id, force })}
-        />
+        <ErrorBoundary fallbackTitle="A leitura documental não pôde ser exibida.">
+          <DocumentAnalysisPanel
+            record={documentAnalysis}
+            isLoading={documentAnalysisLoading}
+            isRequesting={requestDocumentAnalysis.isPending}
+            requestError={requestDocumentAnalysis.isError ? (requestDocumentAnalysis.error as Error).message : null}
+            canAnalyze={Boolean(property.edital_url) && availability !== 'unavailable'}
+            onAnalyze={force => requestDocumentAnalysis.mutate({ propertyId: property.id, force })}
+          />
+        </ErrorBoundary>
 
         {/* AI Evaluation */}
         <section aria-labelledby="ai-heading" className="overflow-hidden rounded-2xl">
