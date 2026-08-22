@@ -234,6 +234,11 @@ class _SuperbidMarketplaceSource(BaseSource):
                 "event_pipeline": event_pipeline,
                 "offer_status": status,
                 "seller_evidence": seller_id,
+                # Antes só o primeiro PDF (edital_url acima) era guardado — o
+                # resto (tipicamente matrícula e laudo) era descartado. A
+                # leitura documental sob demanda relê a página diretamente,
+                # mas preservar a lista aqui evita depender só dessa releitura.
+                "attachments": attachments,
             },
         )
         pipeline_stages = event_pipeline.get("stages") or []

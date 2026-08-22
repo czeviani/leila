@@ -439,7 +439,16 @@ export default function PropertyDetailPage() {
           )}
 
           {evaluation?.status === 'done' && evaluation.financial_data && (
-            <InvestmentDashboard analysis={evaluation.financial_data} />
+            <>
+              {evaluation.decision_status !== 'ready_for_final_review' && (
+                <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                  <p className="font-bold">Relatório financeiro ainda não está liberado para decisão</p>
+                  <p className="mt-1 text-xs leading-relaxed">Ele é uma estimativa de triagem. Resolva as diligências documentais antes de considerar qualquer arrematação.</p>
+                  {(evaluation.blocking_issues ?? []).length > 0 && <ul className="mt-2 list-disc space-y-1 pl-4 text-xs">{evaluation.blocking_issues?.map(issue => <li key={issue}>{issue}</li>)}</ul>}
+                </div>
+              )}
+              <InvestmentDashboard analysis={evaluation.financial_data} />
+            </>
           )}
 
           {evaluation?.status === 'done' && !evaluation.financial_data && (

@@ -11,10 +11,12 @@ import os
 import hashlib
 import json
 from collections import Counter
+from typing import Optional
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Header
+from pydantic import BaseModel
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
@@ -28,6 +30,7 @@ from sources.base import ScrapedProperty, ScrapeResult, calculate_data_quality
 from proxy.manager import proxy_count
 from enrichment import enrich_properties
 from scope import TARGET_CITY, TARGET_STATE, canonical_key, partition_scope
+from documents import discover_documents, fetch_document_bytes
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
@@ -250,6 +253,25 @@ async def _upsert_properties(
                 .execute()
             )
             persisted = {row["external_id"]: row for row in (response.data or [])}
+
+            # Any material source change invalidates prior document/evaluation
+            # readiness. Keep the historical result, but force a fresh review.
+            changed_property_ids = [
+                persisted[prop.external_id]["id"]
+                for prop, digest, _ in prepared
+                if existing.get(prop.external_id, {}).get("content_hash")
+                and existing[prop.external_id].get("content_hash") != digest
+                and persisted.get(prop.external_id, {}).get("id")
+            ]
+            if changed_property_ids:
+                _get_supabase().table("leila_document_analyses").update({
+                    "decision_status": "pending_diligence",
+                    "blocking_issues": ["Dados da fonte mudaram; nova leitura documental obrigatória"],
+                }).in_("property_id", changed_property_ids).execute()
+                _get_supabase().table("leila_evaluations").update({
+                    "decision_status": "pending_diligence",
+                    "blocking_issues": ["Dados da fonte mudaram; nova avaliação obrigatória"],
+                }).in_("property_id", changed_property_ids).execute()
 
             snapshot_rows = []
             for prop, digest, row in prepared:
@@ -498,6 +520,35 @@ async def status():
         "proxy_rotation": os.getenv("PROXY_ROTATION", "false"),
         "scope": {"state": TARGET_STATE, "city": TARGET_CITY},
     }
+
+
+class DiscoverDocumentsRequest(BaseModel):
+    source_id: str
+    listing_url: str
+    event_url: Optional[str] = None
+
+
+class FetchDocumentRequest(BaseModel):
+    url: str
+
+
+@app.post("/documents/discover", dependencies=[Depends(verify_secret)])
+async def documents_discover(payload: DiscoverDocumentsRequest):
+    """Varre a página de anúncio do imóvel por anexos (edital, matrícula,
+    laudo) e devolve também o texto da própria página como fallback. Sob
+    demanda — chamado pelo backend Node quando o usuário pede a leitura
+    documental de UM imóvel, não em lote."""
+    return await discover_documents(payload.source_id, payload.listing_url, payload.event_url)
+
+
+@app.post("/documents/fetch", dependencies=[Depends(verify_secret)])
+async def documents_fetch(payload: FetchDocumentRequest):
+    """Baixa um documento (tipicamente PDF) e devolve em base64 para o backend
+    repassar nativamente à Messages API — sem parser de PDF no meio."""
+    result = await fetch_document_bytes(payload.url)
+    if result is None:
+        raise HTTPException(status_code=502, detail=f"Não foi possível baixar o documento em {payload.url}")
+    return result
 
 
 @app.post("/scrape/all", dependencies=[Depends(verify_secret)])

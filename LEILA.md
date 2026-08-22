@@ -171,6 +171,15 @@ Filtros persistidos do usuário. Um registro por `user_id`.
 ### `leila_favorites`
 Imóveis selecionados para avaliação IA. Relação `user_id × property_id`.
 
+### `leila_document_analyses`
+Uma linha por imóvel (`UNIQUE property_id` — re-análise sobrescreve). Colunas v2: `liabilities` (jsonb, ver `Liability` em `api.ts`), `payment_rules`, `conflicts`, `documents_read`, `total_arrematante_brl`, `stage`/`stage_detail` (progresso durante `processing`).
+
+### `leila_property_documents`
+Um snapshot por documento lido (`UNIQUE property_id, source_url, content_hash`) — `document_type` em `edital`/`matricula`/`laudo`/`errata`/`certificate`/`attachment`/`listing`/`unknown`. Alimentada pelo pipeline de leitura documental (F1), não pela coleta em lote.
+
+### `leila_ai_usage_events`
+**Append-only** — cada chamada de IA do projeto (leitura documental, avaliação, enriquecimento do scraper) vira uma linha permanente, nunca atualizada. `run_id` agrupa uma rodada inteira (ex.: os 3 agentes de uma leitura documental). Existe porque `leila_document_analyses`/`leila_evaluations` são `UNIQUE(property_id)` e re-análises perdiam o histórico de custo.
+
 ---
 
 ## Heat Score (Migration 007)
@@ -272,6 +281,27 @@ Imóveis selecionados para avaliação IA. Relação `user_id × property_id`.
 - `indicadores_mercado`: liquidez, demanda, tendência 12m
 - `checklist_due_diligence`: itens críticos/importantes/recomendados
 - `recomendacao_reforma`: escopo mínimo, recomendado, itens de alto impacto
+
+---
+
+## Leitura Documental — Pipeline v2 (3 agentes)
+
+Botão "Ler condições oficiais" / "Atualizar leitura" em `DocumentAnalysisPanel.tsx`. Diferente da avaliação IA (que lê só os dados já estruturados do anúncio), esta lê os **documentos oficiais** do imóvel — edital, matrícula, laudo de avaliação — e responde à pergunta "quem paga cada dívida: eu (arrematante) ou o vendedor?".
+
+**Antes da v2** (até 2026-08): o botão fazia um único fetch na página de anúncio via `r.jina.ai`, cortava 24k caracteres e mandava para `qwen/qwen3.5-9b`; a saída da IA era sobrescrita por um regex sempre que o regex não achava nada. Nunca lia matrícula ou laudo. Substituído.
+
+**Fluxo (todo em `backend/src/services/document-agents/` + `document-analysis.service.ts`):**
+1. **Descoberta** — `POST {SCRAPER_URL}/documents/discover` (`scraper/documents.py`): abre a página do imóvel com o mesmo proxy BR + `curl_cffi impersonate="chrome120"` da coleta em lote, varre `<a href>` por PDFs de edital/matrícula/laudo, classifica por tipo. Para Superbid/Sold, extrai `product.attachments` do `__NEXT_DATA__` (não são `<a href>`). Para Mega Leilões, também segue `raw_data.event_url` (o edital vive na página do leilão, não na do lote).
+2. **Coleta** — `POST {SCRAPER_URL}/documents/fetch` baixa cada documento (teto 32 MB) e devolve base64; até 6 documentos por rodada, priorizando edital/matrícula/laudo. Persistido em `leila_property_documents`.
+3. **Agente A — Extrator** (`extractor.ts`, 1 chamada por documento, em paralelo, `claude-sonnet-5`): lê o PDF nativamente (bloco `document` base64, sem parser) com `citations: {enabled: true}`. Cada fato extraído carrega um `verbatim_quote` **verificado pelo servidor da Anthropic** como trecho literal do documento — frase sem citação anexada é descartada. É o guard-rail anti-alucinação; substitui o regex antigo.
+4. **Agente B — Jurista de ônus** (`liabilities.ts`, 1 chamada, `claude-opus-5`): classifica cada ônus (condomínio, IPTU, hipoteca, penhora, ação judicial, ITBI, comissão...) por `payer`: `arrematante` | `vendedor` | `sub_rogado_no_preco` | `indefinido`. "Indefinido" é o veredicto correto quando os documentos não deixam claro — nunca vira silenciosamente "sem dívida".
+5. **Agente C — Consolidador** (`consolidator.ts`, 1 chamada, `claude-sonnet-5`): monta resumo, riscos ranqueados, tags, conflitos entre documentos (ex.: um diz desocupado, outro diz ocupado) e `completeness_score`.
+
+**Custo:** cada chamada de cada agente grava uma linha em `leila_ai_usage_events` (append-only, `run_id` agrupa uma rodada inteira). Preços em `ai-usage.service.ts`. Exibido no rodapé do painel via `GET /api/properties/:id/ai-usage`.
+
+**Modelos** (env, todos com default sensato — só sobrescrever para testar): `DOCUMENT_EXTRACTOR_MODEL`, `DOCUMENT_LIABILITIES_MODEL`, `DOCUMENT_CONSOLIDATOR_MODEL`.
+
+**Onde "quem paga" aparece na tela:** três grupos no topo do painel — 🔴 Você paga (arrematante, com total em destaque) · 🟢 Quitado/sub-rogado · ⚪ Indefinido (a confirmar antes do lance).
 
 ---
 
@@ -419,6 +449,9 @@ PROXY_ROTATION=true
 | `005_property_enrichment_fields.sql`       | `bedrooms`, `bathrooms`, `parking_spots`, `is_occupied`, `useful_area_m2` |
 | `006_backfill_enrichment_from_description.sql` | Backfill dos campos acima via parsing de description          |
 | `007_heat_score.sql`                       | `heat_score` coluna + função `leila_calc_heat_score` + trigger + índice |
+| *(tabela não mantida entre 007 e 2026-08 — ver `supabase/migrations/` para o histórico real)* | |
+| `20260822150000_leila_ai_usage_events.sql` | Cria `leila_ai_usage_events` (append-only, custo de IA por chamada)   |
+| `20260822150100_document_analysis_v2.sql`  | `liabilities`, `payment_rules`, `conflicts`, `documents_read`, `stage`/`stage_detail`, `total_arrematante_brl` em `leila_document_analyses` |
 
 **Para aplicar nova migration:**
 - Via MCP Supabase: `mcp__supabase__apply_migration` com `project_id=mfgkpmlesblvvyasamyx`

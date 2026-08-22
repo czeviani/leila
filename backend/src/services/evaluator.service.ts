@@ -34,7 +34,23 @@ function getOpenRouterClient(): OpenAI {
   return _openrouter
 }
 
-async function callLlm(system: string, user: string, config: LlmConfig): Promise<string> {
+export interface LlmCallResult {
+  text: string
+  provider: LlmProvider
+  model: string
+  inputTokens: number
+  outputTokens: number
+  cacheReadTokens: number
+  cacheWriteTokens: number
+  /** Só o OpenRouter devolve custo pronto (USD) na própria resposta. */
+  costUsdOverride?: number
+}
+
+// Antes desta função devolver o objeto de uso, ela devolvia só `Promise<string>`
+// — o `usage` do provider morria dentro dela e a avaliação de investimento (o
+// fluxo mais caro do projeto: Sonnet/Opus, max_tokens 8000, prompt com schema
+// inline) nunca gravava um token sequer. Ver backend/src/services/ai-usage.service.ts.
+async function callLlm(system: string, user: string, config: LlmConfig): Promise<LlmCallResult> {
   if (config.provider === 'openrouter') {
     const client = getOpenRouterClient()
     const res = await client.chat.completions.create({
@@ -46,7 +62,17 @@ async function callLlm(system: string, user: string, config: LlmConfig): Promise
         { role: 'user', content: user },
       ],
     })
-    return res.choices[0]?.message?.content ?? ''
+    const usage = res.usage as (typeof res.usage & { cost?: number }) | undefined
+    return {
+      text: res.choices[0]?.message?.content ?? '',
+      provider: 'openrouter',
+      model: res.model ?? config.model,
+      inputTokens: usage?.prompt_tokens ?? 0,
+      outputTokens: usage?.completion_tokens ?? 0,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+      costUsdOverride: usage?.cost,
+    }
   }
 
   // Default: Anthropic
@@ -54,15 +80,27 @@ async function callLlm(system: string, user: string, config: LlmConfig): Promise
   const res = await client.messages.create({
     model: config.model,
     max_tokens: 8000,
+    thinking: { type: 'adaptive' },
+    output_config: { effort: 'high' },
     system,
     messages: [{ role: 'user', content: user }],
   })
-  const block = res.content[0]
-  if (block.type !== 'text') throw new Error('Unexpected response type from Anthropic')
-  return block.text
+  const block = res.content.find(b => b.type === 'text')
+  if (!block || block.type !== 'text') throw new Error('Unexpected response type from Anthropic')
+  return {
+    text: block.text,
+    provider: 'anthropic',
+    model: config.model,
+    inputTokens: res.usage.input_tokens,
+    outputTokens: res.usage.output_tokens,
+    cacheReadTokens: res.usage.cache_read_input_tokens ?? 0,
+    cacheWriteTokens: res.usage.cache_creation_input_tokens ?? 0,
+  }
 }
 
 export interface InvestmentAnalysis {
+  decision_status?: 'ready_for_final_review' | 'pending_diligence' | 'blocked'
+  blocking_issues?: string[]
   resumo_executivo: {
     veredicto: 'COMPRAR' | 'NEGOCIAR' | 'EVITAR'
     score_geral: number
@@ -181,6 +219,19 @@ export interface PropertyEvaluation {
   recommendation: 'strong_buy' | 'consider' | 'risky' | 'avoid'
   price_per_m2: number | null
   financial_data: InvestmentAnalysis | null
+  input_snapshot?: Record<string, unknown>
+  evidence_snapshot?: Record<string, unknown>
+  decision_status?: 'ready_for_final_review' | 'pending_diligence' | 'blocked'
+  blocking_issues?: string[]
+  llm_usage: {
+    provider: LlmProvider
+    model: string
+    input_tokens: number
+    output_tokens: number
+    cache_read_tokens: number
+    cache_write_tokens: number
+    cost_usd_override?: number
+  }
 }
 
 const SYSTEM_PROMPT = `Você é um analista imobiliário especializado em imóveis de leilão no Brasil. Seu trabalho é avaliar imóveis com frieza técnica e precisão de mercado — sem floreios, sem linguagem de corretor. O usuário vai reformar e vender ou alugar. Ele precisa de números reais, probabilidades e riscos concretos.
@@ -304,6 +355,23 @@ export const evaluateProperty = async (
     edital_url?: string | null
     source_name: string
     auction_modality: string | null
+    document_context?: {
+      status?: string | null
+      decision_status?: 'ready_for_final_review' | 'pending_diligence' | 'blocked' | null
+      blocking_issues?: string[] | null
+      analysis?: unknown
+      evidence?: unknown
+      document_hash?: string | null
+    }
+    market_context?: {
+      neighborhood?: string | null
+      median_price_per_m2?: number | null
+      p25_price_per_m2?: number | null
+      p75_price_per_m2?: number | null
+      confidence?: string | null
+      evidence_count?: number | null
+      calculated_at?: string | null
+    }
   },
   config: LlmConfig = DEFAULT_LLM_CONFIG,
 ): Promise<PropertyEvaluation> => {
@@ -341,6 +409,14 @@ export const evaluateProperty = async (
     property.discount_pct != null ? `Desconto sobre avaliação: ${property.discount_pct.toFixed(1)}%` : null,
     property.edital_url ? `Edital: ${property.edital_url}` : null,
     `Fonte do leilão: ${property.source_name}`,
+    property.document_context ? `Diligência documental atual: ${JSON.stringify({
+      status: property.document_context.status,
+      decision_status: property.document_context.decision_status,
+      blocking_issues: property.document_context.blocking_issues,
+      analysis: property.document_context.analysis,
+      evidence: property.document_context.evidence,
+    })}` : 'Diligência documental: ainda não executada para este imóvel.',
+    property.market_context ? `Comparáveis internos disponíveis: ${JSON.stringify(property.market_context)}` : 'Comparáveis de mercado: não disponíveis; não invente evidência.',
   ].filter(Boolean).join('\n')
 
   const userPrompt = `Analise este imóvel para investimento com reforma. Retorne APENAS o JSON do schema abaixo, sem texto adicional.
@@ -464,9 +540,9 @@ SCHEMA JSON OBRIGATÓRIO
   }
 }`
 
-  const rawText = await callLlm(SYSTEM_PROMPT, userPrompt, config)
+  const llmResult = await callLlm(SYSTEM_PROMPT, userPrompt, config)
 
-  const stripped = rawText.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim()
+  const stripped = llmResult.text.replace(/```(?:json)?\s*/g, '').replace(/```/g, '').trim()
   const jsonMatch = stripped.match(/\{[\s\S]*\}/)
   if (!jsonMatch) throw new Error('Could not parse JSON from evaluation response')
 
@@ -474,6 +550,17 @@ SCHEMA JSON OBRIGATÓRIO
 
   // ── Math correction: ensure financial figures are internally consistent ──────
   const analysis = correctFinancialMath(rawAnalysis, property.auction_price, property.appraised_value)
+  const documentReady = property.document_context?.decision_status === 'ready_for_final_review'
+  const blockingIssues = [
+    ...(property.document_context?.blocking_issues ?? []),
+    ...(documentReady ? [] : ['Diligência documental não está completa e confirmada']),
+    ...(!property.market_context ? ['Não há comparáveis de mercado verificáveis para esta região'] : []),
+  ]
+  analysis.blocking_issues = [...new Set(blockingIssues)]
+  analysis.decision_status = analysis.blocking_issues.length === 0 ? 'ready_for_final_review' : 'pending_diligence'
+  if ((!property.market_context || property.market_context.confidence === 'low') && analysis.metadata) {
+    analysis.metadata.confianca_analise = 'BAIXA'
+  }
 
   const verdictMap: Record<string, 'strong_buy' | 'consider' | 'risky' | 'avoid'> = {
     COMPRAR: 'strong_buy',
@@ -503,6 +590,29 @@ SCHEMA JSON OBRIGATÓRIO
       ? Math.round(property.auction_price / areaEfetiva)
       : null,
     financial_data: analysis,
+    input_snapshot: {
+      property_id: property.id,
+      auction_price: property.auction_price,
+      appraised_value: property.appraised_value,
+      captured_at: new Date().toISOString(),
+    },
+    evidence_snapshot: property.document_context ? {
+      document_hash: property.document_context.document_hash,
+      decision_status: property.document_context.decision_status,
+      blocking_issues: property.document_context.blocking_issues,
+      market_context: property.market_context ?? null,
+    } : {},
+    llm_usage: {
+      provider: llmResult.provider,
+      model: llmResult.model,
+      input_tokens: llmResult.inputTokens,
+      output_tokens: llmResult.outputTokens,
+      cache_read_tokens: llmResult.cacheReadTokens,
+      cache_write_tokens: llmResult.cacheWriteTokens,
+      cost_usd_override: llmResult.costUsdOverride,
+    },
+    decision_status: analysis.decision_status,
+    blocking_issues: analysis.blocking_issues,
   }
 }
 
@@ -529,11 +639,8 @@ function correctFinancialMath(
   const totalCustos = itbi + comissao + registro
 
   if (viab.custos_transacao) {
-    // Only override if the LLM values are wildly wrong (>50% off)
-    const llmTotal = viab.custos_transacao.total ?? 0
-    if (Math.abs(llmTotal - totalCustos) / Math.max(totalCustos, 1) > 0.5) {
-      viab.custos_transacao = { itbi, comissao_leiloeiro: comissao, registro_cartorio: registro, total: totalCustos }
-    }
+    // Derived arithmetic is deterministic; the model cannot override it.
+    viab.custos_transacao = { itbi, comissao_leiloeiro: comissao, registro_cartorio: registro, total: totalCustos }
   } else {
     viab.custos_transacao = { itbi, comissao_leiloeiro: comissao, registro_cartorio: registro, total: totalCustos }
   }
@@ -542,36 +649,26 @@ function correctFinancialMath(
 
   // 2. Recalculate investimento_total from components
   const investimentoCorreto = auctionPrice + custos + (reforma.custo_reforma_mediano ?? 0)
-  if (viab.investimento_total_estimado && Math.abs(viab.investimento_total_estimado - investimentoCorreto) / Math.max(investimentoCorreto, 1) > 0.15) {
-    viab.investimento_total_estimado = investimentoCorreto
-  }
+  viab.investimento_total_estimado = investimentoCorreto
 
   // 3. Recalculate ganho_bruto for each scenario
   if (reforma.custo_reforma_maximo != null && reforma.valor_imovel_pos_reforma_minimo != null) {
     const ganhoMin = reforma.valor_imovel_pos_reforma_minimo - auctionPrice - custos - reforma.custo_reforma_maximo
-    if (Math.abs((reforma.ganho_bruto_estimado_minimo ?? 0) - ganhoMin) / (Math.abs(ganhoMin) + 1) > 0.15) {
-      reforma.ganho_bruto_estimado_minimo = Math.round(ganhoMin)
-    }
+    reforma.ganho_bruto_estimado_minimo = Math.round(ganhoMin)
   }
   if (reforma.custo_reforma_mediano != null && reforma.valor_imovel_pos_reforma_mediano != null) {
     const ganhoMed = reforma.valor_imovel_pos_reforma_mediano - auctionPrice - custos - reforma.custo_reforma_mediano
-    if (Math.abs((reforma.ganho_bruto_estimado_mediano ?? 0) - ganhoMed) / (Math.abs(ganhoMed) + 1) > 0.15) {
-      reforma.ganho_bruto_estimado_mediano = Math.round(ganhoMed)
-    }
+    reforma.ganho_bruto_estimado_mediano = Math.round(ganhoMed)
   }
   if (reforma.custo_reforma_minimo != null && reforma.valor_imovel_pos_reforma_maximo != null) {
     const ganhoMax = reforma.valor_imovel_pos_reforma_maximo - auctionPrice - custos - reforma.custo_reforma_minimo
-    if (Math.abs((reforma.ganho_bruto_estimado_maximo ?? 0) - ganhoMax) / (Math.abs(ganhoMax) + 1) > 0.15) {
-      reforma.ganho_bruto_estimado_maximo = Math.round(ganhoMax)
-    }
+    reforma.ganho_bruto_estimado_maximo = Math.round(ganhoMax)
   }
 
   // 4. Recalculate ROI from corrected values
   if (reforma.ganho_bruto_estimado_mediano != null && viab.investimento_total_estimado > 0) {
     const roiCorreto = (reforma.ganho_bruto_estimado_mediano / viab.investimento_total_estimado) * 100
-    if (Math.abs((reforma.roi_bruto_pct ?? 0) - roiCorreto) > 5) {
-      reforma.roi_bruto_pct = parseFloat(roiCorreto.toFixed(1))
-    }
+    reforma.roi_bruto_pct = parseFloat(roiCorreto.toFixed(1))
   }
 
   return analysis

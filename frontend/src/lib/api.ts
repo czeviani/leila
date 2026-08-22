@@ -86,7 +86,7 @@ export interface Property {
   auction_date: string | null
   auction_status: string
   auction_modality: string | null
-  auction_stage: 'first' | 'second' | 'single' | 'unknown' | null
+  auction_stage: 'first' | 'second' | 'third' | 'single' | 'unknown' | null
   auction_stages: Array<{
     stage: string
     label?: string
@@ -201,16 +201,73 @@ export interface NeighborhoodProfile {
 
 export type DocumentFindingStatus = 'allowed' | 'not_allowed' | 'conditional' | 'not_found'
 
+/** @deprecated leitura v1 — mantido só para registros antigos ainda no banco. */
 export interface DocumentAnalysisData {
   summary: string
-  fgts: { status: DocumentFindingStatus; note: string }
-  financing: { status: DocumentFindingStatus; note: string }
-  occupancy: { status: 'occupied' | 'vacant' | 'unknown'; note: string }
-  condominium_debt: { status: DocumentFindingStatus; responsibility: string; note: string }
-  tax_debt: { status: DocumentFindingStatus; responsibility: string; note: string }
-  payment_methods: string[]
-  risks: Array<{ severity: 'high' | 'medium' | 'low'; title: string; detail: string }>
-  confidence: 'high' | 'medium' | 'low'
+  fgts?: { status: DocumentFindingStatus; note: string }
+  financing?: { status: DocumentFindingStatus; note: string }
+  occupancy?: { status: 'occupied' | 'vacant' | 'unknown'; note: string }
+  condominium_debt?: { status: DocumentFindingStatus; responsibility: string; note: string }
+  tax_debt?: { status: DocumentFindingStatus; responsibility: string; note: string }
+  payment_methods?: string[]
+  risks?: Array<{ severity: 'high' | 'medium' | 'low'; title: string; detail: string }>
+  confidence?: 'high' | 'medium' | 'low'
+}
+
+export type LiabilityKind =
+  | 'condominio' | 'iptu' | 'tributos_municipais' | 'hipoteca' | 'penhora'
+  | 'alienacao_fiduciaria' | 'usufruto' | 'acao_judicial' | 'comissao_leiloeiro'
+  | 'itbi' | 'registro' | 'desocupacao' | 'outros'
+
+export type Payer = 'arrematante' | 'vendedor' | 'sub_rogado_no_preco' | 'indefinido'
+
+export interface Liability {
+  kind: LiabilityKind
+  label: string
+  amount_brl: number | null
+  amount_note: string
+  payer: Payer
+  payer_confidence: 'high' | 'medium' | 'low'
+  basis_quote: string
+  source_document_type: string
+  source_url: string
+}
+
+export interface PaymentRule {
+  applicable: boolean
+  status: DocumentFindingStatus
+  note: string
+  basis_quote: string | null
+}
+
+export interface PaymentRules {
+  fgts: PaymentRule
+  financiamento: PaymentRule
+  consorcio: PaymentRule
+}
+
+export interface DocumentConflict {
+  topic: string
+  description: string
+  document_a_url: string
+  document_b_url: string
+}
+
+export interface DocumentRankedRisk {
+  severity: 'high' | 'medium' | 'low'
+  title: string
+  detail: string
+  source_url: string | null
+}
+
+export interface DocumentReadSummary {
+  url: string
+  type: string
+  label: string | null
+  readOk: boolean
+  errorMessage?: string
+  factCount: number
+  identityMatch: 'matched' | 'partial' | 'mismatch' | 'not_checked'
 }
 
 export interface DocumentAnalysisRecord {
@@ -220,13 +277,56 @@ export interface DocumentAnalysisRecord {
   source_url?: string
   provider?: string | null
   model?: string | null
+  prompt_version?: string
   tags?: string[]
-  analysis?: DocumentAnalysisData | null
-  evidence?: Array<{ field: string; excerpt: string }>
+  /** v2: só summary/risks (o restante estruturado vive em liabilities/payment_rules/conflicts). v1 antigo: shape completo do DocumentAnalysisData. */
+  analysis?: (DocumentAnalysisData & { risks?: DocumentRankedRisk[] | DocumentAnalysisData['risks'] }) | null
+  evidence?: Array<{ field: string; excerpt: string; source?: string; confidence?: string }>
   input_tokens?: number
   output_tokens?: number
   error_message?: string | null
   analyzed_at?: string | null
+  source_snapshot?: Record<string, unknown>
+  identity_match?: 'matched' | 'partial' | 'mismatch' | 'not_checked'
+  identity_evidence?: Array<{ field: string; excerpt: string; source?: string; confidence?: string }>
+  completeness_score?: number
+  blocking_issues?: string[]
+  decision_status?: 'ready_for_final_review' | 'pending_diligence' | 'blocked'
+  liabilities?: Liability[]
+  payment_rules?: PaymentRules
+  conflicts?: DocumentConflict[]
+  documents_read?: DocumentReadSummary[]
+  stage?: string | null
+  stage_detail?: string | null
+  total_arrematante_brl?: number | null
+}
+
+export interface AiUsageEvent {
+  id: string
+  occurred_at: string
+  run_id: string
+  feature: 'document_analysis' | 'evaluation' | 'scraper_enrichment'
+  stage: string | null
+  provider: string
+  model: string
+  input_tokens: number
+  output_tokens: number
+  cost_usd: number
+  cost_brl: number
+  success: boolean
+}
+
+export interface AiUsageTotal {
+  cost_usd: number
+  cost_brl: number
+  input_tokens: number
+  output_tokens: number
+  calls: number
+}
+
+export interface PropertyAiUsage {
+  events: AiUsageEvent[]
+  total: AiUsageTotal
 }
 
 export interface Favorite {
@@ -351,6 +451,11 @@ export interface Evaluation {
   price_per_m2: number | null
   financial_data: EvaluationFinancialData | null
   evaluated_at: string | null
+  input_snapshot?: Record<string, unknown>
+  evidence_snapshot?: Record<string, unknown>
+  decision_status?: 'ready_for_final_review' | 'pending_diligence' | 'blocked'
+  blocking_issues?: string[]
+  model_version?: string | null
 }
 
 export interface ScrapeResult {
@@ -436,6 +541,7 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ force }),
       }),
+    aiUsage: (id: string) => apiFetch<PropertyAiUsage>(`/api/properties/${id}/ai-usage`),
     discarded: () => apiFetch<DiscardedProperty[]>('/api/properties/discarded'),
     discard: (id: string, reason?: string) =>
       apiFetch<DiscardedProperty>(`/api/properties/${id}/discard`, {

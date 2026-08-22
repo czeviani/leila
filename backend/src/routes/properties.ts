@@ -9,6 +9,7 @@ import {
   getPropertyById,
 } from '../controllers/properties.controller'
 import { getDocumentAnalysis, requestDocumentAnalysis } from '../controllers/document-analysis.controller'
+import { getPropertyAiUsage } from '../controllers/ai-usage.controller'
 import {
   discardProperty,
   getDiscardedProperties,
@@ -32,6 +33,7 @@ router.post('/compare', compareProperties)
 router.get('/discarded', getDiscardedProperties)
 router.get('/:id/document-analysis', getDocumentAnalysis)
 router.post('/:id/document-analysis', documentAnalysisLimiter, requestDocumentAnalysis)
+router.get('/:id/ai-usage', getPropertyAiUsage)
 router.post('/:id/discard', discardProperty)
 router.delete('/:id/discard', restoreDiscardedProperty)
 router.get('/:id', getPropertyById)

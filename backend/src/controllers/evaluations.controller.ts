@@ -1,6 +1,8 @@
 import { Request, Response } from 'express'
+import crypto from 'node:crypto'
 import { evaluateProperty, LlmConfig } from '../services/evaluator.service'
 import { supabaseAdmin } from '../config/supabase'
+import { recordUsage } from '../services/ai-usage.service'
 
 export const getEvaluation = async (req: Request, res: Response) => {
   const { property_id } = req.params
@@ -45,6 +47,32 @@ export const requestEvaluation = async (req: Request, res: Response) => {
     .single()
 
   if (propError || !property) return res.status(404).json({ error: 'Property not found' })
+
+  const { data: documentContext } = await req.supabase!
+    .from('leila_document_analyses')
+    .select('status, decision_status, blocking_issues, analysis, evidence, document_hash')
+    .eq('property_id', property_id)
+    .maybeSingle()
+
+  let marketContext: Record<string, unknown> | undefined
+  if (property.neighborhood && property.city && property.state) {
+    const { data: profile } = await req.supabase!
+      .from('leila_neighborhood_profiles')
+      .select('neighborhood, median_price_per_m2, price_per_m2_p25, price_per_m2_p75, confidence, priced_property_count, calculated_at')
+      .eq('state', property.state)
+      .eq('city', property.city)
+      .eq('neighborhood_key', String(property.neighborhood).trim().toLocaleLowerCase('pt-BR'))
+      .maybeSingle()
+    if (profile) marketContext = {
+      neighborhood: profile.neighborhood,
+      median_price_per_m2: profile.median_price_per_m2,
+      p25_price_per_m2: profile.price_per_m2_p25,
+      p75_price_per_m2: profile.price_per_m2_p75,
+      confidence: profile.confidence,
+      evidence_count: profile.priced_property_count,
+      calculated_at: profile.calculated_at,
+    }
+  }
 
   // Resolve LLM config for this user (captured in closure — safe for async fire-and-forget)
   const { data: userSettings } = await req.supabase!
@@ -91,7 +119,23 @@ export const requestEvaluation = async (req: Request, res: Response) => {
     edital_url: property.edital_url,
     source_name: property.leila_sources?.name ?? 'Desconhecida',
     auction_modality: property.auction_modality ?? null,
+    document_context: documentContext ?? undefined,
+    market_context: marketContext,
   }, llmConfig).then(async (evaluation) => {
+    await recordUsage({
+      runId: crypto.randomUUID(),
+      feature: 'evaluation',
+      stage: 'evaluator',
+      propertyId: property_id,
+      userId: req.user!.id,
+      provider: evaluation.llm_usage.provider,
+      model: evaluation.llm_usage.model,
+      inputTokens: evaluation.llm_usage.input_tokens,
+      outputTokens: evaluation.llm_usage.output_tokens,
+      cacheReadTokens: evaluation.llm_usage.cache_read_tokens,
+      cacheWriteTokens: evaluation.llm_usage.cache_write_tokens,
+      costUsdOverride: evaluation.llm_usage.cost_usd_override,
+    })
     const { error: updateError } = await supabaseAdmin
       .from('leila_evaluations')
       .update({
@@ -107,6 +151,11 @@ export const requestEvaluation = async (req: Request, res: Response) => {
         recommendation: evaluation.recommendation,
         price_per_m2: evaluation.price_per_m2,
         financial_data: evaluation.financial_data,
+        input_snapshot: evaluation.input_snapshot ?? {},
+        evidence_snapshot: evaluation.evidence_snapshot ?? {},
+        decision_status: evaluation.decision_status ?? 'pending_diligence',
+        blocking_issues: evaluation.blocking_issues ?? [],
+        model_version: llmConfig.model,
         evaluated_at: new Date().toISOString(),
       })
       .eq('property_id', property_id)

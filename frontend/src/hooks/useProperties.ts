@@ -70,7 +70,11 @@ export const useDocumentAnalysis = (propertyId: string) =>
     queryKey: ['document-analysis', propertyId],
     queryFn: () => api.properties.documentAnalysis(propertyId),
     enabled: Boolean(propertyId),
+    // O pipeline v2 (3 agentes + coleta de documentos) leva 1-3 minutos, não
+    // segundos — sem refetchIntervalInBackground o polling parava assim que a
+    // aba perdia o foco, e a rodada podia terminar sem a tela nunca atualizar.
     refetchInterval: query => query.state.data?.status === 'processing' ? 2500 : false,
+    refetchIntervalInBackground: true,
   })
 
 export const useRequestDocumentAnalysis = () => {
@@ -84,6 +88,14 @@ export const useRequestDocumentAnalysis = () => {
     },
   })
 }
+
+export const usePropertyAiUsage = (propertyId: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ['ai-usage', propertyId],
+    queryFn: () => api.properties.aiUsage(propertyId),
+    enabled: enabled && Boolean(propertyId),
+    staleTime: 30_000,
+  })
 
 export const useFilters = () =>
   useQuery({
