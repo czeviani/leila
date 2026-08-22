@@ -78,6 +78,46 @@ def _declared_stages(text: str) -> list[dict[str, Any]]:
     return stages
 
 
+_SPEC_HINT = re.compile(r"^(a\.?\s?t\.?|a\.?\s?c\.?|a\.?\s?u\.?|\d)", re.I)
+_STREET_HINT = re.compile(
+    r"^(próx|proxima|próxima|prox\.|av\.|avenida|rua|alameda|estrada|rod\.|rodovia|edif[ií]cio|ed\.|condom[ií]nio|cond\.)",
+    re.I,
+)
+
+
+def _neighborhood_from_hyphenated_title(title: str) -> Optional[str]:
+    """"<tipo> - <bairro> - <especificações>" — pega o trecho antes da 1ª
+    especificação (m², A.T., A.U. ...), descartando nomes de rua/prédio."""
+    parts = [part.strip() for part in title.split(" - ") if part.strip()]
+    if len(parts) < 2:
+        return None
+    for index, part in enumerate(parts):
+        if index == 0:
+            continue
+        if _SPEC_HINT.search(part) or "m²" in part.lower() or "m2" in part.lower():
+            candidate = parts[index - 1]
+            if candidate and not re.search(r"\d", candidate) and not _STREET_HINT.search(candidate):
+                return candidate
+            return None
+    return None
+
+
+def _neighborhood_from_free_text(text: Optional[str]) -> Optional[str]:
+    """"... EM <bairro>, São Paulo/SP" — descrições sem estrutura de vírgulas."""
+    if not text:
+        return None
+    match = re.search(
+        r"\bEm\s+([A-ZÀ-Ü][\wÀ-ÿ\s]*?)(?:,\s*S[ãa]o\s*Paulo|\s*-\s*SP\b|\s*/\s*SP\b|$)",
+        text,
+        re.IGNORECASE,
+    )
+    if match:
+        candidate = match.group(1).strip(" ,-")
+        if candidate and len(candidate) > 2 and "são paulo" not in candidate.casefold() and not re.search(r"\d", candidate):
+            return candidate
+    return _neighborhood_from_hyphenated_title(text)
+
+
 def _declared_current_stage(text: str) -> Optional[str]:
     match = re.search(r"\b([123])\s*[ªa]?\s*(?:pra[cç]a|leil[aã]o)\b", text or "", re.I)
     if not match:
@@ -149,6 +189,11 @@ class _SuperbidMarketplaceSource(BaseSource):
                 if not re.search(r"^(?:cep\s*)?\d", part, re.I) and "são paulo" not in part.casefold():
                     neighborhood = part
                     break
+        # O campo "endereco" estruturado quase nunca vem preenchido; a maioria
+        # dos anúncios só traz o bairro embutido no título/descrição em texto
+        # livre, sem vírgulas confiáveis para o parser acima.
+        if not neighborhood:
+            neighborhood = _neighborhood_from_free_text(title) or _neighborhood_from_free_text(description)
 
         gallery = product.get("galleryJson") or []
         photos = [str(photo.get("link")) for photo in gallery if photo.get("link")][:12]
