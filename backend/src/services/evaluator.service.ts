@@ -62,9 +62,14 @@ export interface LlmCallResult {
 // Completions da OpenAI. Só o OpenRouter devolve custo pronto em usage.cost;
 // na OpenAI nativa o custo é calculado depois via PRICES (ai-usage.service.ts).
 async function callOpenAiCompatible(client: OpenAI, config: LlmConfig, system: string, user: string, provider: 'openrouter' | 'openai'): Promise<LlmCallResult> {
+  // Modelos novos da OpenAI nativa (família gpt-5.x) rejeitam `max_tokens` com
+  // 400 "Unsupported parameter" — exigem `max_completion_tokens`. O OpenRouter
+  // normaliza isso por conta própria e aceita `max_tokens` para qualquer
+  // modelo por trás, então só a OpenAI nativa precisa do campo alternativo.
+  const maxTokensField = provider === 'openai' ? { max_completion_tokens: 8000 } : { max_tokens: 8000 }
   const res = await client.chat.completions.create({
     model: config.model,
-    max_tokens: 8000,
+    ...maxTokensField,
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: system },

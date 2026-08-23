@@ -111,9 +111,11 @@ export async function callJsonAgent<T>(
 
   const client = config.provider === 'openrouter' ? getOpenRouterClient() : getOpenAiClient()
   const schemaHint = `\n\nResponda APENAS com um JSON válido, sem texto fora do JSON, seguindo exatamente este schema:\n${JSON.stringify(params.schema)}`
+  // Modelos novos da OpenAI nativa (família gpt-5.x) rejeitam `max_tokens` — ver evaluator.service.ts.
+  const maxTokensField = config.provider === 'openai' ? { max_completion_tokens: params.maxTokens } : { max_tokens: params.maxTokens }
   const res = await client.chat.completions.create({
     model,
-    max_tokens: params.maxTokens,
+    ...maxTokensField,
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: params.system + schemaHint },

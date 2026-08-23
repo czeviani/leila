@@ -195,9 +195,11 @@ async function extractViaChatCompletions(
   const sourceText = doc.plainText ?? (doc.contentBase64 ? await extractPdfText(doc.contentBase64) : null)
   if (!sourceText) throw new Error('Não foi possível extrair texto do documento para leitura fora da Anthropic')
 
+  // Modelos novos da OpenAI nativa (família gpt-5.x) rejeitam `max_tokens` — ver evaluator.service.ts.
+  const maxTokensField = config.provider === 'openai' ? { max_completion_tokens: 8000 } : { max_tokens: 8000 }
   const res = await client.chat.completions.create({
     model,
-    max_tokens: 8000,
+    ...maxTokensField,
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: `${JSON_SYSTEM_PROMPT}\n\nSchema esperado: ${JSON.stringify(JSON_SCHEMA)}` },
