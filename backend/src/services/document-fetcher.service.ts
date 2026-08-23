@@ -58,7 +58,11 @@ export interface FetchedDocument {
   via?: 'direct' | 'reader'
 }
 
-export async function fetchDocument(url: string): Promise<FetchedDocument | null> {
+export type FetchDocumentResult =
+  | { ok: true; document: FetchedDocument }
+  | { ok: false; reason: string }
+
+export async function fetchDocument(url: string): Promise<FetchDocumentResult> {
   try {
     const response = await fetch(`${SCRAPER_URL}/documents/fetch`, {
       method: 'POST',
@@ -67,12 +71,20 @@ export async function fetchDocument(url: string): Promise<FetchedDocument | null
       signal: AbortSignal.timeout(60_000),
     })
     if (!response.ok) {
-      console.warn(`[document-fetcher] /documents/fetch respondeu ${response.status} para ${url}`)
-      return null
+      let reason = `O serviço de coleta respondeu ${response.status}`
+      try {
+        const body = await response.json() as { detail?: string }
+        if (body?.detail) reason = body.detail
+      } catch {
+        // corpo não era JSON — mantém a mensagem genérica de status
+      }
+      console.warn(`[document-fetcher] /documents/fetch respondeu ${response.status} para ${url}: ${reason}`)
+      return { ok: false, reason }
     }
-    return await response.json() as FetchedDocument
+    return { ok: true, document: await response.json() as FetchedDocument }
   } catch (error) {
-    console.warn(`[document-fetcher] /documents/fetch de ${url} falhou:`, error instanceof Error ? error.message : error)
-    return null
+    const reason = error instanceof Error ? error.message : String(error)
+    console.warn(`[document-fetcher] /documents/fetch de ${url} falhou:`, reason)
+    return { ok: false, reason: `Erro de rede ao buscar o documento: ${reason}` }
   }
 }

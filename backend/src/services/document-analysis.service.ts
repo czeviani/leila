@@ -59,6 +59,18 @@ export interface DocumentReadSummary {
   identityMatch: 'matched' | 'partial' | 'mismatch' | 'not_checked'
 }
 
+/** Tudo que ficou de fora da leitura por falta de acesso ou restrição —
+ * mostrado numa seção própria ao final, pra não sumir em silêncio dentro de
+ * "documentsRead". 'discovery' = nem chegamos a listar os documentos do
+ * imóvel; 'document' = um documento específico foi encontrado mas não pôde
+ * ser lido (bloqueio, formato ilegível, tamanho etc). */
+export interface ReadGap {
+  scope: 'discovery' | 'document'
+  type?: string
+  url?: string
+  message: string
+}
+
 export interface EvidenceItem {
   field: string
   excerpt: string
@@ -80,6 +92,7 @@ export interface DocumentAnalysisPipelineResult {
   conflicts: Conflict[]
   evidence: EvidenceItem[]
   documentsRead: DocumentReadSummary[]
+  readGaps: ReadGap[]
   identityMatch: 'matched' | 'partial' | 'mismatch' | 'not_checked'
   completenessScore: number
   blockingIssues: string[]
@@ -169,11 +182,16 @@ interface BuiltDocuments {
   documents: DocumentInput[]
   sourceSnapshot: Record<string, unknown>
   listingTextForAvailabilityCheck: string | null
+  /** Documentos que a descoberta encontrou (tinham link na página) mas cujo
+   * download falhou — nunca chegaram a virar DocumentInput, então sem isto
+   * desapareciam da leitura sem deixar rastro. */
+  notFetched: DocumentReadSummary[]
 }
 
 async function buildDocumentInputs(context: DocumentAnalysisContext, fallbackListingUrl: string): Promise<BuiltDocuments> {
   const discovery = await discoverDocuments(context.sourceId, fallbackListingUrl, context.eventUrl)
   const documents: DocumentInput[] = []
+  const notFetched: DocumentReadSummary[] = []
   const sourceSnapshot: Record<string, unknown> = { captured_at: new Date().toISOString() }
 
   if (discovery && discovery.documents.length > 0) {
@@ -184,9 +202,21 @@ async function buildDocumentInputs(context: DocumentAnalysisContext, fallbackLis
     const fetched = await Promise.all(prioritized.map(async doc => ({ doc, result: await fetchDocument(doc.url) })))
 
     for (const { doc, result } of fetched) {
-      if (!result) continue
-      const isPdf = result.content_type.toLowerCase().includes('pdf')
-      let plainText = isPdf ? undefined : Buffer.from(result.content_base64, 'base64').toString('utf-8')
+      if (!result.ok) {
+        notFetched.push({
+          url: doc.url,
+          type: doc.type,
+          label: doc.label ?? null,
+          readOk: false,
+          errorMessage: result.reason,
+          factCount: 0,
+          identityMatch: 'not_checked',
+        })
+        continue
+      }
+      const fetchedDoc = result.document
+      const isPdf = fetchedDoc.content_type.toLowerCase().includes('pdf')
+      let plainText = isPdf ? undefined : Buffer.from(fetchedDoc.content_base64, 'base64').toString('utf-8')
       let unreadableReason: string | undefined
 
       if (plainText && doc.type === 'edital') {
@@ -201,15 +231,20 @@ async function buildDocumentInputs(context: DocumentAnalysisContext, fallbackLis
         documentType: doc.type,
         sourceUrl: doc.url,
         label: doc.label,
-        contentBase64: isPdf ? result.content_base64 : undefined,
+        contentBase64: isPdf ? fetchedDoc.content_base64 : undefined,
         plainText,
         unreadableReason,
       }
       documents.push(input)
-      await persistDocumentSnapshot(context.propertyId, input, result)
+      await persistDocumentSnapshot(context.propertyId, input, fetchedDoc)
     }
     sourceSnapshot.discovery_documents_found = discovery.documents.length
     sourceSnapshot.discovery_documents_read = documents.length
+    if (discovery.documents.length > prioritized.length) {
+      sourceSnapshot.discovery_documents_skipped_over_limit = discovery.documents.length - prioritized.length
+    }
+  } else if (discovery) {
+    sourceSnapshot.discovery_no_documents_found = true
   } else {
     sourceSnapshot.discovery_unavailable = true
   }
@@ -225,11 +260,53 @@ async function buildDocumentInputs(context: DocumentAnalysisContext, fallbackLis
     documents.push(input)
     await persistDocumentSnapshot(context.propertyId, input, null)
     sourceSnapshot.fallback_listing_only = true
-    return { documents, sourceSnapshot, listingTextForAvailabilityCheck: listingText }
+    return { documents, sourceSnapshot, listingTextForAvailabilityCheck: listingText, notFetched }
   }
 
   const listingDoc = documents.find(d => d.documentType === 'listing')
-  return { documents, sourceSnapshot, listingTextForAvailabilityCheck: listingDoc?.plainText ?? discovery?.listing_text ?? null }
+  return {
+    documents,
+    sourceSnapshot,
+    listingTextForAvailabilityCheck: listingDoc?.plainText ?? discovery?.listing_text ?? null,
+    notFetched,
+  }
+}
+
+/** Traduz os buracos da coleta (documento não encontrado, não baixado, ou
+ * baixado mas ilegível/não extraído) numa lista plana pra UI mostrar numa
+ * seção só, ao final da leitura — em vez de escondida dentro de flags de
+ * sourceSnapshot ou perdida quando o fetch falha antes de virar documentsRead. */
+function buildReadGaps(sourceSnapshot: Record<string, unknown>, documentsRead: DocumentReadSummary[]): ReadGap[] {
+  const gaps: ReadGap[] = []
+  if (sourceSnapshot.discovery_unavailable) {
+    gaps.push({
+      scope: 'discovery',
+      message: 'Não foi possível abrir a página oficial do imóvel para localizar edital, matrícula e laudo — a fonte pode ter bloqueado o acesso.',
+    })
+  } else if (sourceSnapshot.discovery_no_documents_found || sourceSnapshot.fallback_listing_only) {
+    gaps.push({
+      scope: 'discovery',
+      message: 'Nenhum link de documento oficial (edital, matrícula ou laudo) foi encontrado na página do anúncio — a leitura usou apenas o texto da página.',
+    })
+  }
+  const skipped = sourceSnapshot.discovery_documents_skipped_over_limit
+  if (typeof skipped === 'number' && skipped > 0) {
+    gaps.push({
+      scope: 'discovery',
+      message: `${skipped} documento(s) adicionais foram encontrados na página mas não lidos — limite de ${MAX_DOCUMENTS} documentos por leitura.`,
+    })
+  }
+  for (const doc of documentsRead) {
+    if (!doc.readOk) {
+      gaps.push({
+        scope: 'document',
+        type: doc.type,
+        url: doc.url,
+        message: doc.errorMessage ?? 'Não foi possível ler este documento.',
+      })
+    }
+  }
+  return gaps
 }
 
 function overallIdentityMatch(matches: Array<'matched' | 'partial' | 'mismatch' | 'not_checked'>): 'matched' | 'partial' | 'mismatch' | 'not_checked' {
@@ -247,7 +324,7 @@ export async function analyzeOfficialDocumentV2(
   const runId = crypto.randomUUID()
 
   await onStage?.('discovering', 'Localizando documentos oficiais do imóvel…')
-  const { documents, sourceSnapshot, listingTextForAvailabilityCheck } = await buildDocumentInputs(context, fallbackListingUrl)
+  const { documents, sourceSnapshot, listingTextForAvailabilityCheck, notFetched } = await buildDocumentInputs(context, fallbackListingUrl)
 
   if (listingTextForAvailabilityCheck?.includes('não está mais disponível para venda')) {
     return {
@@ -268,6 +345,7 @@ export async function analyzeOfficialDocumentV2(
       conflicts: [],
       evidence: [],
       documentsRead: [],
+      readGaps: [],
       identityMatch: 'not_checked',
       completenessScore: 0,
       blockingIssues: ['Imóvel indisponível na fonte'],
@@ -310,15 +388,19 @@ export async function analyzeOfficialDocumentV2(
   }))
 
   const facts: ExtractedFact[] = extractions.flatMap(e => e.facts)
-  const documentsRead: DocumentReadSummary[] = extractions.map((e, i) => ({
-    url: e.sourceUrl,
-    type: e.documentType,
-    label: documents[i]?.label ?? null,
-    readOk: e.readOk,
-    errorMessage: e.errorMessage,
-    factCount: e.facts.length,
-    identityMatch: e.identityMatch,
-  }))
+  const documentsRead: DocumentReadSummary[] = [
+    ...notFetched,
+    ...extractions.map((e, i) => ({
+      url: e.sourceUrl,
+      type: e.documentType,
+      label: documents[i]?.label ?? null,
+      readOk: e.readOk,
+      errorMessage: e.errorMessage,
+      factCount: e.facts.length,
+      identityMatch: e.identityMatch,
+    })),
+  ]
+  const readGaps = buildReadGaps(sourceSnapshot, documentsRead)
 
   const allFailed = extractions.every(e => !e.readOk)
   if (allFailed || facts.length === 0) {
@@ -342,6 +424,7 @@ export async function analyzeOfficialDocumentV2(
       conflicts: [],
       evidence: [],
       documentsRead,
+      readGaps,
       identityMatch: 'not_checked',
       completenessScore: 0,
       blockingIssues: allFailed ? ['Nenhum documento pôde ser lido'] : ['Nenhuma informação citável foi extraída dos documentos'],
@@ -386,6 +469,7 @@ export async function analyzeOfficialDocumentV2(
     conflicts: consolidation.conflicts,
     evidence,
     documentsRead,
+    readGaps,
     identityMatch: overallIdentityMatch(extractions.map(e => e.identityMatch)),
     completenessScore: consolidation.completeness_score,
     blockingIssues: consolidation.blocking_issues,

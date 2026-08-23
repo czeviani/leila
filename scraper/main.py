@@ -30,7 +30,7 @@ from sources.base import ScrapedProperty, ScrapeResult, calculate_data_quality
 from proxy.manager import proxy_count
 from enrichment import enrich_properties
 from scope import TARGET_CITY, TARGET_STATE, canonical_key, partition_scope
-from documents import discover_documents, fetch_document_bytes
+from documents import discover_documents, fetch_document_bytes, DocumentFetchError
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]
@@ -545,10 +545,10 @@ async def documents_discover(payload: DiscoverDocumentsRequest):
 async def documents_fetch(payload: FetchDocumentRequest):
     """Baixa um documento (tipicamente PDF) e devolve em base64 para o backend
     repassar nativamente à Messages API — sem parser de PDF no meio."""
-    result = await fetch_document_bytes(payload.url)
-    if result is None:
-        raise HTTPException(status_code=502, detail=f"Não foi possível baixar o documento em {payload.url}")
-    return result
+    try:
+        return await fetch_document_bytes(payload.url)
+    except DocumentFetchError as error:
+        raise HTTPException(status_code=502, detail=str(error))
 
 
 @app.post("/scrape/all", dependencies=[Depends(verify_secret)])

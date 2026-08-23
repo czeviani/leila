@@ -246,12 +246,19 @@ async def discover_documents(source_id: str, listing_url: str, event_url: Option
     return {"documents": list(unique.values()), "listing_text": listing_text[:80_000] if listing_text else None}
 
 
-async def fetch_document_bytes(url: str) -> Optional[dict]:
+class DocumentFetchError(Exception):
+    """Erro ao baixar um documento — a mensagem chega ao usuário final via
+    /documents/fetch (502) e vira uma entrada em 'read_gaps' na leitura."""
+
+
+async def fetch_document_bytes(url: str) -> dict:
     """Baixa um documento (tipicamente PDF) e devolve em base64 para o backend
     Node repassar como bloco `document` nativo à Messages API. Sem proxy BR,
     cai no leitor externo para hosts que bloqueiam — nesse caso o resultado é
     texto extraído (markdown), não o PDF binário original, sinalizado por
-    content_type='text/plain' e via='reader'."""
+    content_type='text/plain' e via='reader'. Levanta DocumentFetchError com
+    o motivo em vez de sumir com None — o backend precisa do motivo para
+    explicar ao usuário o que não pôde ser lido."""
     is_caixa = "caixa.gov.br" in url
     async with AsyncSession(impersonate="chrome120") as session:
         try:
@@ -262,13 +269,21 @@ async def fetch_document_bytes(url: str) -> Optional[dict]:
         except Exception as error:
             print(f"[documents] Falha ao baixar {url}: {error}")
             if _needs_reader_fallback(url):
-                return await _fetch_document_via_reader(url)
-            return None
+                fallback = await _fetch_document_via_reader(url)
+                if fallback is not None:
+                    return fallback
+                raise DocumentFetchError(
+                    f"O site bloqueou o download direto e o leitor externo também não conseguiu acessar: {error}"
+                ) from error
+            raise DocumentFetchError(f"Falha ao baixar diretamente: {error}") from error
 
     content = response.content
     if len(content) > MAX_DOCUMENT_BYTES:
         print(f"[documents] {url} tem {len(content)} bytes, acima do limite de {MAX_DOCUMENT_BYTES} — descartado")
-        return None
+        raise DocumentFetchError(
+            f"Documento tem {len(content) / (1024 * 1024):.1f} MB, acima do limite de "
+            f"{MAX_DOCUMENT_BYTES // (1024 * 1024)} MB — descartado."
+        )
 
     content_type = (response.headers.get("content-type") or "").split(";")[0].strip()
     if not content_type:

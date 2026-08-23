@@ -270,6 +270,13 @@ export interface DocumentReadSummary {
   identityMatch: 'matched' | 'partial' | 'mismatch' | 'not_checked'
 }
 
+export interface ReadGap {
+  scope: 'discovery' | 'document'
+  type?: string
+  url?: string
+  message: string
+}
+
 export interface DocumentAnalysisRecord {
   id?: string
   property_id: string
@@ -296,6 +303,7 @@ export interface DocumentAnalysisRecord {
   payment_rules?: PaymentRules
   conflicts?: DocumentConflict[]
   documents_read?: DocumentReadSummary[]
+  read_gaps?: ReadGap[]
   stage?: string | null
   stage_detail?: string | null
   total_arrematante_brl?: number | null

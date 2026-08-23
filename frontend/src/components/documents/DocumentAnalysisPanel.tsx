@@ -262,6 +262,26 @@ export default function DocumentAnalysisPanel({ record, isLoading, isRequesting,
               </div>
             )}
 
+            {/* O que não pôde ser lido — falha de acesso/restrição não pode ficar escondida atrás de um "falhou" genérico */}
+            {(record!.read_gaps ?? []).length > 0 && (
+              <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-800">
+                  <FileWarning size={13} className="flex-shrink-0" />O que não pôde ser lido
+                </p>
+                <ul className="space-y-1.5 text-xs leading-relaxed text-amber-950">
+                  {record!.read_gaps!.map((gap, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="mt-0.5 flex-shrink-0">•</span>
+                      <span>
+                        {gap.type && <strong>{DOCUMENT_TYPE_LABELS[gap.type] ?? gap.type}: </strong>}
+                        {gap.message}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Regras de pagamento — só as aplicáveis */}
             {record!.payment_rules && Object.values(record!.payment_rules).some(r => r.applicable) && (
               <div>

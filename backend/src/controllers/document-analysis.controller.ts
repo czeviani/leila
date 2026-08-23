@@ -127,6 +127,7 @@ export const requestDocumentAnalysis = async (req: Request, res: Response) => {
         payment_rules: result.paymentRules,
         conflicts: result.conflicts,
         documents_read: result.documentsRead,
+        read_gaps: result.readGaps,
         total_arrematante_brl: result.totalArrematanteBrl,
         input_tokens: inputTokens,
         output_tokens: outputTokens,
