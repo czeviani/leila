@@ -112,7 +112,7 @@ export default function SettingsPage() {
               <div>
                 <h2 className="text-sm font-semibold text-slate-900">Modelo de IA</h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Provider e modelo usado nas avaliações de imóveis
+                  Provider e modelo usado nas avaliações de imóveis e na leitura de documentos oficiais
                 </p>
               </div>
             </div>

@@ -6,11 +6,10 @@
 // o completeness_score. Substitui qualityFor() em document-analysis.service.ts,
 // que pontuava sobre 5 campos fixos e penalizava todo leilão judicial por
 // FGTS/financiamento "não localizados" — regras que nem se aplicam a ele.
-import { getAnthropicClient, recordAgentUsage, AgentUsageContext, ExtractedFact, DocumentExtraction } from './shared'
+import { callJsonAgent, recordAgentUsage, recordAgentUsageFailure, AgentUsageContext, ExtractedFact, DocumentExtraction, LlmConfig } from './shared'
 import { Liability, PaymentRules } from './liabilities'
-import { recordUsage } from '../ai-usage.service'
 
-const MODEL = process.env.DOCUMENT_CONSOLIDATOR_MODEL || 'claude-sonnet-5'
+const ANTHROPIC_MODEL = process.env.DOCUMENT_CONSOLIDATOR_MODEL || 'claude-sonnet-5'
 
 export interface Conflict {
   topic: string
@@ -123,10 +122,9 @@ export async function consolidate(
   facts: ExtractedFact[],
   liabilitiesResult: { liabilities: Liability[]; payment_rules: PaymentRules },
   documentsRead: DocumentExtraction[],
+  config: LlmConfig,
   usageCtx: AgentUsageContext,
 ): Promise<ConsolidationResult> {
-  const client = getAnthropicClient()
-
   const userPrompt = `FATOS (todos os documentos):
 ${JSON.stringify(facts.map(f => ({ topic: f.topic, statement: f.statement, source_url: f.sourceUrl })), null, 2)}
 
@@ -147,26 +145,17 @@ Retorne apenas o JSON do schema.`
   )
 
   try {
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 6000,
-      thinking: { type: 'adaptive' },
-      output_config: { effort: 'high', format: { type: 'json_schema', schema: SCHEMA } },
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
+    const { data, usage } = await callJsonAgent<{ summary: string; risks: RankedRisk[]; tags: string[]; conflicts: Conflict[] }>(config, {
+      system: SYSTEM_PROMPT, user: userPrompt, schema: SCHEMA, maxTokens: 6000, anthropicModel: ANTHROPIC_MODEL,
     })
 
-    await recordAgentUsage(usageCtx, MODEL, response.usage)
-
-    const block = response.content.find(b => b.type === 'text')
-    if (!block || block.type !== 'text') throw new Error('Resposta do consolidador sem texto')
-    const parsed = JSON.parse(block.text) as { summary: string; risks: RankedRisk[]; tags: string[]; conflicts: Conflict[] }
+    await recordAgentUsage(usageCtx, usage)
 
     return {
-      summary: parsed.summary,
-      risks: parsed.risks,
-      tags: parsed.tags,
-      conflicts: parsed.conflicts,
+      summary: data.summary,
+      risks: data.risks,
+      tags: data.tags,
+      conflicts: data.conflicts,
       completeness_score: score,
       blocking_issues: blockingIssues,
       decision_status: decisionStatus,
@@ -174,12 +163,7 @@ Retorne apenas o JSON do schema.`
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Falha desconhecida ao consolidar'
     console.error('[document-agents:consolidator] falha:', message)
-    await recordUsage({
-      runId: usageCtx.runId, feature: 'document_analysis', stage: usageCtx.stage,
-      propertyId: usageCtx.propertyId, userId: usageCtx.userId ?? null,
-      provider: 'anthropic', model: MODEL, inputTokens: 0, outputTokens: 0,
-      success: false, errorMessage: message,
-    })
+    await recordAgentUsageFailure(usageCtx, config, message)
     // Consolidação é a etapa de exibição — mesmo que a IA falhe aqui, o usuário
     // já pagou pelos ônus classificados. Devolve um resumo mínimo em vez de derrubar tudo.
     return {

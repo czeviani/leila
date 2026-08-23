@@ -19,7 +19,7 @@ import { discoverDocuments, fetchDocument, DiscoveredDocumentType, FetchedDocume
 import { extractDocumentFacts } from './document-agents/extractor'
 import { judgeLiabilities, Liability, PaymentRules } from './document-agents/liabilities'
 import { consolidate, RankedRisk, Conflict } from './document-agents/consolidator'
-import { DocumentInput, ExtractedFact, DocumentExtraction, PropertyIdentityContext, isUnreadableText } from './document-agents/shared'
+import { DocumentInput, ExtractedFact, DocumentExtraction, PropertyIdentityContext, LlmConfig, isUnreadableText } from './document-agents/shared'
 import { sliceEditalForProperty } from './document-agents/edital-slicer'
 
 export const PROMPT_VERSION = 'document-v2'
@@ -45,6 +45,8 @@ export interface DocumentAnalysisContext extends PropertyIdentityContext {
   userId?: string | null
   /** Mega Leilões publica o edital do certame na página do evento, não na do lote — vem de raw_data.event_url. */
   eventUrl?: string | null
+  /** Provider/modelo salvo em Configurações (leila_settings) — os 3 agentes o respeitam agora. */
+  llmConfig: LlmConfig
 }
 
 export interface DocumentReadSummary {
@@ -294,7 +296,7 @@ export async function analyzeOfficialDocumentV2(
           discardedUncitedCount: 0,
           identityMatch: 'not_checked',
         })
-      : extractDocumentFacts(doc, identityContext, usageCtxFor('extractor'))),
+      : extractDocumentFacts(doc, identityContext, context.llmConfig, usageCtxFor('extractor'))),
   )
 
   // Backfill de identidade por documento — a coleta em lote já gravou a linha sem essa informação.
@@ -352,11 +354,12 @@ export async function analyzeOfficialDocumentV2(
   const liabilitiesResult = await judgeLiabilities(
     facts,
     { modality: context.auctionModality, sourceName: context.sourceName },
+    context.llmConfig,
     usageCtxFor('liabilities'),
   )
 
   await onStage?.('consolidating', 'Consolidando o resultado final…')
-  const consolidation = await consolidate(facts, liabilitiesResult, extractions, usageCtxFor('consolidator'))
+  const consolidation = await consolidate(facts, liabilitiesResult, extractions, context.llmConfig, usageCtxFor('consolidator'))
 
   const evidence: EvidenceItem[] = facts.map(f => ({
     field: f.topic.toLowerCase(),

@@ -290,14 +290,17 @@ export default function DocumentAnalysisPanel({ record, isLoading, isRequesting,
           usage.total.calls > 0 ? (
             <details className="mt-5 rounded-xl border border-slate-200 bg-white p-3">
               <summary className="flex cursor-pointer items-center justify-between text-xs font-bold text-[#176B87]">
-                <span className="flex items-center gap-1.5"><WalletCards size={13} />Custo desta leitura: {formatBRL(usage.total.cost_brl)}</span>
+                <span className="flex items-center gap-1.5"><WalletCards size={13} />Custo acumulado neste imóvel: {formatBRL(usage.total.cost_brl)}</span>
                 <span className="font-normal text-slate-400">{usage.total.calls} chamada(s) · {(usage.total.input_tokens + usage.total.output_tokens).toLocaleString('pt-BR')} tokens</span>
               </summary>
+              <div className="mt-2 text-[10px] text-slate-400">
+                Soma de todas as tentativas de leitura já feitas para este imóvel, não só a mais recente.
+              </div>
               <div className="mt-3 space-y-1.5">
                 {usage.events.slice(0, 12).map(ev => (
                   <div key={ev.id} className="flex items-center justify-between text-[11px] text-slate-600">
                     <span>{ev.stage ?? ev.feature} <span className="text-slate-400">· {ev.model}</span></span>
-                    <span>{formatBRL(ev.cost_brl)} <span className="text-slate-400">({(ev.input_tokens + ev.output_tokens).toLocaleString('pt-BR')} tok)</span></span>
+                    <span>{ev.success === false ? <span className="text-rose-500">falhou</span> : formatBRL(ev.cost_brl)} <span className="text-slate-400">({(ev.input_tokens + ev.output_tokens).toLocaleString('pt-BR')} tok)</span></span>
                   </div>
                 ))}
               </div>
@@ -306,7 +309,7 @@ export default function DocumentAnalysisPanel({ record, isLoading, isRequesting,
             // Sumir aqui em silêncio foi o que gerou a dúvida original — "gastou e não mostrou quanto".
             // Terminou sem nenhum evento de custo registrado: dizer isso explicitamente.
             <p className="mt-5 flex items-center gap-1.5 text-xs font-semibold text-slate-400">
-              <WalletCards size={13} />Custo desta leitura não foi registrado.
+              <WalletCards size={13} />Custo acumulado neste imóvel não foi registrado.
             </p>
           ) : null
         )}

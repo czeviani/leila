@@ -25,7 +25,7 @@ function getAnthropicClient(): Anthropic {
   return _anthropic
 }
 
-function getOpenRouterClient(): OpenAI {
+export function getOpenRouterClient(): OpenAI {
   if (!_openrouter) {
     _openrouter = new OpenAI({
       baseURL: 'https://openrouter.ai/api/v1',
@@ -35,7 +35,7 @@ function getOpenRouterClient(): OpenAI {
   return _openrouter
 }
 
-function getOpenAiClient(): OpenAI {
+export function getOpenAiClient(): OpenAI {
   if (!_openai) {
     _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   }

@@ -7,10 +7,9 @@
 // documento não deixa claro. "Indefinido" é um veredicto tão válido quanto
 // os outros — o sistema anterior tratava ausência de informação como
 // ausência de dívida, o que é o oposto do que protege o usuário.
-import { getAnthropicClient, recordAgentUsage, AgentUsageContext, ExtractedFact } from './shared'
-import { recordUsage } from '../ai-usage.service'
+import { callJsonAgent, recordAgentUsage, recordAgentUsageFailure, AgentUsageContext, ExtractedFact, LlmConfig } from './shared'
 
-const MODEL = process.env.DOCUMENT_LIABILITIES_MODEL || 'claude-opus-5'
+const ANTHROPIC_MODEL = process.env.DOCUMENT_LIABILITIES_MODEL || 'claude-opus-5'
 
 export type LiabilityKind =
   | 'condominio' | 'iptu' | 'tributos_municipais' | 'hipoteca' | 'penhora'
@@ -130,10 +129,9 @@ Regras:
 export async function judgeLiabilities(
   facts: ExtractedFact[],
   auctionContext: { modality: string | null; sourceName: string },
+  config: LlmConfig,
   usageCtx: AgentUsageContext,
 ): Promise<LiabilitiesResult> {
-  const client = getAnthropicClient()
-
   const factsForPrompt = facts.map(f => ({
     topic: f.topic,
     statement: f.statement,
@@ -151,35 +149,21 @@ ${JSON.stringify(factsForPrompt, null, 2)}
 Classifique cada ônus mencionado nos fatos acima e preencha payment_rules. Retorne apenas o JSON do schema.`
 
   try {
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 6000,
-      thinking: { type: 'adaptive' },
-      output_config: { effort: 'high', format: { type: 'json_schema', schema: SCHEMA } },
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userPrompt }],
+    const { data, usage } = await callJsonAgent<{ liabilities: Liability[]; payment_rules: PaymentRules }>(config, {
+      system: SYSTEM_PROMPT, user: userPrompt, schema: SCHEMA, maxTokens: 6000, anthropicModel: ANTHROPIC_MODEL,
     })
 
-    await recordAgentUsage(usageCtx, MODEL, response.usage)
+    await recordAgentUsage(usageCtx, usage)
 
-    const block = response.content.find(b => b.type === 'text')
-    if (!block || block.type !== 'text') throw new Error('Resposta do jurista de ônus sem texto')
-    const parsed = JSON.parse(block.text) as { liabilities: Liability[]; payment_rules: PaymentRules }
-
-    const totalArrematanteBrl = parsed.liabilities
+    const totalArrematanteBrl = data.liabilities
       .filter(l => l.payer === 'arrematante' && typeof l.amount_brl === 'number')
       .reduce((sum, l) => sum + (l.amount_brl as number), 0)
 
-    return { liabilities: parsed.liabilities, payment_rules: parsed.payment_rules, totalArrematanteBrl }
+    return { liabilities: data.liabilities, payment_rules: data.payment_rules, totalArrematanteBrl }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Falha desconhecida ao classificar ônus'
     console.error('[document-agents:liabilities] falha:', message)
-    await recordUsage({
-      runId: usageCtx.runId, feature: 'document_analysis', stage: usageCtx.stage,
-      propertyId: usageCtx.propertyId, userId: usageCtx.userId ?? null,
-      provider: 'anthropic', model: MODEL, inputTokens: 0, outputTokens: 0,
-      success: false, errorMessage: message,
-    })
+    await recordAgentUsageFailure(usageCtx, config, message)
     throw error
   }
 }

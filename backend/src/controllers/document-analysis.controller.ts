@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import { supabaseAdmin } from '../config/supabase'
 import { analyzeOfficialDocumentV2, PROMPT_VERSION } from '../services/document-analysis.service'
+import { LlmConfig } from '../services/evaluator.service'
 
 export const getDocumentAnalysis = async (req: Request, res: Response) => {
   const { data, error } = await req.supabase!
@@ -63,6 +64,21 @@ export const requestDocumentAnalysis = async (req: Request, res: Response) => {
 
   const sourceName = (property as any).leila_sources?.name ?? property.source_id ?? 'Desconhecida'
 
+  // Mesmo provider/modelo salvo em Configurações que o Avaliador usa (ver
+  // evaluations.controller.ts) — antes disto, a leitura documental ignorava
+  // essa preferência e falava Anthropic direto sempre, mesmo com o usuário
+  // sem crédito lá e outro provider configurado e pago.
+  const { data: userSettings } = await req.supabase!
+    .from('leila_settings')
+    .select('llm_provider, llm_model')
+    .eq('user_id', req.user!.id)
+    .single()
+
+  const llmConfig: LlmConfig = {
+    provider: (userSettings?.llm_provider ?? 'anthropic') as LlmConfig['provider'],
+    model: userSettings?.llm_model ?? 'claude-sonnet-4-6',
+  }
+
   analyzeOfficialDocumentV2(property.edital_url, {
     propertyId,
     externalId: property.external_id,
@@ -74,6 +90,7 @@ export const requestDocumentAnalysis = async (req: Request, res: Response) => {
     auctionModality: property.auction_modality ?? null,
     userId: req.user!.id,
     eventUrl: (property.raw_data as Record<string, unknown> | null)?.event_url as string | undefined ?? null,
+    llmConfig,
   }, async (stage, detail) => {
     const { error } = await supabaseAdmin
       .from('leila_document_analyses')
@@ -93,8 +110,8 @@ export const requestDocumentAnalysis = async (req: Request, res: Response) => {
       .update({
         status: result.status,
         document_hash: result.documentHash,
-        provider: 'anthropic',
-        model: 'document-agents-v2',
+        provider: llmConfig.provider,
+        model: llmConfig.model,
         prompt_version: result.promptVersion,
         tags: result.tags,
         analysis: { summary: result.summary, risks: result.risks },
