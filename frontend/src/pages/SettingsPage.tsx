@@ -160,7 +160,9 @@ export default function SettingsPage() {
                   <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
                     {selectedProvider === 'openrouter'
                       ? 'Requer OPENROUTER_API_KEY configurada no backend. Qualidade da análise varia por modelo.'
-                      : 'Requer ANTHROPIC_API_KEY no backend. Claude Sonnet 4.6 é o recomendado para análises.'}
+                      : selectedProvider === 'openai'
+                        ? 'Requer OPENAI_API_KEY configurada no backend.'
+                        : 'Requer ANTHROPIC_API_KEY no backend. Claude Sonnet 4.6 é o recomendado para análises.'}
                   </p>
                 </div>
 
@@ -189,6 +191,9 @@ export default function SettingsPage() {
                         : 'Salvar'}
                   </button>
                 </div>
+                {saveLlmSettings.isError && (
+                  <p className="text-xs font-semibold text-red-600">{(saveLlmSettings.error as Error).message}</p>
+                )}
               </>
             )}
           </div>

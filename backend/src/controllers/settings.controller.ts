@@ -1,11 +1,24 @@
 import { Request, Response } from 'express'
 
-const VALID_PROVIDERS = ['anthropic', 'openrouter'] as const
+const VALID_PROVIDERS = ['anthropic', 'openrouter', 'openai'] as const
 type LlmProvider = typeof VALID_PROVIDERS[number]
 
+// Espelha frontend/src/lib/api.ts (LLM_PROVIDERS) — os dois precisam listar
+// exatamente os mesmos IDs de modelo, senão o Salvar em Configurações falha
+// com 400 pra qualquer modelo que o dropdown ofereça (bug real: a lista do
+// OpenRouter aqui estava desatualizada e nenhum modelo do menu passava).
 const VALID_MODELS: Record<LlmProvider, string[]> = {
-  anthropic:   ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-opus-4-6'],
-  openrouter:  ['anthropic/claude-haiku-4-5', 'anthropic/claude-sonnet-4-6'],
+  anthropic: ['claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-opus-4-6'],
+  openrouter: [
+    'openai/gpt-4o',
+    'openai/gpt-4o-mini',
+    'google/gemini-2.0-flash-001',
+    'google/gemini-2.5-pro-preview-03-25',
+    'meta-llama/llama-3.3-70b-instruct',
+    'deepseek/deepseek-chat-v3-0324',
+    'anthropic/claude-sonnet-4-5',
+  ],
+  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini'],
 }
 
 const DEFAULTS = {

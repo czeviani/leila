@@ -491,6 +491,15 @@ export const LLM_PROVIDERS = {
       { id: 'anthropic/claude-sonnet-4-5',           label: 'Claude Sonnet 4.5 (via OR)' },
     ],
   },
+  openai: {
+    label: 'OpenAI',
+    models: [
+      { id: 'gpt-4o',        label: 'GPT-4o' },
+      { id: 'gpt-4o-mini',   label: 'GPT-4o Mini (econômico)' },
+      { id: 'gpt-4.1',       label: 'GPT-4.1' },
+      { id: 'gpt-4.1-mini',  label: 'GPT-4.1 Mini (econômico)' },
+    ],
+  },
 } as const
 
 export type LlmProvider = keyof typeof LLM_PROVIDERS

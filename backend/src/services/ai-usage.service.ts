@@ -29,6 +29,13 @@ const PRICES: Record<string, ModelPrice> = {
   'claude-opus-4-6': { inputPerM: 5, outputPerM: 25 },
   'claude-haiku-4-5': { inputPerM: 1, outputPerM: 5 },
   'claude-haiku-4-5-20251001': { inputPerM: 1, outputPerM: 5 },
+  // USD por milhão de tokens, OpenAI nativo (platform.openai.com/docs/pricing,
+  // conferido em 2026-08-23). Só usado quando provider='openai' — no OpenRouter
+  // o custo vem pronto em usage.cost (ver callLlm em evaluator.service.ts).
+  'gpt-4o': { inputPerM: 2.5, outputPerM: 10 },
+  'gpt-4o-mini': { inputPerM: 0.15, outputPerM: 0.6 },
+  'gpt-4.1': { inputPerM: 2, outputPerM: 8 },
+  'gpt-4.1-mini': { inputPerM: 0.4, outputPerM: 1.6 },
 }
 
 const USD_BRL_RATE = Number(process.env.USD_BRL_RATE) || 5.40

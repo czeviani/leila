@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
 
-export type LlmProvider = 'anthropic' | 'openrouter'
+export type LlmProvider = 'anthropic' | 'openrouter' | 'openai'
 
 export interface LlmConfig {
   provider: LlmProvider
@@ -16,6 +16,7 @@ const DEFAULT_LLM_CONFIG: LlmConfig = {
 // Lazy singletons — instanciados apenas quando usados
 let _anthropic: Anthropic | null = null
 let _openrouter: OpenAI | null = null
+let _openai: OpenAI | null = null
 
 function getAnthropicClient(): Anthropic {
   if (!_anthropic) {
@@ -34,6 +35,13 @@ function getOpenRouterClient(): OpenAI {
   return _openrouter
 }
 
+function getOpenAiClient(): OpenAI {
+  if (!_openai) {
+    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  }
+  return _openai
+}
+
 export interface LlmCallResult {
   text: string
   provider: LlmProvider
@@ -50,29 +58,39 @@ export interface LlmCallResult {
 // — o `usage` do provider morria dentro dela e a avaliação de investimento (o
 // fluxo mais caro do projeto: Sonnet/Opus, max_tokens 8000, prompt com schema
 // inline) nunca gravava um token sequer. Ver backend/src/services/ai-usage.service.ts.
+// Compartilhado por OpenRouter e OpenAI nativo — ambos falam a API de Chat
+// Completions da OpenAI. Só o OpenRouter devolve custo pronto em usage.cost;
+// na OpenAI nativa o custo é calculado depois via PRICES (ai-usage.service.ts).
+async function callOpenAiCompatible(client: OpenAI, config: LlmConfig, system: string, user: string, provider: 'openrouter' | 'openai'): Promise<LlmCallResult> {
+  const res = await client.chat.completions.create({
+    model: config.model,
+    max_tokens: 8000,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+  })
+  const usage = res.usage as (typeof res.usage & { cost?: number }) | undefined
+  return {
+    text: res.choices[0]?.message?.content ?? '',
+    provider,
+    model: res.model ?? config.model,
+    inputTokens: usage?.prompt_tokens ?? 0,
+    outputTokens: usage?.completion_tokens ?? 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+    costUsdOverride: usage?.cost,
+  }
+}
+
 async function callLlm(system: string, user: string, config: LlmConfig): Promise<LlmCallResult> {
   if (config.provider === 'openrouter') {
-    const client = getOpenRouterClient()
-    const res = await client.chat.completions.create({
-      model: config.model,
-      max_tokens: 8000,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-    })
-    const usage = res.usage as (typeof res.usage & { cost?: number }) | undefined
-    return {
-      text: res.choices[0]?.message?.content ?? '',
-      provider: 'openrouter',
-      model: res.model ?? config.model,
-      inputTokens: usage?.prompt_tokens ?? 0,
-      outputTokens: usage?.completion_tokens ?? 0,
-      cacheReadTokens: 0,
-      cacheWriteTokens: 0,
-      costUsdOverride: usage?.cost,
-    }
+    return callOpenAiCompatible(getOpenRouterClient(), config, system, user, 'openrouter')
+  }
+
+  if (config.provider === 'openai') {
+    return callOpenAiCompatible(getOpenAiClient(), config, system, user, 'openai')
   }
 
   // Default: Anthropic
