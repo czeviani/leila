@@ -20,29 +20,47 @@ function formatBRL(value: number) {
 }
 
 const LIABILITY_LABELS: Record<string, string> = {
-  condominio: 'Condomínio', iptu: 'IPTU', tributos_municipais: 'Tributos municipais',
-  hipoteca: 'Hipoteca', penhora: 'Penhora', alienacao_fiduciaria: 'Alienação fiduciária',
-  usufruto: 'Usufruto', acao_judicial: 'Ação judicial', comissao_leiloeiro: 'Comissão do leiloeiro',
-  itbi: 'ITBI', registro: 'Registro em cartório', desocupacao: 'Desocupação', outros: 'Outros',
+  condominio: 'Condomínio', iptu: 'IPTU', tributos_municipais: 'Impostos municipais',
+  hipoteca: 'Hipoteca (dívida com banco)', penhora: 'Penhora (bloqueio judicial por dívida)',
+  alienacao_fiduciaria: 'Financiamento em aberto (imóvel dado como garantia)',
+  usufruto: 'Usufruto (alguém tem direito de morar/usar)', acao_judicial: 'Processo judicial em aberto',
+  comissao_leiloeiro: 'Comissão do leiloeiro', itbi: 'ITBI (imposto de transferência)',
+  registro: 'Registro em cartório', desocupacao: 'Desocupação', outros: 'Outros',
 }
 
 const PAYMENT_RULE_LABELS = { fgts: 'FGTS', financiamento: 'Financiamento', consorcio: 'Consórcio' } as const
+
+const IDENTITY_LABELS: Record<string, string> = {
+  matched: 'confirmada', partial: 'parcialmente confirmada', mismatch: 'não bate com este imóvel', not_checked: 'não verificada',
+}
+
+const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+  edital: 'Edital', matricula: 'Matrícula', laudo: 'Laudo de avaliação', errata: 'Errata',
+  certificate: 'Certidão', attachment: 'Anexo', unknown: 'Documento', listing: 'Página do anúncio',
+}
+
+const EVIDENCE_TOPIC_LABELS: Record<string, string> = {
+  identidade: 'Identidade do imóvel', fgts: 'FGTS', financiamento: 'Financiamento', condominio: 'Condomínio',
+  tributos: 'Impostos', onus: 'Dívidas e bloqueios', ocupacao: 'Ocupação', regras_pagamento: 'Regras de pagamento',
+  riscos: 'Riscos', outros: 'Outros',
+}
 
 function LiabilityLine({ liability }: { liability: Liability }) {
   const [open, setOpen] = useState(false)
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-3">
-      <button type="button" onClick={() => setOpen(o => !o)} className="flex w-full items-center justify-between gap-3 text-left">
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-[#163447]">{LIABILITY_LABELS[liability.kind] ?? liability.label}</p>
-          <p className="truncate text-xs text-slate-500">{liability.label}</p>
-        </div>
-        <div className="flex flex-shrink-0 items-center gap-2">
+      {/* Empilhado (não lado a lado) — em cards de 1/3 de largura, título + valor
+          em R$ + selo na mesma linha invadiam um o outro quando o título era
+          longo ou não tinha espaço pra quebrar (ex.: "Condomínio" sozinho). */}
+      <button type="button" onClick={() => setOpen(o => !o)} className="flex w-full flex-col items-start gap-1.5 text-left">
+        <p className="break-words text-sm font-bold text-[#163447]">{LIABILITY_LABELS[liability.kind] ?? liability.label}</p>
+        <div className="flex w-full flex-wrap items-center gap-2">
           {liability.amount_brl != null && <span className="text-sm font-bold text-[#163447]">{formatBRL(liability.amount_brl)}</span>}
           <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${liability.payer_confidence === 'high' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : liability.payer_confidence === 'medium' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
             {liability.payer_confidence === 'high' ? 'confirmado' : liability.payer_confidence === 'medium' ? 'provável' : 'a confirmar'}
           </span>
         </div>
+        <p className="w-full truncate text-xs text-slate-500">{liability.label}</p>
       </button>
       {open && (
         <div className="mt-2 space-y-1 border-t border-slate-100 pt-2 text-xs text-slate-600">
@@ -64,9 +82,9 @@ function PayerGroup({ title, subtitle, icon, tone, liabilities, emptyLabel }: {
   const total = liabilities.filter(l => l.amount_brl != null).reduce((sum, l) => sum + (l.amount_brl as number), 0)
   return (
     <div className={`rounded-xl border p-4 ${toneClasses}`}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-sm font-bold text-[#163447]">{icon}{title}</div>
-        {tone === 'red' && total > 0 && <span className="text-base font-black text-red-700">{formatBRL(total)}</span>}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-sm font-bold text-[#163447]"><span className="flex-shrink-0">{icon}</span>{title}</div>
+        {tone === 'red' && total > 0 && <span className="flex-shrink-0 text-base font-black text-red-700">{formatBRL(total)}</span>}
       </div>
       <p className="mt-1 text-[11px] leading-snug text-slate-500">{subtitle}</p>
       {liabilities.length === 0 ? (
@@ -178,15 +196,15 @@ export default function DocumentAnalysisPanel({ record, isLoading, isRequesting,
         {status === 'done' && !isLegacyShape && (
           <div className="space-y-5">
             <div className={`rounded-xl border p-4 text-sm ${record!.decision_status === 'ready_for_final_review' ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : record!.decision_status === 'blocked' ? 'border-red-200 bg-red-50 text-red-900' : 'border-amber-200 bg-amber-50 text-amber-950'}`}>
-              <p className="font-bold">{record!.decision_status === 'ready_for_final_review' ? 'Diligência documental pronta para revisão final' : record!.decision_status === 'blocked' ? 'Documento bloqueado para decisão' : 'Diligência pendente — não dar lance com base neste resultado'}</p>
-              <p className="mt-1 text-xs leading-relaxed">Identidade: {record!.identity_match ?? 'não verificada'} · Completude: {record!.completeness_score ?? 0}/100</p>
+              <p className="font-bold">{record!.decision_status === 'ready_for_final_review' ? 'Documentos conferidos — pronto para revisão final' : record!.decision_status === 'blocked' ? 'Faltam confirmações importantes — não dá pra decidir ainda' : 'Ainda incompleto — não dê lance só com este resultado'}</p>
+              <p className="mt-1 text-xs leading-relaxed">Confirma que é este imóvel: {IDENTITY_LABELS[record!.identity_match ?? ''] ?? 'não verificada'} · Completude: {record!.completeness_score ?? 0}/100</p>
               {(record!.blocking_issues ?? []).length > 0 && <ul className="mt-2 list-disc space-y-1 pl-4 text-xs">{record!.blocking_issues?.map(issue => <li key={issue}>{issue}</li>)}</ul>}
             </div>
 
             {/* Número que mais importa: quanto o arrematante paga além do lance — não pode ficar escondido dentro do card de detalhe */}
             {(record!.total_arrematante_brl ?? 0) > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
-                <div className="flex items-center gap-2 text-sm font-bold text-red-900"><Landmark size={16} />Você paga além do lance</div>
+                <div className="flex items-center gap-2 text-sm font-bold text-red-900"><Landmark size={16} className="flex-shrink-0" />Você paga além do lance</div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xl font-black text-red-700">{formatBRL(record!.total_arrematante_brl!)}</span>
                   {indefinido.length > 0 && (
@@ -236,8 +254,8 @@ export default function DocumentAnalysisPanel({ record, isLoading, isRequesting,
                 <div className="flex flex-wrap gap-2">
                   {record!.documents_read!.map((doc, i) => (
                     <span key={`${doc.url}-${i}`} title={doc.url} className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${doc.readOk ? 'border-slate-200 bg-white text-slate-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
-                      {doc.readOk ? <FileCheck2 size={13} /> : <FileX2 size={13} />}
-                      {doc.type} {doc.readOk ? `(${doc.factCount} fatos)` : '— falhou'}
+                      {doc.readOk ? <FileCheck2 size={13} className="flex-shrink-0" /> : <FileX2 size={13} className="flex-shrink-0" />}
+                      {DOCUMENT_TYPE_LABELS[doc.type] ?? doc.type} {doc.readOk ? `(${doc.factCount} informações)` : '— falhou'}
                     </span>
                   ))}
                 </div>
@@ -259,7 +277,7 @@ export default function DocumentAnalysisPanel({ record, isLoading, isRequesting,
             {/* Conflitos entre documentos */}
             {(record!.conflicts ?? []).length > 0 && (
               <div className="space-y-2">
-                <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-700"><Scale size={13} />Conflito entre documentos</p>
+                <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-700"><Scale size={13} className="flex-shrink-0" />Conflito entre documentos</p>
                 {record!.conflicts!.map((c, i) => (
                   <div key={i} className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-950">
                     <p className="font-bold">{c.topic}</p>
@@ -288,7 +306,7 @@ export default function DocumentAnalysisPanel({ record, isLoading, isRequesting,
               <div className="mt-3 space-y-3">
                 {(record!.evidence ?? []).map((item, index) => (
                   <blockquote key={`${item.field}-${index}`} className="border-l-2 border-[#8bbec2] pl-3 text-xs leading-relaxed text-slate-600">
-                    <span className="mb-0.5 block text-[10px] font-bold uppercase tracking-wide text-[#176B87]">{item.field}</span>
+                    <span className="mb-0.5 block text-[10px] font-bold uppercase tracking-wide text-[#176B87]">{EVIDENCE_TOPIC_LABELS[item.field] ?? item.field}</span>
                     "{item.excerpt}"
                   </blockquote>
                 ))}
@@ -305,8 +323,8 @@ export default function DocumentAnalysisPanel({ record, isLoading, isRequesting,
         {showCost && usage && (
           usage.total.calls > 0 ? (
             <details className="mt-5 rounded-xl border border-slate-200 bg-white p-3">
-              <summary className="flex cursor-pointer items-center justify-between text-xs font-bold text-[#176B87]">
-                <span className="flex items-center gap-1.5"><WalletCards size={13} />Custo acumulado neste imóvel: {formatBRL(usage.total.cost_brl)}</span>
+              <summary className="flex flex-wrap cursor-pointer items-center justify-between gap-x-3 gap-y-1 text-xs font-bold text-[#176B87]">
+                <span className="flex items-center gap-1.5"><WalletCards size={13} className="flex-shrink-0" />Custo acumulado neste imóvel: {formatBRL(usage.total.cost_brl)}</span>
                 <span className="font-normal text-slate-400">{usage.total.calls} chamada(s) · {(usage.total.input_tokens + usage.total.output_tokens).toLocaleString('pt-BR')} tokens</span>
               </summary>
               <div className="mt-2 text-[10px] text-slate-400">
@@ -325,7 +343,7 @@ export default function DocumentAnalysisPanel({ record, isLoading, isRequesting,
             // Sumir aqui em silêncio foi o que gerou a dúvida original — "gastou e não mostrou quanto".
             // Terminou sem nenhum evento de custo registrado: dizer isso explicitamente.
             <p className="mt-5 flex items-center gap-1.5 text-xs font-semibold text-slate-400">
-              <WalletCards size={13} />Custo acumulado neste imóvel não foi registrado.
+              <WalletCards size={13} className="flex-shrink-0" />Custo acumulado neste imóvel não foi registrado.
             </p>
           ) : null
         )}

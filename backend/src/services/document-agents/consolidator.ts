@@ -78,7 +78,7 @@ const SYSTEM_PROMPT = `Você consolida uma diligência documental de imóvel de 
 Sua tarefa:
 1. "summary": 2-4 frases, direto ao ponto, com os números e riscos mais importantes para alguém decidir se dá lance. Sempre mencione o valor total que cai para o arrematante quando houver.
 2. "risks": ranqueie por severidade (high > medium > low) os riscos reais para o comprador — ocupação, ônus não resolvidos, cláusulas de "ad corpus", multas por desistência, débitos de valor alto, pagador "indefinido" em ônus caro. Não repita como risco algo que já é rotina bem resolvida (ex: comissão do leiloeiro claramente paga pelo arrematante não é risco).
-3. "tags": 3-8 tags curtas para exibição em chips na tela (ex.: "FGTS aceito", "Ocupado", "Hipoteca pendente", "Ônus indefinido").
+3. "tags": 3-8 tags curtas para exibição em chips na tela, em português simples, sem termos jurídicos (ex.: "FGTS aceito", "Ocupado", "Hipoteca pendente", "Dívida sem responsável definido").
 4. "conflicts": quando dois documentos diferentes (URLs diferentes) disserem coisas incompatíveis sobre o mesmo tópico (ex.: um diz desocupado, outro diz ocupado), relate o conflito. Se não houver conflito nenhum, devolva um array vazio — não invente conflito para preencher.
 Nunca invente números ou fatos que não estejam nos dados fornecidos.`
 
@@ -100,7 +100,7 @@ function computeCompletenessAndDecision(
 
   const undefinedHighValueLiabilities = liabilities.filter(l => l.payer === 'indefinido' && (l.amount_brl ?? 0) > 0)
   if (undefinedHighValueLiabilities.length > 0) {
-    blockingIssues.push(`${undefinedHighValueLiabilities.length} ônus com valor não têm pagador definido`)
+    blockingIssues.push(`${undefinedHighValueLiabilities.length} dívida(s) com valor sem responsável definido`)
   }
 
   const applicableRules = Object.values(paymentRules).filter(r => r.applicable)
