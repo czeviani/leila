@@ -42,6 +42,10 @@ CAIXA_WARMUP_URL = "https://venda-imoveis.caixa.gov.br/sistema/login-site.asp"
 READER_BASE_URL = os.getenv("DOCUMENT_READER_BASE_URL", "https://r.jina.ai").rstrip("/")
 _READER_FALLBACK_HOSTS = ("caixa.gov.br",)
 
+# Sem chave, r.jina.ai limita a ~20 req/min; com uma chave gratuita (jina.ai)
+# o teto sobe para 500 req/min, sem custo para o volume de uso sob demanda daqui.
+_JINA_API_KEY = os.getenv("JINA_API_KEY", "").strip()
+
 # Presente em toda página de imóvel da Caixa, não é documento do imóvel.
 _BOILERPLATE_URL_SUFFIXES = ("/editais/regras-vol/comocomprar.pdf",)
 
@@ -58,6 +62,8 @@ async def _fetch_via_reader(url: str, *, as_html: bool = False) -> Optional[str]
     headers = {"Accept": "text/plain", "User-Agent": "LeilaRadar/1.0"}
     if as_html:
         headers["X-Return-Format"] = "html"
+    if _JINA_API_KEY:
+        headers["Authorization"] = f"Bearer {_JINA_API_KEY}"
     try:
         async with httpx.AsyncClient(timeout=60) as client:
             response = await client.get(f"{READER_BASE_URL}/{url}", headers=headers)

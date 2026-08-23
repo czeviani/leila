@@ -20,6 +20,18 @@ SOURCE_ID = "zuk"
 BASE_URL = "https://www.portalzuk.com.br"
 CATALOG_URL = f"{BASE_URL}/leilao-de-imoveis/c/todos-imoveis/sp/capital/sao-paulo"
 
+# Sem chave, r.jina.ai limita a ~20 req/min; com uma chave gratuita (jina.ai)
+# o teto sobe para 500 req/min. Zuk depende do reader para toda a coleta
+# (não é fallback aqui), então vale configurar.
+_JINA_API_KEY = os.getenv("JINA_API_KEY", "").strip()
+
+
+def _reader_headers(**extra: str) -> dict[str, str]:
+    headers = dict(extra)
+    if _JINA_API_KEY:
+        headers["Authorization"] = f"Bearer {_JINA_API_KEY}"
+    return headers
+
 _CARD_PATTERN = re.compile(
     r'\[!\[Image\s+\d+:\s*(?P<alt>.*?)\]\((?P<image>https?://[^)]+)\)\]'
     r'\((?P<url>https?://www\.portalzuk\.com\.br/imovel/[^\s]+)\s+"(?P<tooltip>.*?)"\)'
@@ -175,7 +187,7 @@ class ZukSource(BaseSource):
                     response = await self._get(
                         client,
                         f"{self.reader_base}/http://{prop.edital_url}",
-                        headers={"User-Agent": "LeilaBot/1.0", "Accept": "text/plain"},
+                        headers=_reader_headers(**{"User-Agent": "LeilaBot/1.0", "Accept": "text/plain"}),
                     )
                     built, private = _parse_detail_areas(response.text)
                     prop.area_m2 = built or private
@@ -204,7 +216,7 @@ class ZukSource(BaseSource):
                     response = await self._get(
                         client,
                         self._reader_url(page),
-                        headers={"User-Agent": "LeilaBot/1.0", "Accept": "text/plain"},
+                        headers=_reader_headers(**{"User-Agent": "LeilaBot/1.0", "Accept": "text/plain"}),
                     )
                     page_properties = self._parse_markdown(response.text)
                     new_count = 0

@@ -40,4 +40,5 @@ jobs:
           SCRAPER_TARGET_STATE: 'SP'
           SCRAPER_TARGET_CITY: 'São Paulo'
           ZUK_READER_BASE_URL: ${{ vars.LEILA_ZUK_READER_BASE_URL || 'https://r.jina.ai' }}
+          JINA_API_KEY: ${{ secrets.LEILA_JINA_API_KEY }}
         run: python run.py
