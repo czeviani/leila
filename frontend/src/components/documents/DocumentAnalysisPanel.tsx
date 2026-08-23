@@ -55,8 +55,8 @@ function LiabilityLine({ liability }: { liability: Liability }) {
   )
 }
 
-function PayerGroup({ title, icon, tone, liabilities, emptyLabel }: {
-  title: string; icon: React.ReactNode; tone: 'red' | 'green' | 'gray'; liabilities: Liability[]; emptyLabel: string
+function PayerGroup({ title, subtitle, icon, tone, liabilities, emptyLabel }: {
+  title: string; subtitle: string; icon: React.ReactNode; tone: 'red' | 'green' | 'gray'; liabilities: Liability[]; emptyLabel: string
 }) {
   const toneClasses = {
     red: 'border-red-200 bg-red-50', green: 'border-emerald-200 bg-emerald-50', gray: 'border-slate-200 bg-slate-50',
@@ -68,6 +68,7 @@ function PayerGroup({ title, icon, tone, liabilities, emptyLabel }: {
         <div className="flex items-center gap-2 text-sm font-bold text-[#163447]">{icon}{title}</div>
         {tone === 'red' && total > 0 && <span className="text-base font-black text-red-700">{formatBRL(total)}</span>}
       </div>
+      <p className="mt-1 text-[11px] leading-snug text-slate-500">{subtitle}</p>
       {liabilities.length === 0 ? (
         <p className="mt-2 text-xs text-slate-500">{emptyLabel}</p>
       ) : (
@@ -207,9 +208,24 @@ export default function DocumentAnalysisPanel({ record, isLoading, isRequesting,
             <div>
               <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">Quem paga o quê</p>
               <div className="grid gap-3 sm:grid-cols-3">
-                <PayerGroup title="Você paga (arrematante)" icon={<Landmark size={15} className="text-red-700" />} tone="red" liabilities={arrematante} emptyLabel="Nenhum ônus atribuído a você nesta leitura." />
-                <PayerGroup title="Quitado / sub-rogado no preço" icon={<FileCheck2 size={15} className="text-emerald-700" />} tone="green" liabilities={subRogado} emptyLabel="Nenhum ônus quitado ou sub-rogado identificado." />
-                <PayerGroup title="Indefinido — confirmar antes do lance" icon={<HelpCircle size={15} className="text-slate-500" />} tone="gray" liabilities={indefinido} emptyLabel="Nenhum ônus com responsabilidade indefinida." />
+                <PayerGroup
+                  title="Você paga a mais"
+                  subtitle="Some ao valor do seu lance — sai do seu bolso."
+                  icon={<Landmark size={15} className="text-red-700" />} tone="red" liabilities={arrematante}
+                  emptyLabel="Nenhuma dívida extra identificada além do lance."
+                />
+                <PayerGroup
+                  title="Já é resolvido pelo próprio lance"
+                  subtitle="É descontado do dinheiro que o leilão arrecada, antes de sobrar troco — você não paga isso separado."
+                  icon={<FileCheck2 size={15} className="text-emerald-700" />} tone="green" liabilities={subRogado}
+                  emptyLabel="Nenhuma dívida quitada dessa forma foi identificada."
+                />
+                <PayerGroup
+                  title="Não ficou claro — pergunte antes de dar lance"
+                  subtitle="O documento não diz quem paga essa dívida. Confirme com o leiloeiro/cartório antes de arrematar."
+                  icon={<HelpCircle size={15} className="text-slate-500" />} tone="gray" liabilities={indefinido}
+                  emptyLabel="Nenhuma dívida com responsável indefinido."
+                />
               </div>
             </div>
 
