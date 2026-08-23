@@ -9,6 +9,7 @@ import {
 import { useProperty, useFavorites, useToggleFavorite, useRequestEvaluation, useDocumentAnalysis, useRequestDocumentAnalysis } from '../hooks/useProperties'
 import InvestmentDashboard from '../components/evaluator/InvestmentDashboard'
 import DocumentAnalysisPanel from '../components/documents/DocumentAnalysisPanel'
+import ErrorBoundary from '../components/common/ErrorBoundary'
 import SourceBadge from '../components/properties/SourceBadge'
 import type { Property } from '../lib/api'
 
