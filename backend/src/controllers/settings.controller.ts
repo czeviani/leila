@@ -18,7 +18,7 @@ const VALID_MODELS: Record<LlmProvider, string[]> = {
     'deepseek/deepseek-chat-v3-0324',
     'anthropic/claude-sonnet-4-5',
   ],
-  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini'],
+  openai: ['gpt-5.6-terra', 'gpt-5.6-sol', 'gpt-5.6-luna', 'gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini'],
 }
 
 const DEFAULTS = {

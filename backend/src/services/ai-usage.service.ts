@@ -32,6 +32,11 @@ const PRICES: Record<string, ModelPrice> = {
   // USD por milhão de tokens, OpenAI nativo (platform.openai.com/docs/pricing,
   // conferido em 2026-08-23). Só usado quando provider='openai' — no OpenRouter
   // o custo vem pronto em usage.cost (ver callLlm em evaluator.service.ts).
+  // Preço de contexto longo (>128k tokens de entrada) é maior na família 5.6 —
+  // não modelado aqui, mesma simplificação já usada pros modelos Claude acima.
+  'gpt-5.6-sol': { inputPerM: 4, outputPerM: 20 },
+  'gpt-5.6-terra': { inputPerM: 2, outputPerM: 12 },
+  'gpt-5.6-luna': { inputPerM: 0.2, outputPerM: 1.2 },
   'gpt-4o': { inputPerM: 2.5, outputPerM: 10 },
   'gpt-4o-mini': { inputPerM: 0.15, outputPerM: 0.6 },
   'gpt-4.1': { inputPerM: 2, outputPerM: 8 },

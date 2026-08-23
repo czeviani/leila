@@ -494,6 +494,9 @@ export const LLM_PROVIDERS = {
   openai: {
     label: 'OpenAI',
     models: [
+      { id: 'gpt-5.6-terra', label: 'GPT-5.6 Terra (recomendado)' },
+      { id: 'gpt-5.6-sol',   label: 'GPT-5.6 Sol (mais capaz)' },
+      { id: 'gpt-5.6-luna',  label: 'GPT-5.6 Luna (econômico)' },
       { id: 'gpt-4o',        label: 'GPT-4o' },
       { id: 'gpt-4o-mini',   label: 'GPT-4o Mini (econômico)' },
       { id: 'gpt-4.1',       label: 'GPT-4.1' },
