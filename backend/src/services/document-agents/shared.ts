@@ -47,6 +47,10 @@ export interface DocumentInput {
   contentBase64?: string
   /** Texto puro (página HTML já convertida) — usado quando não há PDF. */
   plainText?: string
+  /** Setado quando plainText existe mas não é texto de verdade (ex.: PDF com
+   * fonte protegida virando glifos aleatórios via leitor externo) — orquestrador
+   * pula a chamada de IA para este documento em vez de arriscar alucinação. */
+  unreadableReason?: string
 }
 
 export interface PropertyIdentityContext {
@@ -99,6 +103,18 @@ export function checkIdentity(facts: ExtractedFact[], context?: PropertyIdentity
   if (externalHit || (addressHits >= 2 && cityHit)) return 'matched'
   if (cityHit || addressHits > 0) return 'partial'
   return 'mismatch'
+}
+
+/** Heurística barata para detectar texto ilegível — ex.: PDF com fonte cmap
+ * protegida (certidões digitais da Caixa) que, extraído via leitor externo em
+ * vez do parser nativo da Messages API, vira glifos aleatórios em vez de
+ * caracteres reais. Evita gastar uma chamada de IA (e arriscar alucinação)
+ * num documento que não tem texto de verdade para ler. */
+export function isUnreadableText(text: string): boolean {
+  const sample = text.slice(0, 5000)
+  if (sample.trim().length < 50) return true
+  const readableChars = sample.match(/[a-zA-ZÀ-ÿ0-9\s.,;:()\-/R$%]/g)?.length ?? 0
+  return readableChars / sample.length < 0.7
 }
 
 // Marcas de acento remanescentes após normalize('NFD') — faixa Unicode 0300-036F,

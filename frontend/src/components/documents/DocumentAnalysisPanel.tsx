@@ -182,6 +182,21 @@ export default function DocumentAnalysisPanel({ record, isLoading, isRequesting,
               {(record!.blocking_issues ?? []).length > 0 && <ul className="mt-2 list-disc space-y-1 pl-4 text-xs">{record!.blocking_issues?.map(issue => <li key={issue}>{issue}</li>)}</ul>}
             </div>
 
+            {/* Número que mais importa: quanto o arrematante paga além do lance — não pode ficar escondido dentro do card de detalhe */}
+            {(record!.total_arrematante_brl ?? 0) > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+                <div className="flex items-center gap-2 text-sm font-bold text-red-900"><Landmark size={16} />Você paga além do lance</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xl font-black text-red-700">{formatBRL(record!.total_arrematante_brl!)}</span>
+                  {indefinido.length > 0 && (
+                    <span className="rounded-full border border-amber-300 bg-amber-100 px-2.5 py-1 text-[11px] font-bold text-amber-900">
+                      +{indefinido.length} sem responsável definido
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2">
               {(record!.tags ?? []).map(tag => <span key={tag} className="rounded-full border border-[#b9dcd5] bg-white px-3 py-1.5 text-xs font-bold text-[#126252]">{tag}</span>)}
             </div>
@@ -271,21 +286,29 @@ export default function DocumentAnalysisPanel({ record, isLoading, isRequesting,
           </div>
         )}
 
-        {showCost && usage && usage.total.calls > 0 && (
-          <details className="mt-5 rounded-xl border border-slate-200 bg-white p-3">
-            <summary className="flex cursor-pointer items-center justify-between text-xs font-bold text-[#176B87]">
-              <span className="flex items-center gap-1.5"><WalletCards size={13} />Custo desta leitura: {formatBRL(usage.total.cost_brl)}</span>
-              <span className="font-normal text-slate-400">{usage.total.calls} chamada(s) · {(usage.total.input_tokens + usage.total.output_tokens).toLocaleString('pt-BR')} tokens</span>
-            </summary>
-            <div className="mt-3 space-y-1.5">
-              {usage.events.slice(0, 12).map(ev => (
-                <div key={ev.id} className="flex items-center justify-between text-[11px] text-slate-600">
-                  <span>{ev.stage ?? ev.feature} <span className="text-slate-400">· {ev.model}</span></span>
-                  <span>{formatBRL(ev.cost_brl)} <span className="text-slate-400">({(ev.input_tokens + ev.output_tokens).toLocaleString('pt-BR')} tok)</span></span>
-                </div>
-              ))}
-            </div>
-          </details>
+        {showCost && usage && (
+          usage.total.calls > 0 ? (
+            <details className="mt-5 rounded-xl border border-slate-200 bg-white p-3">
+              <summary className="flex cursor-pointer items-center justify-between text-xs font-bold text-[#176B87]">
+                <span className="flex items-center gap-1.5"><WalletCards size={13} />Custo desta leitura: {formatBRL(usage.total.cost_brl)}</span>
+                <span className="font-normal text-slate-400">{usage.total.calls} chamada(s) · {(usage.total.input_tokens + usage.total.output_tokens).toLocaleString('pt-BR')} tokens</span>
+              </summary>
+              <div className="mt-3 space-y-1.5">
+                {usage.events.slice(0, 12).map(ev => (
+                  <div key={ev.id} className="flex items-center justify-between text-[11px] text-slate-600">
+                    <span>{ev.stage ?? ev.feature} <span className="text-slate-400">· {ev.model}</span></span>
+                    <span>{formatBRL(ev.cost_brl)} <span className="text-slate-400">({(ev.input_tokens + ev.output_tokens).toLocaleString('pt-BR')} tok)</span></span>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : status === 'done' ? (
+            // Sumir aqui em silêncio foi o que gerou a dúvida original — "gastou e não mostrou quanto".
+            // Terminou sem nenhum evento de custo registrado: dizer isso explicitamente.
+            <p className="mt-5 flex items-center gap-1.5 text-xs font-semibold text-slate-400">
+              <WalletCards size={13} />Custo desta leitura não foi registrado.
+            </p>
+          ) : null
         )}
       </div>
     </section>

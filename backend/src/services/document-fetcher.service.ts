@@ -53,6 +53,9 @@ export interface FetchedDocument {
   content_type: string
   bytes: number
   sha256: string
+  /** 'reader' = veio via leitor externo (r.jina.ai) porque o host bloqueou o fetch direto —
+   * para PDFs isso significa content_base64 é texto extraído, não o PDF binário original. */
+  via?: 'direct' | 'reader'
 }
 
 export async function fetchDocument(url: string): Promise<FetchedDocument | null> {

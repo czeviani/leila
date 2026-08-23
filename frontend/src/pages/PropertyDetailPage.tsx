@@ -1,4 +1,6 @@
+import { useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   AlertTriangle, ArrowLeft, Bath, BedDouble, Calendar, Car, CheckCircle2,
   CircleHelp, CircleX, Clock3, Database, ExternalLink, FileText, Gavel,
@@ -158,6 +160,19 @@ export default function PropertyDetailPage() {
   const requestEval = useRequestEvaluation()
   const { data: documentAnalysis, isLoading: documentAnalysisLoading } = useDocumentAnalysis(id!)
   const requestDocumentAnalysis = useRequestDocumentAnalysis()
+
+  // Cobre o caso de a página ser recarregada com uma leitura já em
+  // 'processing': o polling de useDocumentAnalysis observa a virada para
+  // 'done' aqui e força o custo (ai-usage, com staleTime próprio) a refazer —
+  // sem isso ele ficava preso no snapshot (vazio) de antes da rodada terminar.
+  const qc = useQueryClient()
+  const previousStatus = useRef(documentAnalysis?.status)
+  useEffect(() => {
+    if (previousStatus.current === 'processing' && documentAnalysis?.status === 'done') {
+      qc.invalidateQueries({ queryKey: ['ai-usage', id] })
+    }
+    previousStatus.current = documentAnalysis?.status
+  }, [documentAnalysis?.status, id, qc])
 
   if (isLoading) {
     return (

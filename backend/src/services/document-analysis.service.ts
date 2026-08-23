@@ -19,7 +19,8 @@ import { discoverDocuments, fetchDocument, DiscoveredDocumentType, FetchedDocume
 import { extractDocumentFacts } from './document-agents/extractor'
 import { judgeLiabilities, Liability, PaymentRules } from './document-agents/liabilities'
 import { consolidate, RankedRisk, Conflict } from './document-agents/consolidator'
-import { DocumentInput, ExtractedFact, DocumentExtraction, PropertyIdentityContext } from './document-agents/shared'
+import { DocumentInput, ExtractedFact, DocumentExtraction, PropertyIdentityContext, isUnreadableText } from './document-agents/shared'
+import { sliceEditalForProperty } from './document-agents/edital-slicer'
 
 export const PROMPT_VERSION = 'document-v2'
 const MAX_DOCUMENTS = 6
@@ -155,7 +156,7 @@ async function persistDocumentSnapshot(propertyId: string, doc: DocumentInput, f
     captured_at: new Date().toISOString(),
     content_type: fetched?.content_type ?? (doc.contentBase64 ? 'application/pdf' : 'text/plain'),
     extracted_text: doc.plainText?.slice(0, 200_000) ?? null,
-    metadata: fetched ? { bytes: fetched.bytes, sha256: fetched.sha256 } : {},
+    metadata: fetched ? { bytes: fetched.bytes, sha256: fetched.sha256, via: fetched.via ?? 'direct' } : {},
     is_current: true,
   }, { onConflict: 'property_id,source_url,content_hash' })
 
@@ -183,13 +184,24 @@ async function buildDocumentInputs(context: DocumentAnalysisContext, fallbackLis
     for (const { doc, result } of fetched) {
       if (!result) continue
       const isPdf = result.content_type.toLowerCase().includes('pdf')
+      let plainText = isPdf ? undefined : Buffer.from(result.content_base64, 'base64').toString('utf-8')
+      let unreadableReason: string | undefined
+
+      if (plainText && doc.type === 'edital') {
+        plainText = sliceEditalForProperty(plainText, context.externalId)
+      }
+      if (plainText && doc.type === 'matricula' && isUnreadableText(plainText)) {
+        unreadableReason = 'Matrícula disponível apenas como imagem/fonte protegida — requer proxy BR para leitura nativa do PDF.'
+      }
+
       const input: DocumentInput = {
         id: crypto.randomUUID(),
         documentType: doc.type,
         sourceUrl: doc.url,
         label: doc.label,
         contentBase64: isPdf ? result.content_base64 : undefined,
-        plainText: isPdf ? undefined : Buffer.from(result.content_base64, 'base64').toString('utf-8'),
+        plainText,
+        unreadableReason,
       }
       documents.push(input)
       await persistDocumentSnapshot(context.propertyId, input, result)
@@ -271,7 +283,18 @@ export async function analyzeOfficialDocumentV2(
   })
 
   const extractions: DocumentExtraction[] = await Promise.all(
-    documents.map(doc => extractDocumentFacts(doc, identityContext, usageCtxFor('extractor'))),
+    documents.map(doc => doc.unreadableReason
+      ? Promise.resolve<DocumentExtraction>({
+          documentId: doc.id,
+          documentType: doc.documentType,
+          sourceUrl: doc.sourceUrl,
+          readOk: false,
+          errorMessage: doc.unreadableReason,
+          facts: [],
+          discardedUncitedCount: 0,
+          identityMatch: 'not_checked',
+        })
+      : extractDocumentFacts(doc, identityContext, usageCtxFor('extractor'))),
   )
 
   // Backfill de identidade por documento — a coleta em lote já gravou a linha sem essa informação.

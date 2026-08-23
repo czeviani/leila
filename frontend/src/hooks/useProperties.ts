@@ -85,6 +85,7 @@ export const useRequestDocumentAnalysis = () => {
     onSuccess: data => {
       qc.setQueryData(['document-analysis', data.property_id], data)
       qc.invalidateQueries({ queryKey: ['property', data.property_id] })
+      qc.invalidateQueries({ queryKey: ['ai-usage', data.property_id] })
     },
   })
 }
@@ -94,7 +95,10 @@ export const usePropertyAiUsage = (propertyId: string, enabled: boolean) =>
     queryKey: ['ai-usage', propertyId],
     queryFn: () => api.properties.aiUsage(propertyId),
     enabled: enabled && Boolean(propertyId),
-    staleTime: 30_000,
+    // Curto de propósito: quando a leitura termina, o painel invalida esta
+    // query (ver efeito em PropertyDetailPage) e o refetch precisa valer,
+    // não ficar preso no cache de 30s de antes.
+    staleTime: 5_000,
   })
 
 export const useFilters = () =>
