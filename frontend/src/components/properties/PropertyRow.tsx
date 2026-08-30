@@ -103,10 +103,26 @@ export default memo(function PropertyRow({
           <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500">
             <MapPin size={11} /> {[property.city, property.state].filter(Boolean).join(' · ') || 'Localização pendente'}
           </p>
-          {property.work_distance_km != null && (
-            <p className="mt-1 truncate text-[10px] font-bold text-[#176B87]" title="Estimativa matemática em linha reta">
-              ≈ {Number(property.work_distance_km).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km do trabalho
-            </p>
+        </td>
+      )}
+
+      {columns.includes('distance') && (
+        <td className={`whitespace-nowrap px-3 ${yPadding}`}>
+          {property.work_distance_km != null ? (
+            <div title="Estimativa matemática em linha reta; não representa uma rota de trânsito">
+              <p className="flex items-center gap-1.5 text-sm font-extrabold text-[#176B87]">
+                <MapPinned size={14} />
+                ≈ {Number(property.work_distance_km).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km
+              </p>
+              <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
+                {property.estimated_commute_minutes != null ? `~${property.estimated_commute_minutes} min estimados` : 'do trabalho'}
+              </p>
+            </div>
+          ) : (
+            <div title="Este imóvel ainda não entrou na rodada de localização">
+              <p className="text-xs font-semibold text-slate-400">Não calculada</p>
+              <p className="mt-0.5 text-[10px] text-slate-400">fora da rodada atual</p>
+            </div>
           )}
         </td>
       )}

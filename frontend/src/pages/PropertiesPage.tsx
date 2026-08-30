@@ -31,6 +31,7 @@ const SORT_OPTIONS = [
 ]
 
 const DISCOVERY_PRESETS = [
+  { key: 'near-work', label: 'Mais perto do trabalho', sort: 'work_distance_km:asc', params: {} },
   { key: 'approved', label: 'Aprovados', sort: 'last_seen_at:desc', params: { decision: 'approved' } },
   { key: 'unreviewed', label: 'Não avaliados', sort: 'opportunity_score:desc', params: { decision: 'unreviewed' } },
   { key: 'rejected', label: 'Reprovados', sort: 'last_seen_at:desc', params: { decision: 'rejected' } },

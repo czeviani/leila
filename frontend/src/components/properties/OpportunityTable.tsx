@@ -6,6 +6,7 @@ import PropertyRow from './PropertyRow'
 const SORT_FIELDS: Partial<Record<OpportunityColumn, string>> = {
   opportunity: 'opportunity_score',
   location: 'neighborhood',
+  distance: 'work_distance_km',
   property: 'property_type',
   area: 'filter_area_m2',
   price: 'auction_price',
@@ -17,6 +18,7 @@ const SORT_FIELDS: Partial<Record<OpportunityColumn, string>> = {
 
 const WIDTHS: Record<OpportunityColumn, string> = {
   opportunity: 'min-w-[140px]', location: 'min-w-[190px]', property: 'min-w-[230px]',
+  distance: 'min-w-[125px]',
   area: 'min-w-[90px]', price: 'min-w-[190px]', pricePerM2: 'min-w-[115px]',
   discount: 'min-w-[100px]', neighborhood: 'min-w-[145px]', status: 'min-w-[165px]',
   deadline: 'min-w-[100px]',
@@ -50,7 +52,7 @@ export default function OpportunityTable({
 
   return (
     <div className="hidden max-h-[calc(100vh-12rem)] overflow-auto rounded-2xl border border-[#cfdddd] bg-white shadow-[0_8px_30px_rgba(22,52,71,.06)] xl:block">
-      <table className="w-full min-w-[1230px] border-separate border-spacing-0 text-left">
+      <table className="w-full min-w-[1355px] border-separate border-spacing-0 text-left">
         <thead className="sticky top-0 z-30 bg-[#163447] text-white shadow-[0_2px_0_rgba(22,52,71,.14)]">
           <tr>
             <th scope="col" className="sticky left-0 z-40 w-12 bg-[#163447] px-3 py-3">

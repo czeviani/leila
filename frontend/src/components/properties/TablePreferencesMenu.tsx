@@ -56,7 +56,7 @@ export default function TablePreferencesMenu({ preferences, onChange }: Props) {
               {(['compact', 'comfortable'] as const).map(density => <button type="button" key={density} onClick={() => onChange({ ...preferences, density })} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${preferences.density === density ? 'border-[#176B87] bg-[#176B87] text-white' : 'border-slate-200 text-slate-500'}`}>{density === 'compact' ? 'Compacta' : 'Confortável'}</button>)}
             </div>
           </div>
-          <button type="button" onClick={() => onChange({ version: 3, columns: DEFAULT_COLUMNS, density: 'compact' })} className="mt-3 text-xs font-bold text-[#176B87]">Restaurar padrão</button>
+          <button type="button" onClick={() => onChange({ version: 4, columns: DEFAULT_COLUMNS, density: 'compact' })} className="mt-3 text-xs font-bold text-[#176B87]">Restaurar padrão</button>
         </div>
       )}
     </div>

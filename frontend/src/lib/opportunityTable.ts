@@ -3,6 +3,7 @@ import { Property } from './api'
 export type OpportunityColumn =
   | 'opportunity'
   | 'location'
+  | 'distance'
   | 'property'
   | 'area'
   | 'price'
@@ -15,7 +16,7 @@ export type OpportunityColumn =
 export type TableDensity = 'compact' | 'comfortable'
 
 export interface OpportunityTablePreferences {
-  version: 3
+  version: 4
   columns: OpportunityColumn[]
   density: TableDensity
 }
@@ -23,6 +24,7 @@ export interface OpportunityTablePreferences {
 export const COLUMN_LABELS: Record<OpportunityColumn, string> = {
   opportunity: 'Oportunidade',
   location: 'Localização',
+  distance: 'Distância',
   property: 'Imóvel',
   area: 'Área',
   price: 'Lance',
@@ -34,20 +36,20 @@ export const COLUMN_LABELS: Record<OpportunityColumn, string> = {
 }
 
 export const DEFAULT_COLUMNS: OpportunityColumn[] = [
-  'opportunity', 'location', 'property', 'area', 'price', 'pricePerM2',
+  'opportunity', 'location', 'distance', 'property', 'area', 'price', 'pricePerM2',
   'discount', 'neighborhood',
 ]
 
-export const TABLE_PREFERENCES_KEY = 'leila_opportunity_table_v3'
+export const TABLE_PREFERENCES_KEY = 'leila_opportunity_table_v4'
 
 export function readTablePreferences(): OpportunityTablePreferences {
-  const fallback: OpportunityTablePreferences = { version: 3, columns: DEFAULT_COLUMNS, density: 'compact' }
+  const fallback: OpportunityTablePreferences = { version: 4, columns: DEFAULT_COLUMNS, density: 'compact' }
   try {
     const parsed = JSON.parse(localStorage.getItem(TABLE_PREFERENCES_KEY) || 'null') as Partial<OpportunityTablePreferences> | null
-    if (!parsed || parsed.version !== 3 || !Array.isArray(parsed.columns)) return fallback
+    if (!parsed || parsed.version !== 4 || !Array.isArray(parsed.columns)) return fallback
     const validColumns = parsed.columns.filter((column): column is OpportunityColumn => column in COLUMN_LABELS)
     return {
-      version: 3,
+      version: 4,
       columns: validColumns.length ? validColumns : DEFAULT_COLUMNS,
       density: parsed.density === 'comfortable' ? 'comfortable' : 'compact',
     }
