@@ -7,6 +7,22 @@ type PropertyRow = { id: string; latitude: number; longitude: number }
 const db = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_KEY!, {
   auth: { persistSession: false },
 })
+const wait = (milliseconds: number) => new Promise(resolve => setTimeout(resolve, milliseconds))
+
+async function updateDistance(property: PropertyRow, workLatitude: number, workLongitude: number, calculatedAt: string) {
+  const proximity = estimateProximity(workLatitude, workLongitude, property.latitude, property.longitude)
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const result = await db.from('leila_properties').update({
+      work_distance_km: proximity.straightLineKm,
+      estimated_road_distance_km: proximity.estimatedRoadKm,
+      estimated_commute_minutes: proximity.estimatedMinutes,
+      distance_calculated_at: calculatedAt,
+    }).eq('id', property.id)
+    if (!result.error) return
+    if (result.error.code !== '57014' || attempt === 3) throw result.error
+    await wait(attempt * 400)
+  }
+}
 
 async function main() {
   const { data: settings, error: settingsError } = await db.from('leila_settings')
@@ -31,21 +47,11 @@ async function main() {
     if (error) throw error
     if (!data?.length) break
 
-    for (let index = 0; index < data.length; index += 50) {
-      const chunk = data.slice(index, index + 50) as PropertyRow[]
-      const results = await Promise.all(chunk.map(property => {
-        const proximity = estimateProximity(
-          Number(settings.work_latitude), Number(settings.work_longitude), property.latitude, property.longitude,
-        )
-        return db.from('leila_properties').update({
-          work_distance_km: proximity.straightLineKm,
-          estimated_road_distance_km: proximity.estimatedRoadKm,
-          estimated_commute_minutes: proximity.estimatedMinutes,
-          distance_calculated_at: now,
-        }).eq('id', property.id)
-      }))
-      const failed = results.find(result => result.error)
-      if (failed?.error) throw failed.error
+    for (let index = 0; index < data.length; index += 10) {
+      const chunk = data.slice(index, index + 10) as PropertyRow[]
+      await Promise.all(chunk.map(property => updateDistance(
+        property, Number(settings.work_latitude), Number(settings.work_longitude), now,
+      )))
       updated += chunk.length
     }
     console.log(JSON.stringify({ event: 'progress', updated }))

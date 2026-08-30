@@ -107,6 +107,57 @@ export async function geocodeAddress(
 
 const toRadians = (degrees: number) => degrees * Math.PI / 180
 
+const interpolate = (value: number, points: Array<{ axis: number; position: number }>) => {
+  const ordered = [...points].sort((a, b) => a.axis - b.axis)
+  if (value <= ordered[0].axis) return ordered[0].position
+  if (value >= ordered[ordered.length - 1].axis) return ordered[ordered.length - 1].position
+  const upperIndex = ordered.findIndex(point => point.axis >= value)
+  const lower = ordered[upperIndex - 1]
+  const upper = ordered[upperIndex]
+  const progress = (value - lower.axis) / (upper.axis - lower.axis)
+  return lower.position + (upper.position - lower.position) * progress
+}
+
+const pinheirosLongitudeAt = (latitude: number) => interpolate(latitude, [
+  { axis: -23.70, position: -46.703 },
+  { axis: -23.65, position: -46.719 },
+  { axis: -23.60, position: -46.707 },
+  { axis: -23.57, position: -46.700 },
+  { axis: -23.54, position: -46.723 },
+  { axis: -23.51, position: -46.750 },
+])
+
+const tieteLatitudeAt = (longitude: number) => interpolate(longitude, [
+  { axis: -46.82, position: -23.487 },
+  { axis: -46.72, position: -23.515 },
+  { axis: -46.62, position: -23.526 },
+  { axis: -46.52, position: -23.510 },
+  { axis: -46.42, position: -23.492 },
+])
+
+function saoPauloBarrierCrossings(
+  originLatitude: number,
+  originLongitude: number,
+  destinationLatitude: number,
+  destinationLongitude: number,
+) {
+  let crossings = 0
+  const withinPinheiros = [originLatitude, destinationLatitude].every(latitude => latitude >= -23.71 && latitude <= -23.50)
+  if (withinPinheiros) {
+    const originSide = originLongitude - pinheirosLongitudeAt(originLatitude)
+    const destinationSide = destinationLongitude - pinheirosLongitudeAt(destinationLatitude)
+    if (originSide * destinationSide < 0) crossings += 1
+  }
+
+  const withinTiete = [originLongitude, destinationLongitude].every(longitude => longitude >= -46.83 && longitude <= -46.41)
+  if (withinTiete) {
+    const originSide = originLatitude - tieteLatitudeAt(originLongitude)
+    const destinationSide = destinationLatitude - tieteLatitudeAt(destinationLongitude)
+    if (originSide * destinationSide < 0) crossings += 1
+  }
+  return crossings
+}
+
 export function estimateProximity(
   originLatitude: number,
   originLongitude: number,
@@ -120,13 +171,42 @@ export function estimateProximity(
     + Math.cos(toRadians(originLatitude)) * Math.cos(toRadians(destinationLatitude))
     * Math.sin(longitudeDelta / 2) ** 2
   const straightLineKm = earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  const estimatedRoadKm = straightLineKm * 1.25
-  const averageSpeedKmh = estimatedRoadKm <= 30 ? 25 : estimatedRoadKm <= 100 ? 45 : 70
+  const bothInSaoPauloMetro = [originLatitude, destinationLatitude].every(latitude => latitude >= -24.0 && latitude <= -23.2)
+    && [originLongitude, destinationLongitude].every(longitude => longitude >= -47.1 && longitude <= -46.2)
+
+  let estimatedRoadKm: number
+  let estimatedMinutes: number
+  if (bothInSaoPauloMetro) {
+    const latitudeKm = Math.abs(destinationLatitude - originLatitude) * 111.32
+    const meanLatitude = (originLatitude + destinationLatitude) / 2
+    const longitudeKm = Math.abs(destinationLongitude - originLongitude) * 111.32 * Math.cos(toRadians(meanLatitude))
+    const urbanGridKm = latitudeKm + longitudeKm
+    const gridFactor = straightLineKm <= 15 ? 1.12 : straightLineKm <= 30 ? 1.08 : 1.04
+    const barrierCrossings = saoPauloBarrierCrossings(
+      originLatitude, originLongitude, destinationLatitude, destinationLongitude,
+    )
+    const localAccessKm = straightLineKm <= 30 ? 0.6 : 0.3
+    const barrierDetourKm = barrierCrossings * 0.6
+    estimatedRoadKm = Math.max(straightLineKm * 1.18, urbanGridKm * gridFactor + localAccessKm + barrierDetourKm)
+
+    const averageSpeedKmh = estimatedRoadKm <= 5 ? 18
+      : estimatedRoadKm <= 15 ? 22
+        : estimatedRoadKm <= 30 ? 25
+          : estimatedRoadKm <= 60 ? 32
+            : 48
+    const localTrafficMinutes = estimatedRoadKm <= 30 ? 4 : 2
+    estimatedMinutes = Math.max(1, Math.round(estimatedRoadKm / averageSpeedKmh * 60 + localTrafficMinutes + barrierCrossings * 5))
+  } else {
+    const roadFactor = straightLineKm <= 30 ? 1.28 : straightLineKm <= 100 ? 1.18 : 1.12
+    estimatedRoadKm = straightLineKm * roadFactor
+    const averageSpeedKmh = estimatedRoadKm <= 30 ? 28 : estimatedRoadKm <= 100 ? 50 : 72
+    estimatedMinutes = Math.max(1, Math.round(estimatedRoadKm / averageSpeedKmh * 60))
+  }
 
   return {
     straightLineKm: Math.round(straightLineKm * 100) / 100,
     estimatedRoadKm: Math.round(estimatedRoadKm * 100) / 100,
-    estimatedMinutes: Math.max(1, Math.round(estimatedRoadKm / averageSpeedKmh * 60)),
+    estimatedMinutes,
   }
 }
 

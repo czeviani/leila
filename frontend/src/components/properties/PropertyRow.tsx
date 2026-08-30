@@ -108,14 +108,14 @@ export default memo(function PropertyRow({
 
       {columns.includes('distance') && (
         <td className={`whitespace-nowrap px-3 ${yPadding}`}>
-          {property.work_distance_km != null ? (
-            <div title="Estimativa matemática em linha reta; não representa uma rota de trânsito">
+          {(property.estimated_road_distance_km ?? property.work_distance_km) != null ? (
+            <div title="Estimativa matemática de percurso urbano; não usa trânsito ao vivo">
               <p className="flex items-center gap-1.5 text-sm font-extrabold text-[#176B87]">
                 <MapPinned size={14} />
-                ≈ {Number(property.work_distance_km).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km
+                ≈ {Number(property.estimated_road_distance_km ?? property.work_distance_km).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km
               </p>
               <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
-                {property.estimated_commute_minutes != null ? `~${property.estimated_commute_minutes} min estimados` : 'do trabalho'}
+                {property.estimated_commute_minutes != null ? `~${property.estimated_commute_minutes} min típicos` : 'do trabalho'}
               </p>
             </div>
           ) : (

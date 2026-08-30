@@ -551,7 +551,7 @@ export default function FilterPanel({ activeParams, onFilterChange }: Props) {
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-[11px] text-slate-400">Distância aproximada em linha reta; requer endereço do trabalho configurado.</p>
+            <p className="mt-2 text-[11px] text-slate-400">Percurso urbano aproximado, com margens para vias internas e travessias; requer endereço do trabalho configurado.</p>
           </div>
 
           <div className="rounded-xl border border-[#cfe0e1] bg-[#f6faf9] p-3.5">

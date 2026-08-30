@@ -16,7 +16,7 @@ const SORT_FIELDS: Record<string, string> = {
   data_quality_score: 'data_quality_score',
   last_verified_at: 'last_verified_at',
   last_seen_at: 'last_seen_at',
-  work_distance_km: 'work_distance_km',
+  work_distance_km: 'estimated_road_distance_km',
 }
 
 const AVAILABILITY_STATUSES = new Set(['available', 'suspect', 'unavailable'])
@@ -228,7 +228,7 @@ export const getProperties = async (req: Request, res: Response) => {
   if (pricePerM2Maximum !== null) query = query.lte('price_per_m2', pricePerM2Maximum)
   if (opportunityMinimum !== null) query = query.gte('opportunity_score', opportunityMinimum)
   if (neighborhoodMinimum !== null) query = query.gte('neighborhood_score', neighborhoodMinimum)
-  if (workDistanceMaximum !== null) query = query.lte('work_distance_km', workDistanceMaximum)
+  if (workDistanceMaximum !== null) query = query.lte('estimated_road_distance_km', workDistanceMaximum)
   if (source) {
     const sources = String(source).split(',').map(value => value.trim()).filter(Boolean)
     query = sources.length === 1 ? query.eq('source_id', sources[0]) : query.in('source_id', sources)

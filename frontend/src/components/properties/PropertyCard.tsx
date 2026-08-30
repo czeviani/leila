@@ -116,9 +116,9 @@ export default function PropertyCard({ property, isFavorite, isRejected, onAppro
             <span className="truncate"><strong className="text-[#163447]">{neighborhoodName(property) ?? 'Bairro não informado'}</strong> · {[property.city, property.state].filter(Boolean).join(' · ') || 'localização pendente'}</span>
           </p>
 
-          {property.work_distance_km != null && (
-            <p className="-mt-2 mb-4 flex items-center gap-1.5 text-xs font-semibold text-[#176B87]" title="Estimativa matemática em linha reta">
-              <MapPinned size={13} />≈ {Number(property.work_distance_km).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km do trabalho
+          {(property.estimated_road_distance_km ?? property.work_distance_km) != null && (
+            <p className="-mt-2 mb-4 flex items-center gap-1.5 text-xs font-semibold text-[#176B87]" title="Estimativa matemática de percurso urbano; não usa trânsito ao vivo">
+              <MapPinned size={13} />≈ {Number(property.estimated_road_distance_km ?? property.work_distance_km).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km do trabalho
               {property.estimated_commute_minutes != null && <span className="font-normal text-slate-400">· ~{property.estimated_commute_minutes} min</span>}
             </p>
           )}

@@ -67,6 +67,24 @@ export const upsertSettings = async (req: Request, res: Response) => {
 }
 
 async function refreshStoredDistances(workLatitude: number, workLongitude: number) {
+  const wait = (milliseconds: number) => new Promise(resolve => setTimeout(resolve, milliseconds))
+  const updateDistance = async (property: { id: string; latitude: number; longitude: number }) => {
+    const proximity = estimateProximity(
+      workLatitude, workLongitude, Number(property.latitude), Number(property.longitude),
+    )
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const result = await supabaseAdmin.from('leila_properties').update({
+        work_distance_km: proximity.straightLineKm,
+        estimated_road_distance_km: proximity.estimatedRoadKm,
+        estimated_commute_minutes: proximity.estimatedMinutes,
+        distance_calculated_at: new Date().toISOString(),
+      }).eq('id', property.id)
+      if (!result.error) return
+      if (result.error.code !== '57014' || attempt === 3) throw result.error
+      await wait(attempt * 400)
+    }
+  }
+
   let updated = 0
   for (let from = 0; ; from += 500) {
     const { data, error } = await supabaseAdmin.from('leila_properties')
@@ -78,21 +96,9 @@ async function refreshStoredDistances(workLatitude: number, workLongitude: numbe
     if (error) throw error
     if (!data?.length) break
 
-    for (let index = 0; index < data.length; index += 50) {
-      const chunk = data.slice(index, index + 50)
-      const results = await Promise.all(chunk.map(property => {
-        const proximity = estimateProximity(
-          workLatitude, workLongitude, Number(property.latitude), Number(property.longitude),
-        )
-        return supabaseAdmin.from('leila_properties').update({
-          work_distance_km: proximity.straightLineKm,
-          estimated_road_distance_km: proximity.estimatedRoadKm,
-          estimated_commute_minutes: proximity.estimatedMinutes,
-          distance_calculated_at: new Date().toISOString(),
-        }).eq('id', property.id)
-      }))
-      const failed = results.find(result => result.error)
-      if (failed?.error) throw failed.error
+    for (let index = 0; index < data.length; index += 10) {
+      const chunk = data.slice(index, index + 10)
+      await Promise.all(chunk.map(property => updateDistance(property as { id: string; latitude: number; longitude: number })))
       updated += chunk.length
     }
     if (data.length < 500) break
