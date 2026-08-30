@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "geocode:priority": "tsx scripts/geocode-properties.ts",
-    "geocode:city-fallback": "tsx scripts/geocode-city-fallback.ts"
+    "geocode:city-fallback": "tsx scripts/geocode-city-fallback.ts",
+    "refresh:work-distances": "tsx scripts/refresh-work-distances.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

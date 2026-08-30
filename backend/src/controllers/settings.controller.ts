@@ -128,8 +128,12 @@ export const upsertWorkLocation = async (req: Request, res: Response) => {
       .single()
     if (error) return res.status(500).json({ error: error.message })
 
-    const distances_updated = await refreshStoredDistances(geocoded.latitude, geocoded.longitude)
-    return res.json({ ...data, distances_updated })
+    // O recálculo pode envolver milhares de imóveis. Não o mantemos no ciclo da
+    // requisição: assim o endereço é salvo mesmo se o proxy encerrar uma chamada longa.
+    void refreshStoredDistances(geocoded.latitude, geocoded.longitude).catch(refreshError => {
+      console.error('Falha ao recalcular distâncias do trabalho:', refreshError)
+    })
+    return res.json({ ...data, distances_updated: 0, distances_status: 'processing' })
   } catch (error) {
     return res.status(502).json({
       error: error instanceof Error ? error.message : 'Falha ao localizar o endereço de trabalho',
