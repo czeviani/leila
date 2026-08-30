@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useSources, useToggleSource, useRunScraper, useFilters, useSaveFilters, useLlmSettings, useSaveLlmSettings } from '../hooks/useProperties'
-import { RefreshCw, CheckCircle2, XCircle, Globe, Info, ShoppingCart, Gavel, Users, Mail, Tag, Cpu, Check } from 'lucide-react'
+import { useSources, useToggleSource, useRunScraper, useFilters, useSaveFilters, useLlmSettings, useSaveLlmSettings, useSaveWorkLocation } from '../hooks/useProperties'
+import { RefreshCw, CheckCircle2, XCircle, Globe, Info, ShoppingCart, Gavel, Users, Mail, Tag, Cpu, Check, MapPin } from 'lucide-react'
 import { MODALITY_CONFIG } from '../components/filters/FilterPanel'
 import { LLM_PROVIDERS, LlmProvider } from '../lib/api'
 
@@ -50,11 +50,15 @@ export default function SettingsPage() {
   const [selectedProvider, setSelectedProvider] = useState<LlmProvider>('anthropic')
   const [selectedModel, setSelectedModel] = useState<string>('claude-sonnet-4-6')
   const [llmSaved, setLlmSaved] = useState(false)
+  const saveWorkLocation = useSaveWorkLocation()
+  const [workAddress, setWorkAddress] = useState('')
+  const [workSaved, setWorkSaved] = useState(false)
 
   useEffect(() => {
     if (llmSettings) {
       setSelectedProvider(llmSettings.llm_provider)
       setSelectedModel(llmSettings.llm_model)
+      setWorkAddress(llmSettings.work_address ?? '')
     }
   }, [llmSettings])
 
@@ -79,6 +83,15 @@ export default function SettingsPage() {
     )
   }
 
+  const handleWorkSave = () => {
+    saveWorkLocation.mutate(workAddress.trim(), {
+      onSuccess: () => {
+        setWorkSaved(true)
+        setTimeout(() => setWorkSaved(false), 2500)
+      },
+    })
+  }
+
   const activeSources = sources?.filter(s => s.active && s.coverage_mode === 'direct' && s.implementation_status === 'ready').length ?? 0
   const indirectSources = sources?.filter(s => s.operational_status === 'covered_indirectly').length ?? 0
   const pendingSources = sources?.filter(s => s.implemented === false).length ?? 0
@@ -101,6 +114,47 @@ export default function SettingsPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
+
+        <div className="overflow-hidden rounded-2xl border border-[#cfdede] bg-white shadow-sm">
+          <div className="border-b border-slate-100 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="grid h-8 w-8 place-items-center rounded-xl bg-[#176B87] text-white">
+                <MapPin size={14} />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Endereço do trabalho</h2>
+                <p className="mt-0.5 text-xs text-slate-500">Usado para calcular gratuitamente a proximidade dos imóveis.</p>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-3 px-5 py-5">
+            <label className="block text-xs font-semibold text-slate-500" htmlFor="work-address">Endereço completo</label>
+            <input
+              id="work-address"
+              value={workAddress}
+              onChange={event => { setWorkAddress(event.target.value); setWorkSaved(false) }}
+              placeholder="Rua, número, cidade e estado"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-800 outline-none transition focus:border-[#176B87] focus:bg-white focus:ring-2 focus:ring-[#176B87]/10"
+            />
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-[11px] leading-relaxed text-slate-400">
+                {llmSettings?.work_geocoded_at
+                  ? `Localizado · ${Math.round((llmSettings.work_geocode_confidence ?? 0) * 100)}% de confiança`
+                  : 'A distância exibida será aproximada e calculada matematicamente.'}
+              </p>
+              <button
+                type="button"
+                onClick={handleWorkSave}
+                disabled={workAddress.trim().length < 5 || workAddress.trim() === (llmSettings?.work_address ?? '') || saveWorkLocation.isPending}
+                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition ${workSaved ? 'bg-emerald-500 text-white' : 'bg-[#163447] text-white hover:bg-[#0f293a] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400'}`}
+              >
+                {workSaved ? <><Check size={13} /> Salvo</> : saveWorkLocation.isPending ? 'Localizando…' : 'Salvar endereço'}
+              </button>
+            </div>
+            {saveWorkLocation.isError && <p className="text-xs font-semibold text-red-600">{(saveWorkLocation.error as Error).message}</p>}
+            <p className="text-[10px] text-slate-400">Localização por dados abertos · Powered by Geoapify / OpenStreetMap</p>
+          </div>
+        </div>
 
         {/* LLM settings card */}
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">

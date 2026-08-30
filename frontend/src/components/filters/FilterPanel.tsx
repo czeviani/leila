@@ -62,6 +62,7 @@ function filtersToParams(filters: PropertyFilters): Record<string, string | numb
   if (filters.price_per_m2_max != null) params.price_per_m2_max = filters.price_per_m2_max
   if (filters.opportunity_score_min != null) params.opportunity_score_min = filters.opportunity_score_min
   if (filters.neighborhood_score_min != null) params.neighborhood_score_min = filters.neighborhood_score_min
+  if (filters.work_distance_max != null) params.work_distance_max = filters.work_distance_max
   return params
 }
 
@@ -93,6 +94,7 @@ export default function FilterPanel({ activeParams, onFilterChange }: Props) {
   const [pricePerM2Max, setPricePerM2Max] = useState('')
   const [opportunityScoreMin, setOpportunityScoreMin] = useState('')
   const [neighborhoodScoreMin, setNeighborhoodScoreMin] = useState('')
+  const [workDistanceMax, setWorkDistanceMax] = useState('')
   const [daysUntilAuction, setDaysUntilAuction] = useState<number | null>(null)
   const [hasEvaluation, setHasEvaluation] = useState(false)
   const [verifiedOnly, setVerifiedOnly] = useState(false)
@@ -130,6 +132,7 @@ export default function FilterPanel({ activeParams, onFilterChange }: Props) {
     setPricePerM2Max(activeParams.price_per_m2_max == null ? '' : String(activeParams.price_per_m2_max))
     setOpportunityScoreMin(activeParams.opportunity_score_min == null ? '' : String(activeParams.opportunity_score_min))
     setNeighborhoodScoreMin(activeParams.neighborhood_score_min == null ? '' : String(activeParams.neighborhood_score_min))
+    setWorkDistanceMax(activeParams.work_distance_max == null ? '' : String(activeParams.work_distance_max))
     setVerifiedOnly(activeParams.verified_within_hours != null)
     setQualityOnly(Number(activeParams.quality_min ?? 0) >= 70)
     setOccupancy(activeParams.occupied === 'true' || activeParams.occupied === 'false' || activeParams.occupied === 'unknown' ? activeParams.occupied : '')
@@ -230,6 +233,7 @@ export default function FilterPanel({ activeParams, onFilterChange }: Props) {
       price_per_m2_max: pricePerM2Max ? Number(pricePerM2Max) : null,
       opportunity_score_min: opportunityScoreMin ? Number(opportunityScoreMin) : null,
       neighborhood_score_min: neighborhoodScoreMin ? Number(neighborhoodScoreMin) : null,
+      work_distance_max: workDistanceMax ? Number(workDistanceMax) : null,
     }
     saveFilters.mutate(filters)
     onFilterChange({
@@ -250,6 +254,7 @@ export default function FilterPanel({ activeParams, onFilterChange }: Props) {
     setSelectedNeighborhoods([]); setNeighborhoodSearch('')
     setPricePerM2Min(''); setPricePerM2Max('')
     setOpportunityScoreMin(''); setNeighborhoodScoreMin('')
+    setWorkDistanceMax('')
     setVerifiedOnly(false); setQualityOnly(false); setOccupancy('')
     const empty: PropertyFilters = {
       price_min: null, price_max: null, states: [], cities: [], property_types: [],
@@ -258,6 +263,7 @@ export default function FilterPanel({ activeParams, onFilterChange }: Props) {
       area_min: null, area_max: null, source_ids: [],
       neighborhoods: [], price_per_m2_min: null, price_per_m2_max: null,
       opportunity_score_min: null, neighborhood_score_min: null,
+      work_distance_max: null,
     }
     saveFilters.mutate(empty)
     onFilterChange({})
@@ -273,6 +279,7 @@ export default function FilterPanel({ activeParams, onFilterChange }: Props) {
     (areaMin ? 1 : 0) + (areaMax ? 1 : 0) +
     (pricePerM2Min ? 1 : 0) + (pricePerM2Max ? 1 : 0) +
     (opportunityScoreMin ? 1 : 0) + (neighborhoodScoreMin ? 1 : 0) +
+    (workDistanceMax ? 1 : 0) +
     (daysUntilAuction ? 1 : 0) + (hasEvaluation ? 1 : 0) +
     (verifiedOnly ? 1 : 0) + (qualityOnly ? 1 : 0) + (occupancy ? 1 : 0)
 
@@ -528,6 +535,23 @@ export default function FilterPanel({ activeParams, onFilterChange }: Props) {
               ))}
             </div>
             <p className="mt-2 text-[11px] text-slate-400">Usa área útil quando disponível; caso contrário, a área total.</p>
+          </div>
+
+          <div>
+            <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500">Distância do trabalho</p>
+            <div className="flex flex-wrap gap-1.5">
+              {[10, 20, 30, 50, 100].map(distance => (
+                <button
+                  type="button"
+                  key={distance}
+                  onClick={() => setWorkDistanceMax(workDistanceMax === String(distance) ? '' : String(distance))}
+                  className={`rounded-full border px-2.5 py-1.5 text-[11px] font-semibold transition ${workDistanceMax === String(distance) ? 'border-[#176B87] bg-[#eaf4f5] text-[#176B87]' : 'border-slate-200 text-slate-500 hover:border-[#176B87] hover:text-[#176B87]'}`}
+                >
+                  Até {distance} km
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] text-slate-400">Distância aproximada em linha reta; requer endereço do trabalho configurado.</p>
           </div>
 
           <div className="rounded-xl border border-[#cfe0e1] bg-[#f6faf9] p-3.5">

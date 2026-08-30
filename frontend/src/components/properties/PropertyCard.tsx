@@ -116,6 +116,13 @@ export default function PropertyCard({ property, isFavorite, isRejected, onAppro
             <span className="truncate"><strong className="text-[#163447]">{neighborhoodName(property) ?? 'Bairro não informado'}</strong> · {[property.city, property.state].filter(Boolean).join(' · ') || 'localização pendente'}</span>
           </p>
 
+          {property.work_distance_km != null && (
+            <p className="-mt-2 mb-4 flex items-center gap-1.5 text-xs font-semibold text-[#176B87]" title="Estimativa matemática em linha reta">
+              <MapPinned size={13} />≈ {Number(property.work_distance_km).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km do trabalho
+              {property.estimated_commute_minutes != null && <span className="font-normal text-slate-400">· ~{property.estimated_commute_minutes} min</span>}
+            </p>
+          )}
+
           <div className="mb-4 flex min-h-9 flex-wrap items-center gap-x-4 gap-y-2 border-y border-[#e8eeee] py-2.5 text-xs text-slate-600">
             {area ? <span className="flex items-center gap-1"><Ruler size={13} />{Math.round(area)} m²</span> : null}
             {property.bedrooms != null ? <span className="flex items-center gap-1"><Bed size={13} />{property.bedrooms}</span> : null}

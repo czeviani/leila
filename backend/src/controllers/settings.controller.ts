@@ -1,4 +1,6 @@
 import { Request, Response } from 'express'
+import { supabaseAdmin } from '../config/supabase'
+import { estimateProximity, geocodeAddress } from '../services/geocoding.service'
 
 const VALID_PROVIDERS = ['anthropic', 'openrouter', 'openai'] as const
 type LlmProvider = typeof VALID_PROVIDERS[number]
@@ -62,4 +64,75 @@ export const upsertSettings = async (req: Request, res: Response) => {
 
   if (error) return res.status(500).json({ error: error.message })
   return res.json(data)
+}
+
+async function refreshStoredDistances(workLatitude: number, workLongitude: number) {
+  let updated = 0
+  for (let from = 0; ; from += 500) {
+    const { data, error } = await supabaseAdmin.from('leila_properties')
+      .select('id,latitude,longitude')
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
+      .order('id')
+      .range(from, from + 499)
+    if (error) throw error
+    if (!data?.length) break
+
+    for (let index = 0; index < data.length; index += 50) {
+      const chunk = data.slice(index, index + 50)
+      const results = await Promise.all(chunk.map(property => {
+        const proximity = estimateProximity(
+          workLatitude, workLongitude, Number(property.latitude), Number(property.longitude),
+        )
+        return supabaseAdmin.from('leila_properties').update({
+          work_distance_km: proximity.straightLineKm,
+          estimated_road_distance_km: proximity.estimatedRoadKm,
+          estimated_commute_minutes: proximity.estimatedMinutes,
+          distance_calculated_at: new Date().toISOString(),
+        }).eq('id', property.id)
+      }))
+      const failed = results.find(result => result.error)
+      if (failed?.error) throw failed.error
+      updated += chunk.length
+    }
+    if (data.length < 500) break
+  }
+  return updated
+}
+
+export const upsertWorkLocation = async (req: Request, res: Response) => {
+  const userId = req.user!.id
+  const workAddress = typeof req.body?.work_address === 'string' ? req.body.work_address.trim() : ''
+  if (workAddress.length < 5 || workAddress.length > 500) {
+    return res.status(400).json({ error: 'Informe um endereço de trabalho válido' })
+  }
+
+  try {
+    const geocoded = await geocodeAddress(`${workAddress}, Brasil`)
+    if (!geocoded) return res.status(422).json({ error: 'Não foi possível localizar esse endereço' })
+
+    const now = new Date().toISOString()
+    const { data, error } = await req.supabase!
+      .from('leila_settings')
+      .upsert({
+        user_id: userId,
+        work_address: workAddress,
+        work_latitude: geocoded.latitude,
+        work_longitude: geocoded.longitude,
+        work_geocode_provider: geocoded.provider,
+        work_geocode_confidence: geocoded.confidence,
+        work_geocoded_at: now,
+        updated_at: now,
+      }, { onConflict: 'user_id' })
+      .select()
+      .single()
+    if (error) return res.status(500).json({ error: error.message })
+
+    const distances_updated = await refreshStoredDistances(geocoded.latitude, geocoded.longitude)
+    return res.json({ ...data, distances_updated })
+  } catch (error) {
+    return res.status(502).json({
+      error: error instanceof Error ? error.message : 'Falha ao localizar o endereço de trabalho',
+    })
+  }
 }

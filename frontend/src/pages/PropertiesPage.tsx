@@ -27,6 +27,7 @@ const SORT_OPTIONS = [
   { label: 'Melhor sinal do bairro', value: 'neighborhood_score:desc' },
   { label: 'Mais recentes', value: 'last_seen_at:desc' },
   { label: 'Dados mais completos', value: 'data_quality_score:desc' },
+  { label: 'Mais perto do trabalho', value: 'work_distance_km:asc' },
 ]
 
 const DISCOVERY_PRESETS = [
@@ -49,6 +50,7 @@ const FILTER_LABELS: Record<string, string> = {
   verified_within_hours: 'Verificação', quality_min: 'Qualidade', occupied: 'Ocupação',
   neighborhood: 'Bairro', price_per_m2_min: 'R$/m² mín.', price_per_m2_max: 'R$/m² máx.',
   opportunity_score_min: 'Oportunidade mín.', neighborhood_score_min: 'Sinal do bairro mín.',
+  work_distance_max: 'Distância do trabalho',
   discarded: 'Descartados', decision: 'Triagem',
 }
 
@@ -58,6 +60,7 @@ const NUMERIC_FILTERS = new Set([
   'days_until_auction_max', 'verified_within_hours', 'quality_min',
   'price_per_m2_min', 'price_per_m2_max', 'opportunity_score_min',
   'neighborhood_score_min',
+  'work_distance_max',
 ])
 
 interface DeskState {
@@ -118,6 +121,7 @@ function filterValue(key: string, value: string | number) {
   if (key === 'price_per_m2_min' || key === 'price_per_m2_max') return `R$ ${Number(value).toLocaleString('pt-BR')}/m²`
   if (key === 'price_min' || key === 'price_max') return `R$ ${Number(value).toLocaleString('pt-BR')}`
   if (key === 'area_min' || key === 'area_max') return `${value} m²`
+  if (key === 'work_distance_max') return `até ${value} km`
   if (key === 'discount_min') return `${value}%+`
   return String(value).replace(/,/g, ', ')
 }

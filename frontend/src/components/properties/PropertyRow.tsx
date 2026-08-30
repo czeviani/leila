@@ -103,6 +103,11 @@ export default memo(function PropertyRow({
           <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500">
             <MapPin size={11} /> {[property.city, property.state].filter(Boolean).join(' · ') || 'Localização pendente'}
           </p>
+          {property.work_distance_km != null && (
+            <p className="mt-1 truncate text-[10px] font-bold text-[#176B87]" title="Estimativa matemática em linha reta">
+              ≈ {Number(property.work_distance_km).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} km do trabalho
+            </p>
+          )}
         </td>
       )}
 

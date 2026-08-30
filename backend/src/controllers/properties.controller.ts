@@ -16,6 +16,7 @@ const SORT_FIELDS: Record<string, string> = {
   data_quality_score: 'data_quality_score',
   last_verified_at: 'last_verified_at',
   last_seen_at: 'last_seen_at',
+  work_distance_km: 'work_distance_km',
 }
 
 const AVAILABILITY_STATUSES = new Set(['available', 'suspect', 'unavailable'])
@@ -81,6 +82,7 @@ export const getProperties = async (req: Request, res: Response) => {
   const {
     state, city, neighborhood, type, source, price_min, price_max, discount_min, modality,
     area_min, area_max, price_per_m2_min, price_per_m2_max,
+    work_distance_max,
     opportunity_score_min, neighborhood_score_min,
     search, has_evaluation, area_classification, days_until_auction_max,
     availability_status, availability, status, verified_within_hours, quality_min, occupied,
@@ -98,6 +100,7 @@ export const getProperties = async (req: Request, res: Response) => {
   const pricePerM2Maximum = parseBoundedNumber(price_per_m2_max, 0, 10_000_000)
   const opportunityMinimum = parseBoundedNumber(opportunity_score_min, 0, 100)
   const neighborhoodMinimum = parseBoundedNumber(neighborhood_score_min, 0, 100)
+  const workDistanceMaximum = parseBoundedNumber(work_distance_max, 0, 20_000)
 
   if (area_min !== undefined && areaMinimum === null) {
     return res.status(400).json({ error: 'area_min deve ser um número entre 0 e 1.000.000' })
@@ -122,6 +125,9 @@ export const getProperties = async (req: Request, res: Response) => {
   }
   if (neighborhood_score_min !== undefined && neighborhoodMinimum === null) {
     return res.status(400).json({ error: 'neighborhood_score_min deve estar entre 0 e 100' })
+  }
+  if (work_distance_max !== undefined && workDistanceMaximum === null) {
+    return res.status(400).json({ error: 'work_distance_max deve estar entre 0 e 20.000 km' })
   }
 
   const requestedAvailability = availability_status ?? availability ?? status
@@ -222,6 +228,7 @@ export const getProperties = async (req: Request, res: Response) => {
   if (pricePerM2Maximum !== null) query = query.lte('price_per_m2', pricePerM2Maximum)
   if (opportunityMinimum !== null) query = query.gte('opportunity_score', opportunityMinimum)
   if (neighborhoodMinimum !== null) query = query.gte('neighborhood_score', neighborhoodMinimum)
+  if (workDistanceMaximum !== null) query = query.lte('work_distance_km', workDistanceMaximum)
   if (source) {
     const sources = String(source).split(',').map(value => value.trim()).filter(Boolean)
     query = sources.length === 1 ? query.eq('source_id', sources[0]) : query.in('source_id', sources)

@@ -144,6 +144,17 @@ export interface Property {
   missing_count: number
   data_quality_score: number
   scraped_at: string
+  latitude?: number | null
+  longitude?: number | null
+  geocode_status?: 'pending' | 'success' | 'approximate' | 'failed'
+  geocode_provider?: string | null
+  geocode_confidence?: number | null
+  geocode_match_type?: string | null
+  geocoded_at?: string | null
+  work_distance_km?: number | null
+  estimated_road_distance_km?: number | null
+  estimated_commute_minutes?: number | null
+  distance_calculated_at?: string | null
   leila_sources?: Pick<Source, 'name' | 'icon_url' | 'url'>
   leila_evaluations?: Evaluation | null
   leila_document_analyses?: DocumentAnalysisRecord | null
@@ -178,6 +189,7 @@ export interface PropertyFilters {
   price_per_m2_max: number | null
   opportunity_score_min: number | null
   neighborhood_score_min: number | null
+  work_distance_max: number | null
 }
 
 export interface CityOption {
@@ -519,6 +531,13 @@ export interface LlmSettings {
   user_id?: string
   llm_provider: LlmProvider
   llm_model: string
+  work_address?: string | null
+  work_latitude?: number | null
+  work_longitude?: number | null
+  work_geocode_provider?: string | null
+  work_geocode_confidence?: number | null
+  work_geocoded_at?: string | null
+  distances_updated?: number
 }
 
 // ── Sources ────────────────────────────────────────────────────────────────
@@ -618,6 +637,11 @@ export const api = {
       apiFetch<LlmSettings>('/api/settings', {
         method: 'PUT',
         body: JSON.stringify(settings),
+      }),
+    saveWorkLocation: (work_address: string) =>
+      apiFetch<LlmSettings>('/api/settings/work-location', {
+        method: 'PUT',
+        body: JSON.stringify({ work_address }),
       }),
   },
 }

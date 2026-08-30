@@ -266,3 +266,14 @@ export const useSaveLlmSettings = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['llm-settings'] }),
   })
 }
+
+export const useSaveWorkLocation = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (workAddress: string) => api.settings.saveWorkLocation(workAddress),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['llm-settings'] })
+      qc.invalidateQueries({ queryKey: ['properties'] })
+    },
+  })
+}
